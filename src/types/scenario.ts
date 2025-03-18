@@ -1,4 +1,4 @@
-import { Investment } from "./Investment";
+import { Investment } from "./investment";
 import { User } from "./user";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
 

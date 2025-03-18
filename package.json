@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.8.0",
+    "@types/axios": "^0.9.36",
+    "axios": "^1.8.3",
     "mongodb": "^6.14.2",
     "next": "15.2.1",
     "next-auth": "^4.24.11",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

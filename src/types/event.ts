@@ -1,4 +1,4 @@
-import { Investment } from "./Investment";
+import { Investment } from "./investment";
 import { FixedValues, NormalDistributionValues } from "./utils";
 
 export interface Event {
