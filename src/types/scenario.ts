@@ -1,4 +1,4 @@
-import { Investment } from "./Investment";
+import { Investment } from "./investment";
 import { User } from "./user";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
 
@@ -23,6 +23,14 @@ export interface BaseScenario {
     editPermissions: User[];
 }
 
+export interface RothConversion {
+    id: string;
+    startYear: number;
+    endYear: number;
+    investmentOrder: Investment[];
+    maxTaxBracket: number;// Todo: Add max tax bracket can be optional if we are fetching from Tax Brackets
+}
+
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {
     type: "single";
@@ -37,6 +45,13 @@ export interface CoupleScenario extends BaseScenario {
     userLifeExpectancy: number;
     spouseBirthYear: number;
     spouseLifeExpectancy: number;
+}
+
+export interface RMD {
+    id: string;
+    startAge: number;
+    investmentOrder: Investment[];
+    percentage: FixedValues | NormalDistributionValues | UniformDistributionValues;
 }
 
 interface WithRothConversion {
