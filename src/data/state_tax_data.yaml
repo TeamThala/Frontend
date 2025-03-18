@@ -1,0 +1,37 @@
+# SAMPLE State Tax Data for 2024
+NY:
+  2024:
+    incomeBrackets:
+      - lowerBound: 0
+        upperBound: 8500
+        rate: 0.04
+      - lowerBound: 8501
+        upperBound: 11700
+        rate: 0.045
+      - lowerBound: 11701
+        upperBound: 13900
+        rate: 0.0525
+      - lowerBound: 13901
+        upperBound: 80650
+        rate: 0.059
+      - lowerBound: 80651
+        upperBound: Infinity
+        rate: 0.0645
+NJ:
+  2024:
+    incomeBrackets:
+      - lowerBound: 0
+        upperBound: 20000
+        rate: 0.014
+      - lowerBound: 20001
+        upperBound: 35000
+        rate: 0.0175
+      - lowerBound: 35001
+        upperBound: 40000
+        rate: 0.035
+      - lowerBound: 40001
+        upperBound: 75000
+        rate: 0.05525
+      - lowerBound: 75001
+        upperBound: Infinity
+        rate: 0.0637
