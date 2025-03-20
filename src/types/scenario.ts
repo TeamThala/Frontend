@@ -20,7 +20,7 @@ export interface BaseScenario {
     residenceState: string
     owner: User;
     ownerBirthYear: number;
-    ownerLifeExpectancy: number;
+    ownerLifeExpectancy: FixedValues | NormalDistributionValues;
     viewPermissions: User[];
     editPermissions: User[];
 }
