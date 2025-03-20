@@ -42,7 +42,7 @@ export interface SingleScenario extends BaseScenario {
 export interface CoupleScenario extends BaseScenario {
     type: "couple";
     spouseBirthYear: number;
-    spouseLifeExpectancy: number;
+    spouseLifeExpectancy: FixedValues | NormalDistributionValues;
 }
 
 export interface RMD {
