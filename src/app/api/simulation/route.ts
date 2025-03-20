@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
                 spouseLifeExpectancy: scenario.spouseLifeExpectancy
             };
             // console.log(scenarioData);
-            await simulation(scenario);
+            await simulation(scenarioData);
         }
         else{
             return NextResponse.json({ message: "Error: Scenario Not Found" });
