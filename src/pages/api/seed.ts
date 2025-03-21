@@ -18,7 +18,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await Event.deleteMany({});
     await Scenario.deleteMany({});
 
-    const [stocksType, bondsType, realEstateType, cryptoType] = await InvestmentType.create([
+    const [cashType, stocksType, bondsType, realEstateType, cryptoType] = await InvestmentType.create([
+      { name: "Cash",
+        description: "Cash or savings account with minimal return",
+        expectedAnnualReturn: {
+          type: "fixed",
+          valueType: "percentage",
+          value: 1,
+        },
+        expenseRatio: 0,
+        expectedAnnualIncome: {
+          type: "fixed",
+          valueType: "amount",
+          value: 0,
+        },
+        taxability: false,
+      },
       {
         name: "Stocks",
         description: "Broad market equities",
@@ -88,8 +103,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     ]);
 
-    const [investmentStocks, investmentBonds, investmentRealEstate, investmentCrypto] =
+    const [investmentCash, investmentStocks, investmentBonds, investmentRealEstate, investmentCrypto] =
       await Investment.create([
+        {
+          value: 5000,
+          investmentType: cashType._id,
+          taxStatus: "non-retirement",
+        },
         {
           value: 10000,
           investmentType: stocksType._id,
@@ -260,6 +280,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       description: "Scenario with one event each for income, expense, investment, rebalance",
       financialGoal: 1000000,
       investments: [
+        investmentCash._id,
         investmentStocks._id,
         investmentBonds._id,
         investmentRealEstate._id,
@@ -272,25 +293,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         eventRebalance._id,
         eventAdvanced._id,
       ],
-      spendingStrategy: [],
-      expenseWithdrawalStrategy: [],
+      spendingStrategy: [eventExpense._id,],
+      expenseWithdrawalStrategy: [eventInvestment._id],
       inflationRate: {
         type: "normal",
         valueType: "percentage",
         mean: 2,
         stdDev: 0.5,
       },
-      RothConversionStrategy: [],
-      RMDStrategy: [],
+      RothConversionStrategy: [
+        {
+          startYear: 2050,
+          endYear: 2054,
+          investmentOrder: [investmentBonds._id, investmentStocks._id],
+          maxTaxBracket: 28,
+        }
+      ],
+      RMDStrategy: [
+        {
+          startAge: 72,
+          investmentOrder: [investmentBonds._id, investmentStocks._id],
+          percentage: {
+            type: "fixed",
+            valueType: "percentage",
+            value: 4,
+          }
+        }
+      ],
       rothConversion: {
         rothConversion: false,
       },
       residenceState: "CA",
       owner: user._id,
-      viewPermissions: [],
-      editPermissions: [],
+      viewPermissions: [user._id],
+      editPermissions: [user._id],
       userBirthYear: 1980,
-      userLifeExpectancy: 85,
+      userLifeExpectancy: {
+        type: "fixed",
+        valueType: "year",
+        value: 87,
+      },
     });
     const coupleScenario = await Scenario.create({
       type: "couple",
@@ -298,6 +340,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       description: "Financial plan for a married couple",
       financialGoal: 1500000,
       investments: [
+        investmentCash._id,
         investmentStocks._id,
         investmentBonds._id,
       ],
@@ -305,27 +348,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         eventIncome._id,
         eventExpense._id,
       ],
-      spendingStrategy: [],
-      expenseWithdrawalStrategy: [],
+      spendingStrategy: [eventExpense._id],
+      expenseWithdrawalStrategy: [eventInvestment._id],
       inflationRate: {
         type: "normal",
         valueType: "percentage",
         mean: 2,
         stdDev: 0.5,
       },
-      RothConversionStrategy: [],
-      RMDStrategy: [],
+      RothConversionStrategy: [
+        {
+          startYear: 2040,
+          endYear: 2044,
+          investmentOrder: [investmentBonds._id, investmentStocks._id],
+          maxTaxBracket: 28,
+        }
+      ],
+      RMDStrategy: [
+        {
+          startAge: 72,
+          investmentOrder: [investmentBonds._id, investmentStocks._id],
+          percentage: {
+            type: "fixed",
+            valueType: "percentage",
+            value: 4,
+          }
+        }
+      ],
       rothConversion: {
         rothConversion: false,
       },
       residenceState: "NY",
       owner: user._id,
-      viewPermissions: [],
-      editPermissions: [],
+      viewPermissions: [singleScenario._id],
+      editPermissions: [user._id],
       userBirthYear: 1980,
-      userLifeExpectancy: 85,
+      userLifeExpectancy: {
+        type: "normal",
+        valueType: "year",
+        mean: 85,
+        stdDev: 5,
+      },
       spouseBirthYear: 1982,
-      spouseLifeExpectancy: 87,
+      spouseLifeExpectancy: {
+        type: "fixed",
+        valueType: "year",
+        value: 87,
+      },
     });
 
     const rothScenario = await Scenario.create({
@@ -334,6 +403,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       description: "Financial plan with Roth conversion strategy",
       financialGoal: 1200000,
       investments: [
+        investmentCash._id,
         investmentStocks._id,
         investmentBonds._id,
       ],
@@ -341,8 +411,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         eventIncome._id,
         eventExpense._id,
       ],
-      spendingStrategy: [],
-      expenseWithdrawalStrategy: [],
+      spendingStrategy: [eventExpense._id],
+      expenseWithdrawalStrategy: [eventInvestment._id],
       inflationRate: {
         type: "fixed",
         valueType: "percentage",
@@ -374,10 +444,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
       residenceState: "FL",
       owner: user._id,
-      viewPermissions: [],
-      editPermissions: [],
+      viewPermissions: [singleScenario._id, coupleScenario._id],
+      editPermissions: [user._id, coupleScenario._id, singleScenario._id],
       userBirthYear: 1975,
-      userLifeExpectancy: 85,
+      userLifeExpectancy: {
+        type: "fixed",
+        valueType: "year",
+        value: 85,
+      },
+    });
+    await Scenario.findByIdAndUpdate(rothScenario._id, {
+      $set: { editPermissions: [rothScenario._id] }
     });
 
     await User.findByIdAndUpdate(user._id, {
@@ -389,7 +466,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({
       message: "Successfully seeded the database with data matching the exact TypeScript interfaces",
       data: {
-        investmentTypes: [stocksType, bondsType, realEstateType, cryptoType],
+        investmentTypes: [cashType, stocksType, bondsType, realEstateType, cryptoType],
         investments: [investmentStocks, investmentBonds, investmentRealEstate, investmentCrypto],
         events: [eventIncome, eventExpense, eventInvestment, eventRebalance, eventAdvanced],
         user: user,

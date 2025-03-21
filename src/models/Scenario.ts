@@ -1,6 +1,8 @@
-// src/models/Scenario.ts
 import { Schema, model, models } from "mongoose";
-
+import "@/models/Investment";
+import "@/models/Event";
+import "@/models/User";
+import "@/models/InvestmentType";
 /**
  * Sub-schemas for distribution-like fields:
  * (FixedValues, NormalDistributionValues, UniformDistributionValues)
@@ -12,7 +14,7 @@ const distributionSchema = new Schema(
       enum: ["fixed", "normal", "uniform"],
       required: true,
     },
-    valueType: { type: String, enum: ["amount", "percentage"] },
+    valueType: { type: String, enum: ["amount", "percentage", "year"] },
     // For "fixed":
     value: { type: Number },
     // For "normal":
@@ -88,11 +90,11 @@ const scenarioSchema = new Schema(
 
     // single scenario
     userBirthYear: { type: Number },
-    userLifeExpectancy: { type: Number },
+    userLifeExpectancy: { type: distributionSchema },
 
     // couple scenario
     spouseBirthYear: { type: Number },
-    spouseLifeExpectancy: { type: Number },
+    spouseLifeExpectancy: { type: distributionSchema },
   },
   { timestamps: true }
 );

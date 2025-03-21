@@ -31,20 +31,23 @@ export interface RothConversion {
     maxTaxBracket: number;// Todo: Add max tax bracket can be optional if we are fetching from Tax Brackets
 }
 
+
+export type LifeExpectancy = FixedValues | NormalDistributionValues;
+
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {
     type: "single";
     userBirthYear: number;
-    userLifeExpectancy: number;
+    userLifeExpectancy: LifeExpectancy;
 }
 
 // Scenario where there is a couple (user + spouse)
 export interface CoupleScenario extends BaseScenario {
     type: "couple";
     userBirthYear: number;
-    userLifeExpectancy: number;
+    userLifeExpectancy: LifeExpectancy;
     spouseBirthYear: number;
-    spouseLifeExpectancy: number;
+    spouseLifeExpectancy: LifeExpectancy;
 }
 
 export interface RMD {
