@@ -23,6 +23,7 @@ export interface BaseScenario {
     ownerLifeExpectancy: FixedValues | NormalDistributionValues;
     viewPermissions: User[];
     editPermissions: User[];
+    updatedAt: Date;
 }
 
 export interface RothConversion {
@@ -32,6 +33,9 @@ export interface RothConversion {
     investmentOrder: Investment[];
     maxTaxBracket: number;// Todo: Add max tax bracket can be optional if we are fetching from Tax Brackets
 }
+
+
+export type LifeExpectancy = FixedValues | NormalDistributionValues;
 
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {

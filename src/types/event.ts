@@ -31,7 +31,7 @@ interface EventYear {
     event: Event;
 }
 
-interface IncomeEvent {
+export interface IncomeEvent {
     type: "income";
     initialAmount: number;
     amount: number;
@@ -59,7 +59,7 @@ export interface InvestmentEvent {
     investments: Investment[];
 }
 
-interface RebalanceEvent {
+export interface RebalanceEvent {
     type: "rebalance";
     assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath;
 }

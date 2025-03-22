@@ -1,6 +1,8 @@
 // src/models/Event.ts
 import { Schema, model, models } from "mongoose";
-
+import "@/models/User";
+import "@/models/Scenario";
+import "@/models/Investment";
 // Sub-schema for the "year" union (FixedYear, UniformYear, NormalYear, EventYear)
 const yearSchema = new Schema(
   {

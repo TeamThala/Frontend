@@ -1,6 +1,8 @@
-// src/models/InvestmentType.ts
 import { Schema, model, models } from "mongoose";
-
+import "@/models/Event";
+import "@/models/User";
+import "@/models/Scenario";
+import "@/models/Investment";
 const investmentTypeSchema = new Schema(
   {
     name: { type: String, required: true },
