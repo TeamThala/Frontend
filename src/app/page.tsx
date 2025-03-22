@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Jacques_Francois_Shadow } from "next/font/google";
 

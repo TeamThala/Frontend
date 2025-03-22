@@ -4,18 +4,12 @@ import { usePathname } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import ClientWrapper from "./client-wrapper";
 
 const Header = () => {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Ensures hydration issues do not occur
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   // Navigation links
   const navLinks = [
@@ -50,7 +44,13 @@ const Header = () => {
       </nav>
 
       {/* Authentication Section */}
-      {isMounted ? (
+      <ClientWrapper
+        fallback={
+          <div className="flex items-center space-x-4">
+            <div className="w-28 h-10 bg-gray-800 animate-pulse rounded-lg"></div>
+          </div>
+        }
+      >
         <div className="flex items-center space-x-4">
           {isAuthenticated ? (
             <div className="flex items-center space-x-3">
@@ -81,14 +81,9 @@ const Header = () => {
             </button>
           )}
         </div>
-      ) : (
-        <div className="flex items-center space-x-4">
-          <div className="w-28 h-10 bg-gray-800 animate-pulse rounded-lg"></div>
-        </div>
-      )}
+      </ClientWrapper>
     </div>
   </header>
-
   );
 };
 
