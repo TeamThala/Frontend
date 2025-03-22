@@ -1,5 +1,5 @@
 import { Investment } from "./investment";
-import { FixedValues, NormalDistributionValues } from "./utils";
+import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
 
 export interface Event {
     id: string;
@@ -17,14 +17,12 @@ interface FixedYear {
 
 interface UniformYear {
     type: "uniform";
-    startYear: number;
-    endYear: number;
+    year: UniformDistributionValues;
 }
 
 interface NormalYear {
     type: "normal";
-    mean: number;
-    stdDev: number;
+    year: NormalDistributionValues;
 }
 
 interface EventYear {
@@ -35,17 +33,20 @@ interface EventYear {
 
 export interface IncomeEvent {
     type: "income";
+    initialAmount: number;
     amount: number;
-    expectedAnnualChange: FixedValues | NormalDistributionValues;
+    expectedAnnualChange: FixedValues | NormalDistributionValues | UniformDistributionValues;
     inflationAdjustment: boolean;
     percentageOfIncome?: number;
     socialSecurity: boolean;
+    wage: boolean;
 }
 
 export interface ExpenseEvent {
     type: "expense";
+    initialAmount: number;
     amount: number;
-    expectedAnnualChange: FixedValues | NormalDistributionValues;
+    expectedAnnualChange: FixedValues | NormalDistributionValues | UniformDistributionValues;
     inflationAdjustment: boolean;
     percentageOfIncome?: number;
     discretionary: boolean;
@@ -53,27 +54,28 @@ export interface ExpenseEvent {
 
 export interface InvestmentEvent {
     type: "investment";
-    assetAllocation: (AssetAllocationFixed | AssetAllocationGlidePath)[];
+    assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath;
     maximumCash: number;
+    investments: Investment[];
 }
 
 export interface RebalanceEvent {
     type: "rebalance";
-    assetAllocation: (AssetAllocationFixed | AssetAllocationGlidePath)[];
+    assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath;
 }
 
 interface AssetAllocationFixed {
     type: "fixed";
     investment: Investment;
-    percentage: number;
+    percentages: number[];
 }
 
 
 interface AssetAllocationGlidePath {
     type: "glidePath";
     investment: Investment;
-    initialPercentage: number;
-    finalPercentage: number;
+    initialPercentages: number[];
+    finalPercentages: number[];
 }
 
 
