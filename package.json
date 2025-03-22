@@ -10,19 +10,25 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.8.0",
+    "@radix-ui/react-slot": "^1.1.2",
     "@types/axios": "^0.9.36",
     "axios": "^1.8.4",
     "cheerio": "^1.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
     "formidable": "^3.5.2",
     "js-yaml": "^4.1.0",
+    "lucide-react": "^0.483.0",
     "mongodb": "^6.14.2",
-    "mongoose": "^8.12.1",
+    "mongoose": "^7.6.3",
     "next": "15.2.1",
     "next-auth": "^4.24.11",
     "puppeteer": "^24.4.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "tw-animate-css": "^1.2.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

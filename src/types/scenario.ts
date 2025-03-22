@@ -21,6 +21,7 @@ export interface BaseScenario {
     owner: User;
     viewPermissions: User[];
     editPermissions: User[];
+    updatedAt: Date;
 }
 
 export interface RothConversion {

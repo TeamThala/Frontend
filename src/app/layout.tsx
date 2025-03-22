@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/header";
 import AuthProvider from "@/lib/session-provider";
+import { Inter } from "next/font/google";
+import { MuseoModerno } from "next/font/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,6 +14,15 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const inter = Inter({ subsets: ["latin"] });
+
+const museoModerno = MuseoModerno({
+  subsets: ["latin"],
+  variable: "--font-museo-moderno",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.className} ${museoModerno.variable} antialiased bg-black`}
         suppressHydrationWarning
       >
         <AuthProvider>
