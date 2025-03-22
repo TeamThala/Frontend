@@ -14,11 +14,13 @@ export interface BaseScenario {
     spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expenses
     expenseWithdrawalStrategy: Event[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
-    RothConversionStrategy: RothConversion[]; // Todo: Add Roth Conversion Strategy
-    RMDStrategy: RMD[]; // Todo: Add RMD Strategy
+    RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
+    RMDStrategy: Investment[]; // Todo: Add RMD Strategy
     rothConversion: WithRothConversion | WithoutRothConversion;
     residenceState: string
     owner: User;
+    ownerBirthYear: number;
+    ownerLifeExpectancy: FixedValues | NormalDistributionValues;
     viewPermissions: User[];
     editPermissions: User[];
     updatedAt: Date;
@@ -38,17 +40,13 @@ export type LifeExpectancy = FixedValues | NormalDistributionValues;
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {
     type: "single";
-    userBirthYear: number;
-    userLifeExpectancy: LifeExpectancy;
 }
 
 // Scenario where there is a couple (user + spouse)
 export interface CoupleScenario extends BaseScenario {
     type: "couple";
-    userBirthYear: number;
-    userLifeExpectancy: LifeExpectancy;
     spouseBirthYear: number;
-    spouseLifeExpectancy: LifeExpectancy;
+    spouseLifeExpectancy: FixedValues | NormalDistributionValues;
 }
 
 export interface RMD {
