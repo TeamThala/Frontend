@@ -24,6 +24,11 @@ export default function MultiLineScenarioChart({
     value: number;
   } | null>(null);
 
+  // AI tool (ChatGPT) was used to assist with generating 
+  // chart code, sample data, and visualization design. 
+  // All content was reviewed and revised by the author.
+  // It was used to first generate chart in observablehq.com
+  // and then converted to React code.
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     const width = window.innerWidth - 100;
