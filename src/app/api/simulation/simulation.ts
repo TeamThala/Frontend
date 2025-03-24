@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Scenario } from '@/types/scenario';
 import { Event, FixedYear } from '@/types/event';
 import { randomNormal } from 'd3-random';

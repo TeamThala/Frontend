@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import "@/models/Investment";
 import "@/models/Event";
@@ -6,7 +6,7 @@ import "@/models/User";
 import "@/models/InvestmentType";
 import Scenario from '@/models/Scenario';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   await dbConnect();
 
   try {

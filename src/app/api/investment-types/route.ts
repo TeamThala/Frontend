@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import InvestmentType from '@/models/InvestmentType';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   await dbConnect();
 
   try {

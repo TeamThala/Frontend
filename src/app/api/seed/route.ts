@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 
 import User from "@/models/User";
@@ -7,7 +7,7 @@ import Investment from "@/models/Investment";
 import Event from "@/models/Event";
 import Scenario from "@/models/Scenario";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   await dbConnect();
 
   try {
