@@ -11,13 +11,15 @@ export async function POST() {
   await dbConnect();
 
   try {
-    // Clear existing data
-    await User.deleteMany({});
+    let user = await User.findOne({ email: "anujsureshbhai.dakhara@stonybrook.edu" });
     await InvestmentType.deleteMany({});
     await Investment.deleteMany({});
     await Event.deleteMany({});
     await Scenario.deleteMany({});
 
+    if (!user) {
+      return NextResponse.json({ success: false, error: "User Anuj not found" }, { status: 404 });
+    }
     // Create investment types
     const [cashType, stocksType, bondsType, realEstateType, cryptoType] = await InvestmentType.create([
       {
@@ -150,15 +152,6 @@ export async function POST() {
         ],
         maximumCash: 10000,
       },
-    });
-
-    const user = await User.create({
-      name: "John Doe",
-      email: "john@example.com",
-      image: "some-image-url",
-      createdScenarios: [],
-      readScenarios: [],
-      readWriteScenarios: [],
     });
 
     const singleScenario = await Scenario.create({
