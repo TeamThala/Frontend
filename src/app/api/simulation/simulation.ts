@@ -108,7 +108,7 @@ function updateTaxBrackets(taxBrackets: any, inflationRate: number){
     return taxBrackets;
 }
 
-async function initializeEvents(events: any){ // assuming it is only invoked on scenario.eventSeries
+async function initializeEvents(events: any, noID = false){ // assuming it is only invoked on scenario.eventSeries
     // Initialize durations for all events
     console.log("Initializing event durations...");
     const db = client.db("main");
@@ -119,17 +119,27 @@ async function initializeEvents(events: any){ // assuming it is only invoked on 
     var rebalanceEvents = [];
 
     for (var i = 0; i < events.length; i++){
-        var eventID = events[i];
-        const eventFromDB = await db.collection("events").findOne({_id: eventID});
+        var event: Event;
+        var eventFromDB;
+        if (noID === false){
+            var eventID = events[i];
+            eventFromDB = await db.collection("events").findOne({_id: eventID});
+        }
         // console.log(eventFromDB);
         if (eventFromDB !== null){
-            console.log(`Initializing event with name: ${eventFromDB.name}...`);
-            var event: Event = {
-                name: eventFromDB.name,
-                eventType: eventFromDB.eventType,
-                startYear: eventFromDB.startYear,
-                duration: eventFromDB.duration
-            };
+            if (noID === false && eventFromDB !== undefined){
+                console.log(`Initializing event with name: ${eventFromDB.name}...`);
+                event = {
+                    name: eventFromDB.name,
+                    eventType: eventFromDB.eventType,
+                    startYear: eventFromDB.startYear,
+                    duration: eventFromDB.duration
+                };
+            }
+            else { // noID is true and the events passed are already loaded in-memory as type Event
+                console.log(`Initializing event with name: ${events[i].name}...`);
+                event = events[i];
+            }
             if (event.duration.type === "uniform"){
                 const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
                 var simDuration: FixedYear = {
@@ -152,6 +162,39 @@ async function initializeEvents(events: any){ // assuming it is only invoked on 
                 // If already fixed, do nothing
             }
 
+            // Resolve start year
+            if (event.startYear.type === "uniform"){
+                const uniform = Math.random() * (event.startYear.year.max - event.startYear.year.min) + event.startYear.year.min;
+                var simStartYear: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(uniform)
+                }
+                event.startYear = simStartYear;
+            }
+            else if (event.startYear.type === "normal"){
+                const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
+                var simStartYear: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(normal())
+                }
+                event.startYear = simStartYear;
+            }
+            else if (event.startYear.type === "event"){
+                // recursively resolve start years until we reach a fixed start year
+                await initializeEvents([event.startYear.event]);
+                if (event.startYear.eventTime === "start"){
+                    event.startYear = event.startYear.event.startYear.year; // this should be fixed year after the recursive call
+                }
+                else{
+                    event.startYear = event.startYear.event.startYear.year + event.startYear.event.duration.year;
+                }
+            }
+            else{ // type is "fixed"
+                // console.log(`Event ${event.name} has a fixed start year of ${event.startYear.year}`);
+                // All random start years will be converted to fixed start years at runtime
+                // If already fixed, do nothing
+            }
+
             // Put event in respective array
             if (event.eventType.type === "income"){
                 incomeEvents.push(event);
@@ -165,12 +208,11 @@ async function initializeEvents(events: any){ // assuming it is only invoked on 
             else{
                 rebalanceEvents.push(event);
             }
-            return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
         }
         else {
             console.log(`Could not find event.`);
             return;
         }
     }
-    return
+    return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
 }
