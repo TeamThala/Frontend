@@ -1,11 +1,14 @@
 import { Scenario } from '@/types/scenario';
+import { Event, FixedYear } from '@/types/event';
 import { randomNormal } from 'd3-random';
 import { getTaxData } from '@/types/taxScraper';
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from '@/types/utils';
+import client from '@/lib/db';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
     var age = currentYear - scenario.ownerBirthYear;
+    var year = currentYear;
     console.log(scenario.ownerBirthYear);
     console.log(typeof scenario.ownerBirthYear);
 
@@ -24,22 +27,52 @@ export async function simulation(scenario: Scenario){
     var prevTaxBrackets = initialTaxBrackets;
     console.log(`Fetched initial tax brackets for ${scenario.residenceState} in ${currentYear}`);
 
+    // Initialize durations for all events and sort all of them by type
+    const eventArrays = await initializeEvents(scenario.eventSeries);
+    var incomeEvents, expenseEvents, investmentEvents, rebalanceEvents;
+
+    if (eventArrays !== undefined){
+        incomeEvents = eventArrays[0];
+        expenseEvents = eventArrays[1];
+        investmentEvents = eventArrays[2];
+        rebalanceEvents = eventArrays[3];
+    }
+    else {
+        console.log("No events found.");
+        return;
+    }
+
     // Simulation loop
+    console.log("=====================SIMULATION STARTED=====================");
     for(var age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
-
+        console.log(incomeEvents[0])
         // Inflation assumption calculation for this year
         const inflation = getInflationRate(scenario.inflationRate);
-        console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
+        // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
 
         // Adjust this year's tax brackets for inflation
         var taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
-        console.log(`Adjusted tax brackets for age ${age}`);
+        // console.log(`Adjusted tax brackets for age ${age}`);
 
         // Update previous tax brackets for next iteration
         prevTaxBrackets = taxBrackets;
 
-        console.log(age);
+        // console.log(`Age: ${age}`);
+        // console.log(`Year: ${year}`);
+
+        // TODO: Run income events, add to cash investment
+        // TODO: Perform RMD for previous year
+        // TODO: Update the values of investments
+        // TODO: Run Roth conversion optimizer if enabled
+        // TODO: Pay non-discretionary expenses and previous year's taxes
+        // TODO: Pay discretionary expenses in spending strategy
+        // TODO: Run invest event scheduled for the current year
+        // TODO: Run rebalance events scheduled for the current year
+
+
+        // End of loop calculations
+        year++;
     }
     console.log("=====================SIMULATION FINISHED=====================");
     return;
@@ -73,4 +106,71 @@ function updateTaxBrackets(taxBrackets: any, inflationRate: number){
     taxBrackets.state.incomeBrackets.rate *= trueInflation;
 
     return taxBrackets;
+}
+
+async function initializeEvents(events: any){ // assuming it is only invoked on scenario.eventSeries
+    // Initialize durations for all events
+    console.log("Initializing event durations...");
+    const db = client.db("main");
+
+    var incomeEvents = [];
+    var expenseEvents = [];
+    var investmentEvents = [];
+    var rebalanceEvents = [];
+
+    for (var i = 0; i < events.length; i++){
+        var eventID = events[i];
+        const eventFromDB = await db.collection("events").findOne({_id: eventID});
+        // console.log(eventFromDB);
+        if (eventFromDB !== null){
+            console.log(`Initializing event with name: ${eventFromDB.name}...`);
+            var event: Event = {
+                name: eventFromDB.name,
+                eventType: eventFromDB.eventType,
+                startYear: eventFromDB.startYear,
+                duration: eventFromDB.duration
+            };
+            if (event.duration.type === "uniform"){
+                const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
+                var simDuration: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(uniform)
+                }
+                event.duration = simDuration;
+            }
+            else if (event.duration.type === "normal"){
+                const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
+                var simDuration: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(normal())
+                }
+                event.duration = simDuration;
+            }
+            else { // type is "fixed"
+                // console.log(`Event ${event.name} has a fixed duration of ${event.duration.year}`);
+                // All random durations will be converted to fixed durations at runtime
+                // If already fixed, do nothing
+            }
+
+            // Put event in respective array
+            if (event.eventType.type === "income"){
+                incomeEvents.push(event);
+            }
+            else if (event.eventType.type === "expense"){
+                expenseEvents.push(event);
+            }
+            else if (event.eventType.type === "investment"){
+                investmentEvents.push(event);
+            }
+            else{
+                rebalanceEvents.push(event);
+            }
+            return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
+        }
+        else {
+            console.log(`Could not find event.`);
+            return;
+        }
+    }
+    return
 }
