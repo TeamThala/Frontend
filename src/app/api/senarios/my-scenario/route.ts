@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import dbConnect from '@/lib/dbConnect';
 import "@/models/Investment";
@@ -9,12 +9,11 @@ import Scenario from '@/models/Scenario';
 import mongoose from 'mongoose';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   await dbConnect();
 
   // Get the user session
   const session = await getServerSession(authOptions);
-  console.log("Session data:", JSON.stringify(session, null, 2));
   // Check if user is authenticated
   if (!session || !session.user?.email) {
     return NextResponse.json(
@@ -36,12 +35,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Find scenarios where the user is the owner or has permissions
-    const scenarios = await Scenario.find({
-      $or: [
-        { owner: user._id },
-        { viewPermissions: user._id },
-        { editPermissions: user._id }
-      ]
+    const createdScenarios = await Scenario.find({
+      _id: { $in: user.createdScenarios }
     })
     .populate({
       path: 'investments',
@@ -54,7 +49,43 @@ export async function GET(req: NextRequest) {
     .populate('viewPermissions', 'name email')
     .populate('editPermissions', 'name email');
 
-    return NextResponse.json({ success: true, data: scenarios }, { status: 200 });
+    // Find scenarios where the user has read permissions
+    const readScenarios = await Scenario.find({
+      _id: { $in: user.readScenarios }
+    })
+    .populate({
+      path: 'investments',
+      populate: { path: 'investmentType' }
+    })
+    .populate('eventSeries')
+    .populate('spendingStrategy')
+    .populate('expenseWithdrawalStrategy')
+    .populate('owner', 'name email')
+    .populate('viewPermissions', 'name email')
+    .populate('editPermissions', 'name email')
+
+    // Find scenarios where the user has read and write permissions
+    const readWriteScenarios = await Scenario.find({
+      _id: { $in: user.readWriteScenarios }
+    })
+    .populate({
+      path: 'investments',
+      populate: { path: 'investmentType' }
+    })
+    .populate('eventSeries')
+    .populate('spendingStrategy')
+    .populate('expenseWithdrawalStrategy')
+    .populate('owner', 'name email')
+    .populate('viewPermissions', 'name email')
+    .populate('editPermissions', 'name email')
+    
+    const responsePayload = {
+      "createdScenarios": createdScenarios,
+      "readScenarios": readScenarios,
+      "readWriteScenarios": readWriteScenarios
+    }
+
+    return NextResponse.json(responsePayload, { status: 200 });
   } catch (error) {
     console.error('Error fetching user scenarios:', error);
     return NextResponse.json(

@@ -11,7 +11,7 @@ export async function POST() {
   await dbConnect();
 
   try {
-    let user = await User.findOne({ email: "anujsureshbhai.dakhara@stonybrook.edu" });
+    const user = await User.findOne({ email: "uday.turakhia@stonybrook.edu" });
     await InvestmentType.deleteMany({});
     await Investment.deleteMany({});
     await Event.deleteMany({});
