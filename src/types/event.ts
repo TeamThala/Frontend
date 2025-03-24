@@ -10,22 +10,22 @@ export interface Event {
     eventType: IncomeEvent | ExpenseEvent | InvestmentEvent | RebalanceEvent;
 }
 
-interface FixedYear {
+export interface FixedYear {
     type: "fixed";
     year: number;
 }
 
-interface UniformYear {
+export interface UniformYear {
     type: "uniform";
     year: UniformDistributionValues;
 }
 
-interface NormalYear {
+export interface NormalYear {
     type: "normal";
     year: NormalDistributionValues;
 }
 
-interface EventYear {
+export interface EventYear {
     type: "event";
     eventTime: "start" | "end";
     event: Event;

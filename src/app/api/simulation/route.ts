@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
         const scenario = await getScenario(data.id);
         // console.log(scenario);
         if (scenario !== null){
+            console.log("Scenario found, running simulation...");
             const scenarioData: Scenario = {
                 id: scenario._id.toString(),
                 name: scenario.name,
@@ -28,8 +29,8 @@ export async function POST(req: NextRequest) {
                 rothConversion: scenario.rothConversion,
                 residenceState: scenario.residenceState,
                 owner: scenario.owner,
-                ownerBirthYear: scenario.ownerBirthYear,
-                ownerLifeExpectancy: scenario.ownerLifeExpectancy,
+                ownerBirthYear: scenario.userBirthYear,
+                ownerLifeExpectancy: scenario.userLifeExpectancy,
                 viewPermissions: scenario.viewPermissions,
                 editPermissions: scenario.editPermissions,
                 type: scenario.type,
