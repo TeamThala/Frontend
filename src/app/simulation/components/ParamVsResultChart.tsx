@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface ParamVsResultPoint {
-  parameterValue: number; // e.g., Retirement Age
-  finalResult: number;    // e.g., Probability % or Investment $
+  parameterValue: number;
+  finalResult: number;
 }
 
 export default function ParamVsResultChart({
@@ -14,11 +14,11 @@ export default function ParamVsResultChart({
   yLabel,
 }: {
   data: ParamVsResultPoint[];
-  parameterName: string;   // e.g., "Retirement Age"
-  yLabel?: string;         // e.g., "Probability of Success (%)"
+  parameterName: string;
+  yLabel?: string;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [hover, setHover] = useState<ParamVsResultPoint | null>(null);
+  const [hover, setHover] = useState<{ d: ParamVsResultPoint; xPos: number; yPos: number } | null>(null);
 
   // AI tool (ChatGPT) was used to assist with generating 
   // chart code, sample data, and visualization design. 
@@ -58,7 +58,6 @@ export default function ParamVsResultChart({
       .x(d => x(d.parameterValue))
       .y(d => y(d.finalResult));
 
-    // Draw line
     svg.append("path")
       .datum(data)
       .attr("fill", "none")
@@ -95,11 +94,21 @@ export default function ParamVsResultChart({
       .on("mousemove", (event) => {
         const [mx] = d3.pointer(event);
         const paramX = x.invert(mx);
-        // Find closest
+
         const closest = data.reduce((prev, curr) =>
           Math.abs(curr.parameterValue - paramX) < Math.abs(prev.parameterValue - paramX) ? curr : prev
         );
-        setHover(closest);
+
+        const distance = Math.abs(x(closest.parameterValue) - mx);
+        if (distance < 30) { // Flicker prevention threshold
+          setHover({
+            d: closest,
+            xPos: x(closest.parameterValue),
+            yPos: y(closest.finalResult),
+          });
+        } else {
+          setHover(null);
+        }
       })
       .on("mouseleave", () => setHover(null));
 
@@ -118,13 +127,43 @@ export default function ParamVsResultChart({
       <CardContent className="p-0 relative">
         <svg ref={svgRef} height={500} className="w-full"></svg>
 
+        {/* Crosshair Lines */}
+        {hover && (
+          <svg className="absolute top-0 left-0 pointer-events-none" width="100%" height="500">
+            <line
+              x1={hover.xPos}
+              x2={hover.xPos}
+              y1={0}
+              y2={500}
+              stroke="#7F56D9"
+              strokeWidth={1}
+              strokeDasharray="4"
+            />
+            <line
+              x1={0}
+              x2={window.innerWidth}
+              y1={hover.yPos}
+              y2={hover.yPos}
+              stroke="#7F56D9"
+              strokeWidth={1}
+              strokeDasharray="4"
+            />
+          </svg>
+        )}
+
+        {/* Tooltip */}
         {hover && (
           <div
-            className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[260px] whitespace-nowrap transform -translate-x-1/2"
-            style={{ left: `${(hover.parameterValue - data[0].parameterValue) * 80 + 80}px`, top: "50px" }}
+            className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[260px] whitespace-nowrap pointer-events-none"
+            style={{
+              left: `${hover.xPos}px`,
+              top: "50px",
+              transform:
+                hover.xPos > window.innerWidth - 220 ? "translateX(-100%)" : "translateX(-50%)",
+            }}
           >
-            <p>{parameterName}: {hover.parameterValue}</p>
-            <p>{yLabel || "Final Probability"}: {hover.finalResult}%</p>
+            <p>{parameterName}: {hover.d.parameterValue}</p>
+            <p>{yLabel || "Final Probability"}: {hover.d.finalResult}%</p>
           </div>
         )}
       </CardContent>
