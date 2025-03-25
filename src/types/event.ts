@@ -1,5 +1,5 @@
 import { Investment } from "./investment";
-import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
+import { NormalDistributionValues, UniformDistributionValues } from "./utils";
 
 export interface Event {
     id: string;
