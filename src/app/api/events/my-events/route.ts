@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/dbConnect';
@@ -8,7 +8,7 @@ import '@/models/User';
 import '@/models/Scenario';
 import '@/models/Event';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   await dbConnect();
 
   const session = await getServerSession(authOptions);
