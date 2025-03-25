@@ -247,7 +247,7 @@ export async function GET() {
 // }
 export async function POST(request: NextRequest) {
   await dbConnect();
-  
+
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -298,8 +298,10 @@ export async function POST(request: NextRequest) {
       console.log(id);
 
       if (eventWithoutId.eventType.type === "investment") {
-        if (eventWithoutId.eventType.targetAsset && investmentIdMap[eventWithoutId.eventType.targetAsset]) {
-          eventWithoutId.eventType.targetAsset = investmentIdMap[eventWithoutId.eventType.targetAsset].toString();
+        // Use type assertion to resolve the TypeScript error
+        const investmentEvent = eventWithoutId.eventType as any;
+        if (investmentEvent.targetAsset && investmentIdMap[investmentEvent.targetAsset]) {
+          investmentEvent.targetAsset = investmentIdMap[investmentEvent.targetAsset].toString();
         }
       }
 
