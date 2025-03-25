@@ -42,6 +42,7 @@ export async function GET() {
 
     // Get unique event IDs
     const eventIds = [
+      //eslint-disable-next-line
       ...new Set(scenarios.flatMap((scenario: any) => scenario.eventSeries.map((id: any) => id.toString())))
     ];
 

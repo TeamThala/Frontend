@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ScenarioFormData } from "../page";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SummaryStep({ scenarioData }: { scenarioData: ScenarioFormData }) {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +25,7 @@ export default function SummaryStep({ scenarioData }: { scenarioData: ScenarioFo
             
             if (response.ok) {
                 console.log("Scenario saved successfully:", data);
-                // You can add success notification or redirect here
+                router.push(`/scenarios`);
             } else {
                 const errorMsg = data.error || "Failed to save scenario";
                 console.error("Error saving scenario:", errorMsg);

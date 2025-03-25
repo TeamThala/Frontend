@@ -13,7 +13,6 @@ import Investment from "@/models/Investment";
 import InvestmentType from "@/models/InvestmentType";
 import Event from "@/models/Event";
 import type { ScenarioFormData } from "@/app/scenarios/create/page";
-import { AssetAllocationFixed } from '@/types/event';
 
 
 
@@ -275,6 +274,7 @@ export async function POST(request: NextRequest) {
     // Store Investments
     for (const inv of body.investments.investments) {
       const { id: invTypeId, ...invTypePayload } = inv.investmentType;
+       console.log( invTypeId);
 
       const invTypeDoc = await InvestmentType.create(invTypePayload);
 
@@ -295,6 +295,7 @@ export async function POST(request: NextRequest) {
       const event = structuredClone(evt);
 
       const { id, ...eventWithoutId } = event;
+      console.log(id);
 
       if (eventWithoutId.eventType.type === "investment") {
         if (eventWithoutId.eventType.targetAsset && investmentIdMap[eventWithoutId.eventType.targetAsset]) {

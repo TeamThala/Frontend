@@ -45,6 +45,7 @@ export async function GET() {
     }).select('investments');
 
     // Collect all investment IDs from those scenarios
+    //eslint-disable-next-line
     const investmentIds = scenarios.flatMap((scenario: any) => scenario.investments);
 
     // Fetch those investments and populate
