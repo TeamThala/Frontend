@@ -5,10 +5,10 @@ import { getTaxData } from '@/types/taxScraper';
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from '@/types/utils';
 import client from '@/lib/db';
 import { Investment } from '@/types/investment';
+import { SingleScenario } from '@/types/scenario';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
-    let age = currentYear - scenario.ownerBirthYear;
     let year = currentYear;
     console.log(scenario.ownerBirthYear);
     console.log(typeof scenario.ownerBirthYear);
@@ -21,6 +21,18 @@ export async function simulation(scenario: Scenario){
     else{
         const normal = randomNormal(scenario.ownerLifeExpectancy.mean, scenario.ownerLifeExpectancy.stdDev);
         ownerLifeExpectancy = Math.floor(normal()); // Life expectancy should be a whole number for the loop
+    }
+
+    // Sample spouse life expectancy
+    let spouseLifeExpectancy = null;
+    if (scenario.type === "couple"){
+        if(scenario.spouseLifeExpectancy.type !== "fixed"){
+            const normal = randomNormal(scenario.spouseLifeExpectancy.mean, scenario.spouseLifeExpectancy.stdDev);
+            spouseLifeExpectancy = Math.floor(normal()); // Life expectancy should be a whole number for the loop
+        }
+        else{
+            spouseLifeExpectancy = scenario.spouseLifeExpectancy.value;
+        }
     }
 
     // Obtain initial tax brackets with which to use for simulation
@@ -57,7 +69,7 @@ export async function simulation(scenario: Scenario){
         // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
 
         // Adjust this year's tax brackets for inflation
-        let taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
+        const taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
         // console.log(`Adjusted tax brackets for age ${age}`);
 
         // TODO: update retirement account contributions annual limits
@@ -79,6 +91,32 @@ export async function simulation(scenario: Scenario){
         // End of loop calculations
         year++;
         prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
+
+        // Check if spouse is alive
+        if (scenario.type === "couple" && spouseLifeExpectancy !== null && currentYear > scenario.spouseBirthYear + spouseLifeExpectancy){
+            const newScenario: SingleScenario = {
+                id: scenario.id,
+                name: scenario.name,
+                description: scenario.description,
+                financialGoal: scenario.financialGoal,
+                investments: scenario.investments,
+                eventSeries: scenario.eventSeries,
+                spendingStrategy: scenario.spendingStrategy,
+                expenseWithdrawalStrategy: scenario.expenseWithdrawalStrategy,
+                inflationRate: scenario.inflationRate,
+                RothConversionStrategy: scenario.RothConversionStrategy,
+                RMDStrategy: scenario.RMDStrategy,
+                rothConversion: scenario.rothConversion,
+                residenceState: scenario.residenceState,
+                owner: scenario.owner,
+                ownerBirthYear: scenario.ownerBirthYear,
+                ownerLifeExpectancy: scenario.ownerLifeExpectancy,
+                viewPermissions: scenario.viewPermissions,
+                editPermissions: scenario.editPermissions,
+                type: "single"
+            }
+            scenario = newScenario; // convert current scenario into a single scenario
+        }
     }
     console.log("=====================SIMULATION FINISHED=====================");
     return;
@@ -114,7 +152,7 @@ function updateTaxBrackets(taxBrackets: any, inflationRate: number){
     return taxBrackets;
 }
 
-async function initializeEvents(events: any, noID = false){ // assuming it is only invoked on scenario.eventSeries
+async function initializeEvents(events, noID = false){ // assuming it is only invoked on scenario.eventSeries
     // Resolves all durations and start years that are not fixed
     // Collects events into arrays by type
     // noID is true if the events passed are already loaded in-memory as type Event
@@ -123,16 +161,16 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
     console.log("Initializing event durations...");
     const db = client.db("main");
 
-    let incomeEvents: Event[] = [];
-    let expenseEvents: Event[] = [];
-    let investmentEvents: Event[] = [];
-    let rebalanceEvents: Event[] = [];
+    const incomeEvents: Event[] = [];
+    const expenseEvents: Event[] = [];
+    const investmentEvents: Event[] = [];
+    const rebalanceEvents: Event[] = [];
 
     for (let i = 0; i < events.length; i++){
         let event: Event;
         let eventFromDB;
         if (noID === false){
-            let eventID = events[i];
+            const eventID = events[i];
             eventFromDB = await db.collection("events").findOne({_id: eventID});
         }
         // console.log(eventFromDB);
@@ -140,6 +178,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             if (noID === false && eventFromDB !== undefined){
                 console.log(`Initializing event with name: ${eventFromDB.name}...`);
                 event = {
+                    id: eventFromDB._id.toString(),
                     name: eventFromDB.name,
                     eventType: eventFromDB.eventType,
                     startYear: eventFromDB.startYear,
@@ -152,7 +191,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             if (event.duration.type === "uniform"){
                 const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
-                let simDuration: FixedYear = {
+                const simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
@@ -160,7 +199,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             else if (event.duration.type === "normal"){
                 const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
-                let simDuration: FixedYear = {
+                const simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
@@ -175,7 +214,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             // Resolve start year
             if (event.startYear.type === "uniform"){
                 const uniform = Math.random() * (event.startYear.year.max - event.startYear.year.min) + event.startYear.year.min;
-                let simStartYear: FixedYear = {
+                const simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
@@ -183,7 +222,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             else if (event.startYear.type === "normal"){
                 const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
-                let simStartYear: FixedYear = {
+                const simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
@@ -250,7 +289,7 @@ async function updateIncomeEvents(incomeEvents:Event[], year:number, investments
         const withinDuration = (year >= incomeEvent.startYear.year) && (year <= (incomeEvent.startYear.year + incomeEvent.duration.year)); // should be fixedYears
         if (withinDuration){
             // Inflation adjustment
-            if (incomeEvent.eventType.inflationAdjustment){{
+            if (incomeEvent.eventType.inflationAdjustment){
                 if (incomeEvent.eventType.expectedAnnualChange.type === "normal"){
                     const normal = randomNormal(incomeEvent.eventType.expectedAnnualChange.mean, incomeEvent.eventType.expectedAnnualChange.stdDev);
                     incomeEvent.eventType.amount *= normal();
