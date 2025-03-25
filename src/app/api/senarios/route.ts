@@ -275,31 +275,28 @@ export async function POST(request: NextRequest) {
     // Store Investments
     for (const inv of body.investments.investments) {
       const { id: invTypeId, ...invTypePayload } = inv.investmentType;
-    
+
       const invTypeDoc = await InvestmentType.create(invTypePayload);
-    
+
       const investmentDoc = await Investment.create({
         value: inv.value,
         taxStatus: inv.taxStatus,
         investmentType: invTypeDoc._id,
       });
-    
+
       investmentIds.push(investmentDoc._id);
       investmentIdMap[inv.id] = investmentDoc._id;
     }
-    
+
 
     // Store Events
     const eventIdMap: Record<string, mongoose.Types.ObjectId> = {};
     for (const evt of body.eventSeries.events) {
       const event = structuredClone(evt);
-      
-      // Remove the ID field to let MongoDB create a proper ObjectId
+
       const { id, ...eventWithoutId } = event;
 
-      // Remap investments inside InvestmentEvent
       if (eventWithoutId.eventType.type === "investment") {
-        // InvestmentEvent doesn't have assetAllocation property, it has targetAsset
         if (eventWithoutId.eventType.targetAsset && investmentIdMap[eventWithoutId.eventType.targetAsset]) {
           eventWithoutId.eventType.targetAsset = investmentIdMap[eventWithoutId.eventType.targetAsset].toString();
         }
@@ -309,7 +306,6 @@ export async function POST(request: NextRequest) {
       eventIdMap[evt.id] = createdEvent._id;
     }
 
-    // Build Scenario with references
     const scenarioData = {
       type: (body.generalInformation.scenarioType || 'default').toLowerCase(),
       name: body.generalInformation.scenarioName || 'Untitled Scenario',
@@ -340,15 +336,11 @@ export async function POST(request: NextRequest) {
             value: body.generalInformation.spouseLifeExpectancy
           }
         : undefined,
-      // Adding viewPermissions and editPermissions with default empty arrays
       viewPermissions: [],
       editPermissions: []
     };
 
-    //console.log("Creating scenario with data:", JSON.stringify(scenarioData, null, 2));
     const scenario = await Scenario.create(scenarioData);
-    
-    // Update scenario with investments, eventSeries, spendingStrategy, and expenseWithdrawalStrategy
     scenario.investments = investmentIds;
     scenario.eventSeries = Object.values(eventIdMap);
     scenario.spendingStrategy = (body.spendingStrategy?.expensePriorityOrder || [])
@@ -357,8 +349,6 @@ export async function POST(request: NextRequest) {
     scenario.expenseWithdrawalStrategy = (body.expenseWithdrawalStrategy?.withdrawalOrder || [])
       .filter(id => investmentIdMap[id])
       .map(id => investmentIdMap[id]);
-    
-    // Save the updated scenario
     await scenario.save();
 
     // Link scenario to user

@@ -17,7 +17,7 @@ export async function GET() {
   // Check if user is authenticated
   if (!session || !session.user?.email) {
     return NextResponse.json(
-      { success: false, error: 'Authentication required' }, 
+      { success: false, error: 'Authentication required' },
       { status: 401 }
     );
   }
