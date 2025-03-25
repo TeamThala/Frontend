@@ -8,13 +8,13 @@ import { Investment } from '@/types/investment';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
-    var age = currentYear - scenario.ownerBirthYear;
-    var year = currentYear;
+    let age = currentYear - scenario.ownerBirthYear;
+    let year = currentYear;
     console.log(scenario.ownerBirthYear);
     console.log(typeof scenario.ownerBirthYear);
 
     // Sample life expectancy
-    var ownerLifeExpectancy = null;
+    let ownerLifeExpectancy = null;
     if (scenario.ownerLifeExpectancy.type === "fixed"){
         ownerLifeExpectancy = scenario.ownerLifeExpectancy.value;
     }
@@ -25,7 +25,7 @@ export async function simulation(scenario: Scenario){
 
     // Obtain initial tax brackets with which to use for simulation
     const initialTaxBrackets = await getTaxData(currentYear, scenario.residenceState);
-    var prevTaxBrackets = initialTaxBrackets;
+    let prevTaxBrackets = initialTaxBrackets;
     console.log(`Fetched initial tax brackets for ${scenario.residenceState} in ${currentYear}`);
 
     // Initialize durations for all events and sort all of them by type
@@ -34,7 +34,7 @@ export async function simulation(scenario: Scenario){
         console.log("Error: Could not initialize events.");
         return null;
     }
-    var incomeEvents:Event[], expenseEvents:Event[], investmentEvents:Event[], rebalanceEvents:Event[];
+    let incomeEvents:Event[], expenseEvents:Event[], investmentEvents:Event[], rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
         incomeEvents = eventArrays[0];
@@ -49,7 +49,7 @@ export async function simulation(scenario: Scenario){
 
     // Simulation loop
     console.log("=====================SIMULATION STARTED=====================");
-    for(var age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
+    for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         console.log(incomeEvents[0])
         // Inflation assumption calculation for this year
@@ -57,7 +57,7 @@ export async function simulation(scenario: Scenario){
         // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
 
         // Adjust this year's tax brackets for inflation
-        var taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
+        let taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
         // console.log(`Adjusted tax brackets for age ${age}`);
 
         // TODO: update retirement account contributions annual limits
@@ -123,16 +123,16 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
     console.log("Initializing event durations...");
     const db = client.db("main");
 
-    var incomeEvents: Event[] = [];
-    var expenseEvents: Event[] = [];
-    var investmentEvents: Event[] = [];
-    var rebalanceEvents: Event[] = [];
+    let incomeEvents: Event[] = [];
+    let expenseEvents: Event[] = [];
+    let investmentEvents: Event[] = [];
+    let rebalanceEvents: Event[] = [];
 
-    for (var i = 0; i < events.length; i++){
-        var event: Event;
-        var eventFromDB;
+    for (let i = 0; i < events.length; i++){
+        let event: Event;
+        let eventFromDB;
         if (noID === false){
-            var eventID = events[i];
+            let eventID = events[i];
             eventFromDB = await db.collection("events").findOne({_id: eventID});
         }
         // console.log(eventFromDB);
@@ -152,7 +152,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             if (event.duration.type === "uniform"){
                 const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
-                var simDuration: FixedYear = {
+                let simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
@@ -160,7 +160,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             else if (event.duration.type === "normal"){
                 const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
-                var simDuration: FixedYear = {
+                let simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
@@ -175,7 +175,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             // Resolve start year
             if (event.startYear.type === "uniform"){
                 const uniform = Math.random() * (event.startYear.year.max - event.startYear.year.min) + event.startYear.year.min;
-                var simStartYear: FixedYear = {
+                let simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
@@ -183,7 +183,7 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             else if (event.startYear.type === "normal"){
                 const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
-                var simStartYear: FixedYear = {
+                let simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
@@ -233,8 +233,8 @@ async function updateIncomeEvents(incomeEvents:Event[], year:number, investments
     const db = client.db("main");
     const cashInvestmentType = await db.collection("investmenttypes").findOne({name: "Cash"});
 
-    var curYearIncome = 0;
-    var curYearSS = 0;
+    let curYearIncome = 0;
+    let curYearSS = 0;
 
     if (cashInvestmentType === null){
         console.log("Error: Could not find the default cash investment type in MongoDB.");
@@ -245,8 +245,8 @@ async function updateIncomeEvents(incomeEvents:Event[], year:number, investments
         console.log("Error: Could not find the default cash investment in the scenario.");
         return null;
     }
-    for (var i = 0; i < incomeEvents.length; i++){
-        var incomeEvent = incomeEvents[i];
+    for (let i = 0; i < incomeEvents.length; i++){
+        let incomeEvent = incomeEvents[i];
         const withinDuration = (year >= incomeEvent.startYear.year) && (year <= (incomeEvent.startYear.year + incomeEvent.duration.year)); // should be fixedYears
         if (withinDuration){
             // Inflation adjustment
