@@ -65,7 +65,7 @@ export default function ScenarioCard({ scenario, accessType }: { scenario: Scena
           Last Modified: {new Date(scenario.updatedAt).toLocaleDateString()}
         </span>
         <div className="flex gap-2">
-          <Link href={``}>
+          <Link href={""}>
             <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {alert("View/Edit functionality will be implemented here")}}>
               {accessType === "readWrite" || accessType === "create" ? "View/Edit" : "View"}
             </Button>
