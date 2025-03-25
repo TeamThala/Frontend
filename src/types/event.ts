@@ -41,6 +41,7 @@ export interface IncomeEvent {
 }
 
 export interface ExpenseEvent {
+    discretionary: boolean;
     type: "expense";
     amount: number;
     inflationAdjustment: boolean;

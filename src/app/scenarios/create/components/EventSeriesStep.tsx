@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Event, IncomeEvent, ExpenseEvent, InvestmentEvent, RebalanceEvent } from "@/types/event";
+// Import basic types but we'll extend/adapt them locally
+import { IncomeEvent as BaseIncomeEvent, ExpenseEvent as BaseExpenseEvent } from "@/types/event";
 import { InvestmentsData } from "./InvestmentsStep";
+import { Investment } from "@/types/investment";
 
 // Define FixedYear interface locally to fix the linter error
 interface FixedYear {
@@ -12,8 +14,54 @@ interface FixedYear {
   year: number;
 }
 
+// Extend the base types to match what we're actually using in this component
+interface ExtendedIncomeEvent extends Omit<BaseIncomeEvent, 'wage'> {
+  expectedAnnualChange: {
+    type: string;
+    valueType: string;
+    value: number;
+  };
+}
+
+interface ExtendedExpenseEvent extends BaseExpenseEvent {
+  expectedAnnualChange: {
+    type: string;
+    valueType: string;
+    value: number;
+  };
+  discretionary: boolean;
+}
+
+interface ExtendedInvestmentEvent {
+  type: "investment";
+  assetAllocation: Array<{
+    type: string;
+    investment: Investment;
+    percentage: number;
+  }>;
+  maximumCash: number;
+}
+
+interface ExtendedRebalanceEvent {
+  type: "rebalance";
+  assetAllocation: Array<{
+    type: string;
+    investment: Investment;
+    percentage: number;
+  }>;
+}
+
+// Define Event interface for this component
+interface Event {
+  id: string;
+  name: string;
+  startYear: FixedYear;
+  duration: FixedYear;
+  eventType: ExtendedIncomeEvent | ExtendedExpenseEvent | ExtendedInvestmentEvent | ExtendedRebalanceEvent;
+}
+
 // Define EventTypeUpdate type for the handleEventTypeChange function
-type EventTypeUpdate = Partial<IncomeEvent | ExpenseEvent | InvestmentEvent | RebalanceEvent> & {
+type EventTypeUpdate = Partial<ExtendedIncomeEvent | ExtendedExpenseEvent | ExtendedInvestmentEvent | ExtendedRebalanceEvent> & {
   type?: "income" | "expense" | "investment" | "rebalance";
 };
 
@@ -56,7 +104,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
       }
       
       if (event.eventType.type === 'investment') {
-        const investmentEvent = event.eventType as InvestmentEvent;
+        const investmentEvent = event.eventType as ExtendedInvestmentEvent;
         if (!investmentEvent.assetAllocation || investmentEvent.assetAllocation.length === 0) {
           eventErrors.push('At least one asset allocation is required');
         }
@@ -92,7 +140,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
         expectedAnnualChange: { type: "fixed", valueType: "amount", value: 0 }, 
         inflationAdjustment: false, 
         socialSecurity: false 
-      }
+      } as ExtendedIncomeEvent
     };
     
     setEvents([...events, newEvent]);
@@ -114,7 +162,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
         if (event.id === eventId) {
           // Handle type change which requires rebuilding the eventType object
           if (updates.type && updates.type !== event.eventType.type) {
-            let newEventType: IncomeEvent | ExpenseEvent | InvestmentEvent | RebalanceEvent;
+            let newEventType: ExtendedIncomeEvent | ExtendedExpenseEvent | ExtendedInvestmentEvent | ExtendedRebalanceEvent;
             
             switch (updates.type) {
               case 'income':
@@ -124,7 +172,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
                   expectedAnnualChange: { type: "fixed", valueType: "amount", value: 0 }, 
                   inflationAdjustment: false, 
                   socialSecurity: false 
-                } as IncomeEvent;
+                } as ExtendedIncomeEvent;
                 break;
               case 'expense':
                 newEventType = { 
@@ -133,20 +181,20 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
                   expectedAnnualChange: { type: "fixed", valueType: "amount", value: 0 }, 
                   inflationAdjustment: false, 
                   discretionary: false 
-                } as ExpenseEvent;
+                } as ExtendedExpenseEvent;
                 break;
               case 'investment':
                 newEventType = { 
                   type: 'investment', 
                   assetAllocation: [], 
                   maximumCash: 0 
-                } as InvestmentEvent;
+                } as ExtendedInvestmentEvent;
                 break;
               case 'rebalance':
                 newEventType = { 
                   type: 'rebalance', 
                   assetAllocation: [] 
-                } as RebalanceEvent;
+                } as ExtendedRebalanceEvent;
                 break;
               default:
                 newEventType = event.eventType;
@@ -161,16 +209,16 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
           // Apply updates to the event type
           if (event.eventType.type === 'income' && updates.type !== 'expense' && 
               updates.type !== 'investment' && updates.type !== 'rebalance') {
-            updatedEvent.eventType = { ...event.eventType, ...updates } as IncomeEvent;
+            updatedEvent.eventType = { ...event.eventType, ...updates } as ExtendedIncomeEvent;
           } else if (event.eventType.type === 'expense' && updates.type !== 'income' && 
               updates.type !== 'investment' && updates.type !== 'rebalance') {
-            updatedEvent.eventType = { ...event.eventType, ...updates } as ExpenseEvent;
+            updatedEvent.eventType = { ...event.eventType, ...updates } as ExtendedExpenseEvent;
           } else if (event.eventType.type === 'investment' && updates.type !== 'income' && 
               updates.type !== 'expense' && updates.type !== 'rebalance') {
-            updatedEvent.eventType = { ...event.eventType, ...updates } as InvestmentEvent;
+            updatedEvent.eventType = { ...event.eventType, ...updates } as ExtendedInvestmentEvent;
           } else if (event.eventType.type === 'rebalance' && updates.type !== 'income' && 
               updates.type !== 'expense' && updates.type !== 'investment') {
-            updatedEvent.eventType = { ...event.eventType, ...updates } as RebalanceEvent;
+            updatedEvent.eventType = { ...event.eventType, ...updates } as ExtendedRebalanceEvent;
           }
           
           return updatedEvent;
@@ -197,7 +245,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
   const renderEventTypeSpecificFields = (event: Event) => {
     switch (event.eventType.type) {
       case 'income':
-        const incomeEvent = event.eventType as IncomeEvent;
+        const incomeEvent = event.eventType as ExtendedIncomeEvent;
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -228,7 +276,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
           </div>
         );
       case 'expense':
-        const expenseEvent = event.eventType as ExpenseEvent;
+        const expenseEvent = event.eventType as ExtendedExpenseEvent;
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -259,7 +307,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
           </div>
         );
       case 'investment':
-        const investmentEvent = event.eventType as InvestmentEvent;
+        const investmentEvent = event.eventType as ExtendedInvestmentEvent;
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -296,7 +344,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
         );
       case 'rebalance':
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const _rebalanceEvent = event.eventType as RebalanceEvent;
+        const _rebalanceEvent = event.eventType as ExtendedRebalanceEvent;
         return (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -381,7 +429,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
                       min="1900"
                       max="2100"
                       className={getInputClass(event.id, 'start year')}
-                      value={(event.startYear as FixedYear).year}
+                      value={event.startYear.year}
                       onChange={(e) => handleEventChange(event.id, { startYear: { type: "fixed", year: Number(e.target.value) } })}
                     />
                   </div>
@@ -395,7 +443,7 @@ export default function EventSeriesStep({ data, onDataUpdate, onValidationChange
                     type="number" 
                     min="1"
                     className={getInputClass(event.id, 'duration')}
-                    value={(event.duration as FixedYear).year}
+                    value={event.duration.year}
                     onChange={(e) => handleEventChange(event.id, { duration: { type: "fixed", year: Number(e.target.value) } })}
                   />
                 </div>
