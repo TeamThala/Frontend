@@ -24,7 +24,7 @@ export default function Home() {
         {/* CTA Buttons */}
         <div className="mt-12 flex gap-6">
           <Link
-            href="/create-scenario"
+            href="/scenarios/create"
             className="px-8 py-4 bg-[#7F56D9] text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-[#6b46c1] transition"
           >
             Create a Scenario
