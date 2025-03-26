@@ -1,0 +1,88 @@
+single:
+  - rate: 10%
+    from: $0
+    upto: $11,600
+  - rate: 12%
+    from: $11,601
+    upto: $47,150
+  - rate: 22%
+    from: $47,151
+    upto: $100,525
+  - rate: 24%
+    from: $100,526
+    upto: $191,950
+  - rate: 32%
+    from: $191,951
+    upto: $243,725
+  - rate: 35%
+    from: $243,726
+    upto: $609,350
+  - rate: 37%
+    from: $609,351
+    upto: And up
+married-joint:
+  - rate: 10%
+    from: $0
+    upto: $23,200
+  - rate: 12%
+    from: $23,201
+    upto: $94,300
+  - rate: 22%
+    from: $94,301
+    upto: $201,050
+  - rate: 24%
+    from: $201,051
+    upto: $383,900
+  - rate: 32%
+    from: $383,901
+    upto: $487,450
+  - rate: 35%
+    from: $487,451
+    upto: $731,200
+  - rate: 37%
+    from: $731,201
+    upto: And up
+married-separate:
+  - rate: 10%
+    from: $0
+    upto: $11,600
+  - rate: 12%
+    from: $11,601
+    upto: $47,150
+  - rate: 22%
+    from: $47,151
+    upto: $100,525
+  - rate: 24%
+    from: $100,526
+    upto: $191,950
+  - rate: 32%
+    from: $191,951
+    upto: $243,725
+  - rate: 35%
+    from: $243,726
+    upto: $365,600
+  - rate: 37%
+    from: $365,601
+    upto: And up
+head-of-household:
+  - rate: 10%
+    from: $0
+    upto: $16,550
+  - rate: 12%
+    from: $16,551
+    upto: $63,100
+  - rate: 22%
+    from: $63,101
+    upto: $100,500
+  - rate: 24%
+    from: $100,501
+    upto: $191,950
+  - rate: 32%
+    from: $191,951
+    upto: $243,700
+  - rate: 35%
+    from: $243,701
+    upto: $609,350
+  - rate: 37%
+    from: $609,351
+    upto: And up
