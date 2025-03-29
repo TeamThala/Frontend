@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
+import puppeteer from 'puppeteer';
 
 export async function GET() {
   try {
@@ -26,11 +27,16 @@ export async function GET() {
     const capitalGains = await scrapeCapitalGains(capitalGainsUrl);
     await saveToYaml({ capitalGainsRates: capitalGains }, 'capital_gains.yaml');
 
+    // 4. NYS Tax Rate Table Scraper
+    const nysTaxRates = await scrapeNysTaxRates();
+    await saveToYaml({ nysTaxRates }, 'nys_tax_rate_schedules.yaml');
+
     // Return all results
     return NextResponse.json({
-      taxBrackets,
-      standardDeductions,
-      capitalGains
+        taxBrackets,
+        standardDeductions,
+        capitalGains,
+        nysTaxRates
     });
 
   } catch (error) {
@@ -224,6 +230,77 @@ async function scrapeCapitalGains(url) {
     
   } catch (error) {
     console.error('Error in scrapeCapitalGains:', error);
+    throw error;
+  }
+}
+
+// NY State Income Tax Tables
+async function scrapeNysTaxRates() {
+  try {
+    const browser = await puppeteer.launch({
+      headless: 'new'
+    });
+    const page = await browser.newPage();
+    
+    // Navigate to the page and wait for it to load
+    await page.goto('https://www.tax.ny.gov/forms/current-forms/it/it201i.htm#nys-tax-rate-schedule', {
+      waitUntil: 'networkidle0'
+    });
+
+    // Wait for tables to be present
+    await page.waitForSelector('.tableborder');
+
+    const result = {};
+
+    // Function to parse table data
+    const parseTable = async (tableId, label) => {
+      const data = await page.evaluate((selector) => {
+        const rows = document.querySelectorAll(`${selector} tbody tr`);
+        const tableData = [];
+        
+        // Skip first two header rows
+        for (let i = 2; i < rows.length; i++) {
+          const cols = rows[i].querySelectorAll('td');
+          if (cols.length === 7) {
+            const over = cols[0].textContent.trim().replace('$', '').replace(/,/g, '');
+            const butNotOver = cols[1].textContent.trim();
+            const baseTax = cols[2].textContent.trim().replace('$', '').replace(/,/g, '') || '0';
+            const rate = cols[4].textContent.trim().replace('%', '');
+            const excessOver = cols[6].textContent.trim().replace('$', '').replace(/,/g, '') || '0';
+
+            tableData.push({
+              over: Number(over),
+              but_not_over: butNotOver === '----' ? null : Number(butNotOver.replace('$', '').replace(/,/g, '')),
+              base_tax: Number(baseTax),
+              plus: cols[3].textContent.trim() || null,
+              rate: Number(rate),
+              of_excess_over: Number(excessOver)
+            });
+          }
+        }
+        return tableData;
+      }, `#${tableId}`);
+
+      return data;
+    };
+
+    // Parse each table
+    const tables = {
+      'table-28': 'married_jointly_or_surviving_spouse',
+      'table-29': 'single_or_married_separately',
+      'table-30': 'head_of_household'
+    };
+
+    for (const [tableId, label] of Object.entries(tables)) {
+      result[label] = await parseTable(tableId, label);
+      console.log(`Processed ${label}: ${result[label].length} entries`);
+    }
+
+    await browser.close();
+    return result;
+
+  } catch (error) {
+    console.error('Error scraping tax rates:', error);
     throw error;
   }
 }
