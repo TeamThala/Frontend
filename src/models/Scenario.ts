@@ -71,7 +71,7 @@ const withOrWithoutRothSchema = new Schema(
 
 const scenarioSchema = new Schema(
   {
-    type: { type: String, enum: ["single", "couple"], required: true },
+    type: { type: String, enum: ["single", "married"], required: true },
     name: { type: String, required: true },
     description: { type: String },
     financialGoal: { type: Number, required: true },

@@ -7,7 +7,7 @@ import { LineChartSample,  StackedBarChartData, ShadedDataSample, multiLineSampl
 export default function Page() {
 
   return (
-    <div className="p-8">
+    <div className="p-8 bg-black">
       <ParamVsResultChart
         data={LineChartSample}
         parameterName="Year"

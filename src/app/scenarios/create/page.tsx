@@ -12,8 +12,8 @@ import InvestmentsStep, { InvestmentsData } from './components/InvestmentsStep';
 import EventSeriesStep, { EventSeriesData } from './components/EventSeriesStep';
 import SpendingStrategyStep, { SpendingStrategyData } from './components/SpendingStrategyStep';
 import ExpenseWithdrawalStrategyStep, { ExpenseWithdrawalStrategyData } from './components/ExpenseWithdrawalStrategyStep';
-import SimulationSettingsStep, { SimulationSettingsData } from './components/SimulationSettingsStep';
-import ResultStep from './components/ResultStep';
+import RothAndRMDStep, { RothAndRMDData } from './components/RothAndRMDStep';
+import SummaryStep from './components/SummaryStep';
 
 // Define step labels
 const STEPS = [
@@ -22,18 +22,18 @@ const STEPS = [
   "Event Series",
   "Spending Strategy",
   "Expense Withdrawal Strategy",
-  "Simulation Settings",
-  "Result"
+  "Roth and RMD",
+  "Summary"
 ];
 
 // Define the overall form data structure
-interface ScenarioFormData {
+export interface ScenarioFormData {
   generalInformation: GeneralInformationData;
   investments: InvestmentsData;
   eventSeries: EventSeriesData;
   spendingStrategy: SpendingStrategyData;
   expenseWithdrawalStrategy: ExpenseWithdrawalStrategyData;
-  simulationSettings: SimulationSettingsData;
+  rothAndRMD: RothAndRMDData;
 }
 
 export default function CreateScenarioPage() {
@@ -73,10 +73,7 @@ export default function CreateScenarioPage() {
     expenseWithdrawalStrategy: {
       withdrawalOrder: []
     },
-    simulationSettings: {
-      numberOfSimulations: 1000,
-      rothConversionEnabled: false,
-      rmdEnabled: true,
+    rothAndRMD: {
       inflationRate: {
         type: "fixed",
         valueType: "percentage",
@@ -134,10 +131,10 @@ export default function CreateScenarioPage() {
     }));
   }, []);
 
-  const updateSimulationSettings = useCallback((data: SimulationSettingsData) => {
+  const updateRothAndRMD = useCallback((data: RothAndRMDData) => {
     setScenarioData(prevData => ({
       ...prevData,
-      simulationSettings: data,
+      rothAndRMD: data,
     }));
   }, []);
 
@@ -234,14 +231,14 @@ export default function CreateScenarioPage() {
         );
       case 5:
         return (
-          <SimulationSettingsStep 
-            data={scenarioData.simulationSettings}
-            onDataUpdate={updateSimulationSettings}
+          <RothAndRMDStep 
+            data={scenarioData.rothAndRMD}
+            onDataUpdate={updateRothAndRMD}
           />
         );
       case 6:
         return (
-          <ResultStep />
+          <SummaryStep scenarioData={scenarioData}/>
         );
       default:
         return (

@@ -5,6 +5,7 @@ import { FixedValues, NormalDistributionValues, UniformDistributionValues } from
 export type Scenario = SingleScenario | CoupleScenario;
 
 export interface BaseScenario {
+    _id?: string;
     id: string;
     name: string;
     description: string;

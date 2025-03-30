@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 
 import User from "@/models/User";
@@ -7,17 +7,19 @@ import Investment from "@/models/Investment";
 import Event from "@/models/Event";
 import Scenario from "@/models/Scenario";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   await dbConnect();
 
   try {
-    // Clear existing data
-    await User.deleteMany({});
+    const user = await User.findOne({ email: "uday.turakhia@stonybrook.edu" });
     await InvestmentType.deleteMany({});
     await Investment.deleteMany({});
     await Event.deleteMany({});
     await Scenario.deleteMany({});
 
+    if (!user) {
+      return NextResponse.json({ success: false, error: "User Anuj not found" }, { status: 404 });
+    }
     // Create investment types
     const [cashType, stocksType, bondsType, realEstateType, cryptoType] = await InvestmentType.create([
       {
@@ -152,15 +154,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const user = await User.create({
-      name: "John Doe",
-      email: "john@example.com",
-      image: "some-image-url",
-      createdScenarios: [],
-      readScenarios: [],
-      readWriteScenarios: [],
-    });
-
     const singleScenario = await Scenario.create({
       type: "single",
       name: "Complete Financial Plan",
@@ -204,7 +197,7 @@ export async function POST(req: NextRequest) {
     });
 
     const coupleScenario = await Scenario.create({
-      type: "couple",
+      type: "married",
       name: "Couple Financial Plan",
       description: "Financial plan for a married couple",
       financialGoal: 1500000,

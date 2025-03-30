@@ -1,9 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import dbConnect from '@/lib/dbConnect';
-import Investment from "@/models/Investment";
-import Event from "@/models/Event";
-import InvestmentType from "@/models/InvestmentType";
-import Scenario from "@/models/Scenario";
+
 const userSchema = new Schema(
   {
     name: { type: String, required: true },

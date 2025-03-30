@@ -6,36 +6,30 @@ import { FixedValues, NormalDistributionValues, UniformDistributionValues } from
 
 type InflationRateType = FixedValues | NormalDistributionValues | UniformDistributionValues;
 
-export interface SimulationSettingsData {
-  numberOfSimulations: number;
-  rothConversionEnabled: boolean;
-  rmdEnabled: boolean;
+export interface RothAndRMDData {
   inflationRate: InflationRateType;
 }
 
-interface SimulationSettingsStepProps {
-  data: SimulationSettingsData;
-  onDataUpdate: (data: SimulationSettingsData) => void;
+interface RothAndRMDStepProps {
+  data: RothAndRMDData;
+  onDataUpdate: (data: RothAndRMDData) => void;
   onValidationChange?: (isValid: boolean) => void;
 }
 
-export default function SimulationSettingsStep({ 
+export default function RothAndRMDStep({ 
   data, 
   onDataUpdate, 
   onValidationChange 
-}: SimulationSettingsStepProps) {
+}: RothAndRMDStepProps) {
   // Create refs to prevent infinite update loops
   const dataRef = useRef(data);
   const onDataUpdateRef = useRef(onDataUpdate);
   const onValidationChangeRef = useRef(onValidationChange);
   
   // Initialize state with default values if not provided
-  const [formData, setFormData] = useState<SimulationSettingsData>(() => {
+  const [formData, setFormData] = useState<RothAndRMDData>(() => {
     // Use existing data if available, otherwise use defaults
-    const initialData: SimulationSettingsData = {
-      numberOfSimulations: dataRef.current?.numberOfSimulations ?? 1000,
-      rothConversionEnabled: dataRef.current?.rothConversionEnabled ?? false,
-      rmdEnabled: dataRef.current?.rmdEnabled ?? true,
+    const initialData: RothAndRMDData = {
       inflationRate: dataRef.current?.inflationRate ?? {
         type: "fixed",
         valueType: "percentage",
@@ -59,10 +53,6 @@ export default function SimulationSettingsStep({
   useEffect(() => {
     const newErrors: string[] = [];
     
-    // Validate number of simulations
-    if (formData.numberOfSimulations < 100) {
-      newErrors.push('Number of simulations should be at least 100');
-    }
     
     // Validate inflation rate based on type
     if (formData.inflationRate.type === 'fixed') {
@@ -100,31 +90,6 @@ export default function SimulationSettingsStep({
       onValidationChangeRef.current(isValid);
     }
   }, [formData]);
-  
-  // Handle number of simulations change
-  const handleSimulationsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    setFormData(prev => ({
-      ...prev,
-      numberOfSimulations: isNaN(value) ? 0 : value
-    }));
-  };
-  
-  // Handle Roth conversion toggle
-  const handleRothConversionChange = (enabled: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      rothConversionEnabled: enabled
-    }));
-  };
-  
-  // Handle RMD toggle
-  const handleRmdChange = (enabled: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      rmdEnabled: enabled
-    }));
-  };
   
   // Handle inflation rate type change
   const handleInflationRateTypeChange = (type: "fixed" | "normal" | "uniform") => {
@@ -225,86 +190,6 @@ export default function SimulationSettingsStep({
       )}
       
       <div className="space-y-6">
-        {/* Number of Simulations */}
-        <div className="space-y-2">
-          <label htmlFor="numberOfSimulations" className="block text-md font-medium text-white">
-            Number of Simulations <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="numberOfSimulations"
-            type="number"
-            min="100"
-            step="100"
-            value={formData.numberOfSimulations}
-            onChange={handleSimulationsChange}
-            className={`w-full px-3 py-2 bg-zinc-900 border ${
-              errors.some(err => err.includes('simulations')) ? 'border-red-500' : 'border-zinc-700'
-            } rounded-md text-white focus:outline-none focus:ring-1 focus:ring-[#7F56D9]`}
-          />
-          <p className="text-sm text-zinc-400">
-            Higher values provide more accurate results but take longer to process. Recommended: 1000-5000.
-          </p>
-        </div>
-        
-        {/* Roth Conversion */}
-        <div className="space-y-2">
-          <label className="block text-md font-medium text-white">
-            Roth Conversion
-          </label>
-          <div className="flex space-x-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-[#7F56D9] bg-zinc-900 border-zinc-700 focus:ring-[#7F56D9]"
-                checked={formData.rothConversionEnabled}
-                onChange={() => handleRothConversionChange(true)}
-              />
-              <span className="ml-2">Enabled</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-[#7F56D9] bg-zinc-900 border-zinc-700 focus:ring-[#7F56D9]"
-                checked={!formData.rothConversionEnabled}
-                onChange={() => handleRothConversionChange(false)}
-              />
-              <span className="ml-2">Disabled</span>
-            </label>
-          </div>
-          <p className="text-sm text-zinc-400">
-            When enabled, the simulation will consider converting Traditional IRA assets to Roth IRAs when advantageous.
-          </p>
-        </div>
-        
-        {/* Required Minimum Distributions */}
-        <div className="space-y-2">
-          <label className="block text-md font-medium text-white">
-            Required Minimum Distributions (RMDs)
-          </label>
-          <div className="flex space-x-4">
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-[#7F56D9] bg-zinc-900 border-zinc-700 focus:ring-[#7F56D9]"
-                checked={formData.rmdEnabled}
-                onChange={() => handleRmdChange(true)}
-              />
-              <span className="ml-2">Enabled</span>
-            </label>
-            <label className="inline-flex items-center">
-              <input
-                type="radio"
-                className="form-radio text-[#7F56D9] bg-zinc-900 border-zinc-700 focus:ring-[#7F56D9]"
-                checked={!formData.rmdEnabled}
-                onChange={() => handleRmdChange(false)}
-              />
-              <span className="ml-2">Disabled</span>
-            </label>
-          </div>
-          <p className="text-sm text-zinc-400">
-            When enabled, the simulation will account for required minimum distributions from tax-deferred accounts.
-          </p>
-        </div>
         
         {/* Inflation Rate */}
         <div className="space-y-4">

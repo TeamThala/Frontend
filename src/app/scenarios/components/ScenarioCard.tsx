@@ -8,7 +8,7 @@ import { Scenario } from '@/types/scenario';
 import { Investment } from '@/types/investment';
 import { Event } from '@/types/event';
 
-export default function ScenarioCard({ scenario }: { scenario: Scenario }) {
+export default function ScenarioCard({ scenario, accessType }: { scenario: Scenario, accessType: string }) {
   return (
     <Card className="bg-black text-white border-[#7F56D9]">
       <CardHeader>
@@ -65,15 +65,17 @@ export default function ScenarioCard({ scenario }: { scenario: Scenario }) {
           Last Modified: {new Date(scenario.updatedAt).toLocaleDateString()}
         </span>
         <div className="flex gap-2">
-          <Link href={`/scenarios/${scenario.id}`}>
-            <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900">
-              View/Edit
+          <Link href={""}>
+            <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {alert("View/Edit functionality will be implemented here")}}>
+              {accessType === "readWrite" || accessType === "create" ? "View/Edit" : "View"}
             </Button>
           </Link>
-          <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900">
-            Share
-          </Button>
-          <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900">
+          {accessType === "readWrite" || accessType === "create" && (
+            <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {alert("Share functionality will be implemented here")}}>
+              Share
+            </Button>
+          )}
+          <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {alert("Export functionality will be implemented here")}}>
             Export
           </Button>
         </div>
