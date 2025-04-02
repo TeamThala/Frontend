@@ -1,8 +1,11 @@
 import { Investment } from "./investment";
 import { User } from "./user";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
+import { Event } from "./event";
 
 export type Scenario = SingleScenario | CoupleScenario;
+
+// Event is the most specific version (in event vs. investmentEvent vs. investment)
 
 export interface BaseScenario {
     _id?: string;
@@ -15,9 +18,9 @@ export interface BaseScenario {
     spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expenses
     expenseWithdrawalStrategy: Event[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
-    RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
-    RMDStrategy: Investment[]; // Todo: Add RMD Strategy
-    rothConversion: WithRothConversion | WithoutRothConversion;
+    RothConversionStrategy: Event[]; // Todo: Add Roth Conversion Strategy
+    RMDStrategy: Event[]; // Todo: Add RMD Strategy
+    rothConversion: WithRothConversion | null;
     residenceState: string
     owner: User;
     ownerBirthYear: number;
@@ -63,9 +66,9 @@ interface WithRothConversion {
     RothConversionEndYear: number;
 }
 
-interface WithoutRothConversion {
-    rothConversion: false;
-    RothConversionStartYear?: never;
-    RothConversionEndYear?: never;
-    RothConversionStrategy?: never;
-}
+// interface WithoutRothConversion {
+//     rothConversion: false;
+//     RothConversionStartYear?: never;
+//     RothConversionEndYear?: never;
+//     RothConversionStrategy?: never;
+// }
