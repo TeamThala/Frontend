@@ -14,12 +14,12 @@ export interface BaseScenario {
     description: string;
     financialGoal: number;
     investments: Investment[];
-    eventSeries: Event[];
-    spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expenses
-    expenseWithdrawalStrategy: Event[]; // * Assume this is sorted and only contains Investment Events
+    // eventSeries: Event[]; // In our implementation, an event is an event series
+    spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expense events
+    expenseWithdrawalStrategy: Investment[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
-    RothConversionStrategy: Event[]; // Todo: Add Roth Conversion Strategy
-    RMDStrategy: Event[]; // Todo: Add RMD Strategy
+    RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
+    RMDStrategy: Investment[]; // Todo: Add RMD Strategy
     rothConversion: WithRothConversion | null;
     residenceState: string
     owner: User;

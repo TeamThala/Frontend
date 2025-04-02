@@ -53,7 +53,7 @@ export interface ExpenseEvent {
 
 export interface InvestmentEvent {
     type: "investment";
-    amount: number;
+    // amount: number;
     inflationAdjustment: boolean;
     // targetAsset: string; // What is this for?
     assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath;

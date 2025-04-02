@@ -1,0 +1,20 @@
+{
+    "id": "cashInvestment",
+    "value": 10000,
+    "investmentType": {
+        "id": "cash",
+        "name": "Cash Account",
+        "description": "Default cash investment",
+        "expectedAnnualReturn": {
+            "type": "fixed",
+            "value": 0
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "fixed",
+            "value": 0
+        },
+        "taxability": true
+    },
+    "taxStatus": "non-retirement"
+}

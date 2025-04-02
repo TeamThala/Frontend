@@ -1,0 +1,21 @@
+{
+    "id": "mortgageExpense",
+    "name": "Mortgage Event",
+    "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": 30,
+    "durationType": "years",
+    "eventType": {
+        "discretionary": false,
+        "type": "expense",
+        "amount": 3000,
+        "inflationAdjustment": true,
+        "expectedAnnualChange": {
+            "type": "fixed",
+            "value": 0
+        }
+    }
+}

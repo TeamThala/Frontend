@@ -1,0 +1,97 @@
+{
+    "id": "scenario1",
+    "name": "Test Scenario 1",
+    "description": "Contains only cash investment. No discretionary expenses. Fixed inflation set to 0. No Roth conversion strategy. Fixed life expectancy.",
+    "financialGoal": 100000,
+    "investments": [
+        {
+            "id": "cashInvestment",
+            "value": 10000,
+            "investmentType": {
+                "id": "cash",
+                "name": "Cash Account",
+                "description": "Default cash investment",
+                "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "expenseRatio": 0,
+                "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "taxability": true
+            },
+            "taxStatus": "non-retirement"
+        }
+    ],
+    "spendingStrategy": [],
+    "expenseWithdrawalStrategy": [
+        {
+            "id": "cashInvestment",
+            "value": 10000,
+            "investmentType": {
+                "id": "cash",
+                "name": "Cash Account",
+                "description": "Default cash investment",
+                "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "expenseRatio": 0,
+                "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "taxability": true
+            },
+            "taxStatus": "non-retirement"
+        }
+    ],
+    "inflationRate": {
+        "type": "fixed",
+        "value": 0
+    },
+    "RothConversionStrategy": [],
+    "RMDStrategy": [
+        {
+            "id": "cashInvestment",
+            "value": 10000,
+            "investmentType": {
+                "id": "cash",
+                "name": "Cash Account",
+                "description": "Default cash investment",
+                "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "expenseRatio": 0,
+                "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "value": 0
+                },
+                "taxability": true
+            },
+            "taxStatus": "non-retirement"
+        }
+    ],
+    "rothConversion": null,
+    "residenceState": "NY",
+    "owner": {
+        "id": "user1",
+        "name": "John Doe",
+        "email": "johndoe@test.com",
+        "image": "https://example.com/johndoe.jpg",
+        "createdScenarios": ["scenario1"],
+        "readScenarios": [],
+        "readWriteScenarios": []
+    },
+    "ownerBirthYear": 1980,
+    "ownerLifeExpectancy": {
+        "type": "fixed",
+        "value": 85
+    },
+    "viewPermissions": [],
+    "editPermissions": [],
+    "updatedAt": "2023-10-05T14:30:00Z"
+}
