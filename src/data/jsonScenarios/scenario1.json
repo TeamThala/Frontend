@@ -25,6 +25,94 @@
             "taxStatus": "non-retirement"
         }
     ],
+    "eventSeries":[
+        {
+            "id": "cashOnly",
+            "name": "Cash Only Event",
+            "description": "Default cash event and no other investments.",
+            "startYear": {
+                "type": "fixed",
+                "year": 2025
+            },
+            "duration": {
+                "type": "fixed",
+                "value": 99
+            },
+            "durationType": "years",
+            "eventType": {
+                "type": "investment",
+                "inflationAdjustment": true,
+                "assetAllocation":{
+                    "type": "fixed",
+                    "investments":[
+                        {
+                            "id": "cashInvestment",
+                            "value": 10000,
+                            "investmentType": {
+                                "id": "cash",
+                                "name": "Cash Account",
+                                "description": "Default cash investment",
+                                "expectedAnnualReturn": {
+                                    "type": "fixed",
+                                    "value": 0
+                                },
+                                "expenseRatio": 0,
+                                "expectedAnnualIncome": {
+                                    "type": "fixed",
+                                    "value": 0
+                                },
+                                "taxability": true
+                            },
+                            "taxStatus": "non-retirement"
+                        }
+                    ],
+                    "percentages": [100]
+                },
+                "maxCash": 999999999
+            }
+        },
+        {
+            "id": "mortgageExpense",
+            "name": "Mortgage Event",
+            "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+            "startYear": {
+                "type": "fixed",
+                "year": 2025
+            },
+            "duration": 30,
+            "durationType": "years",
+            "eventType": {
+                "discretionary": false,
+                "type": "expense",
+                "amount": 3000,
+                "inflationAdjustment": true,
+                "expectedAnnualChange": {
+                    "type": "fixed",
+                    "value": 0
+                }
+            }
+        },
+        {
+            "id": "incomeEvent1",
+            "name": "Income Event 1",
+            "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+            "startYear": {
+                "type": "fixed",
+                "year": 2025
+            },
+            "duration": 20,
+            "durationType": "years",
+            "eventType": {
+                "type": "income",
+                "amount": 70000,
+                "inflationAdjustment": true,
+                "expectedAnnualChange": {
+                    "type": "fixed",
+                    "value": 0
+                }
+            }
+        }
+    ],
     "spendingStrategy": [],
     "expenseWithdrawalStrategy": [
         {

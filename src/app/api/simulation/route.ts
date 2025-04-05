@@ -1,9 +1,9 @@
 import { /*NextRequest, */NextResponse } from 'next/server'
-import fs from "fs"
+import { promises as fs } from "fs"
 // import { ObjectId } from 'mongodb'
 import { Scenario } from '@/types/scenario'
 // import client from '@/lib/db'
-// import { simulation } from './simulation'
+import { simulation } from './simulation'
 // import { Investment, InvestmentType } from '@/types/investment'
 // import { parseFixedValue, parseNormalDistribution } from './parseValues'
 // import { Event } from '@/types/event'
@@ -17,12 +17,13 @@ export async function POST(/*req: NextRequest*/) {
     try{
         // const data = await req.json(); // Assuming body is never null
         // const scenario = await getScenario(data.id);
-        const scenario = loadScenario(); // Placeholder to load scenario data from JSON
+        const scenario = await loadScenario(); // Placeholder to load scenario data from JSON
+        // console.log("LOADSCENARIO RESPONSE:")
         // console.log(scenario);
         if (scenario !== null){
             console.log("Scenario found, running simulation...");
             // console.log(scenario);
-            // await simulation(scenario);
+            await simulation(scenario);
             console.log(typeof scenario);
         }
         else{
@@ -35,22 +36,16 @@ export async function POST(/*req: NextRequest*/) {
     }
 }
 
-function loadScenario(filepath:string="@/data/jsonScenarios/scenario1.json"): Scenario | null { // placeholder to load scenario data from JSON
-    fs.readFile(filepath, 'utf8', (err, data) => {
-        if (err) {
-            console.error("Error reading file:", err);
-            return null;
-        }
-        try {
-            const scenario = JSON.parse(data) as Scenario;
-            console.log("Scenario loaded successfully:", scenario);
-            return scenario;
-        } catch (parseError) {
-            console.error("Error parsing JSON:", parseError);
-            return null;
-        }
-    });
-    return null;
+async function loadScenario(filepath:string="src/data/jsonScenarios/scenario1.json"): Promise<Scenario | null> { // placeholder to load scenario data from JSON
+    try {
+        const data = await fs.readFile(filepath, 'utf8');
+        const scenario = JSON.parse(data) as Scenario;
+        console.log("Scenario loaded successfully:", scenario);
+        return scenario;
+    } catch (err) {
+        console.error("Error reading or parsing file:", err);
+        return null;
+    }
 }
 
 // async function getScenario(id: string): Promise<Scenario | null> {

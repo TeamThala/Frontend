@@ -3,11 +3,11 @@ import fs from 'fs';
 import path from 'path';
 
 // Match the scraped data structure
-interface TaxBracket {
-  lowerBound: number;
-  upperBound: number;
-  rate: number;
-}
+// interface TaxBracket {
+//   lowerBound: number;
+//   upperBound: number;
+//   rate: number;
+// }
 
 interface StandardDeductions {
   'Single': number; 

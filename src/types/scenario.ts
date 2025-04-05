@@ -14,7 +14,7 @@ export interface BaseScenario {
     description: string;
     financialGoal: number;
     investments: Investment[];
-    // eventSeries: Event[]; // In our implementation, an event is an event series
+    eventSeries: Event[]; // all events in the scenario
     spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expense events
     expenseWithdrawalStrategy: Investment[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
@@ -43,7 +43,7 @@ export type LifeExpectancy = FixedValues | NormalDistributionValues;
 
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {
-    type: "single";
+    type: "individual";
 }
 
 // Scenario where there is a couple (user + spouse)

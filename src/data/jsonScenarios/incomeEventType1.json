@@ -1,0 +1,9 @@
+{
+    "type": "income",
+    "amount": 70000,
+    "inflationAdjustment": true,
+    "expectedAnnualChange": {
+        "type": "fixed",
+        "value": 0
+    }
+}

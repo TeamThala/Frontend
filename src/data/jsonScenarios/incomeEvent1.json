@@ -1,0 +1,20 @@
+{
+    "id": "incomeEvent1",
+    "name": "Income Event 1",
+    "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": 20,
+    "durationType": "years",
+    "eventType": {
+        "type": "income",
+        "amount": 70000,
+        "inflationAdjustment": true,
+        "expectedAnnualChange": {
+            "type": "fixed",
+            "value": 0
+        }
+    }
+}
