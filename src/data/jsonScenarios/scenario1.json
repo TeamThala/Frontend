@@ -13,12 +13,12 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "taxability": true
             },
@@ -32,11 +32,11 @@
             "description": "Default cash event and no other investments.",
             "startYear": {
                 "type": "fixed",
-                "year": 2025
+                "year": 2020
             },
             "duration": {
                 "type": "fixed",
-                "value": 99
+                "year": 99
             },
             "durationType": "years",
             "eventType": {
@@ -54,12 +54,12 @@
                                 "description": "Default cash investment",
                                 "expectedAnnualReturn": {
                                     "type": "fixed",
-                                    "value": 0
+                                    "value": 1
                                 },
                                 "expenseRatio": 0,
                                 "expectedAnnualIncome": {
                                     "type": "fixed",
-                                    "value": 0
+                                    "value": 1
                                 },
                                 "taxability": true
                             },
@@ -79,7 +79,10 @@
                 "type": "fixed",
                 "year": 2025
             },
-            "duration": 30,
+            "duration": {
+                "type": "fixed",
+                "year": 30
+            },
             "durationType": "years",
             "eventType": {
                 "discretionary": false,
@@ -88,7 +91,7 @@
                 "inflationAdjustment": true,
                 "expectedAnnualChange": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 }
             }
         },
@@ -100,16 +103,21 @@
                 "type": "fixed",
                 "year": 2025
             },
-            "duration": 20,
+            "duration": {
+                "type": "fixed",
+                "year": 10
+            },
             "durationType": "years",
             "eventType": {
                 "type": "income",
                 "amount": 70000,
                 "inflationAdjustment": true,
+                "socialSecurity": false,
+                "wage": true,
                 "expectedAnnualChange": {
                     "type": "fixed",
-                    "value": 0
-                }
+                    "value": 1
+                }    
             }
         }
     ],
@@ -124,12 +132,12 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "taxability": true
             },
@@ -151,12 +159,12 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 0
+                    "value": 1
                 },
                 "taxability": true
             },

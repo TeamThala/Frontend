@@ -15,7 +15,7 @@
         "inflationAdjustment": true,
         "expectedAnnualChange": {
             "type": "fixed",
-            "value": 0
+            "value": 1
         }
     }
 }

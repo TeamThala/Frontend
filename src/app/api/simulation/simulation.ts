@@ -1,11 +1,11 @@
 import { Scenario } from '@/types/scenario';
-import { Event, FixedYear, EventYear, IncomeEvent, InvestmentEvent } from '@/types/event';
+import { Event, FixedYear, EventYear } from '@/types/event';
 import { randomNormal } from 'd3-random';
 // import { getTaxData } from '@/types/taxScraper';
 // import client from '@/lib/db';
-import { Investment } from '@/types/investment';
 import { SingleScenario } from '@/types/scenario';
 // import { getInflationRate } from './inflation';
+import { updateIncomeEvents } from './updateIncomeEvents';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -68,7 +68,7 @@ export async function simulation(scenario: Scenario){
     console.log("=====================SIMULATION STARTED=====================");
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
-        console.log(incomeEvents[0])
+        // console.log(incomeEvents[0])
         // Inflation assumption calculation for this year
         // const inflation = getInflationRate(scenario.inflationRate);
         // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
@@ -264,66 +264,3 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
     return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
 }
 
-function findCashInvestment(investmentEvent: Event): Investment | null {
-    // Find the cash investment in the investment event
-    const investmentEventType = investmentEvent.eventType as InvestmentEvent;
-    const nestedInvestments = investmentEventType.assetAllocation.investments;
-    if (nestedInvestments === null){
-        console.log(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
-        return null;
-    }
-    console.log(`Nested investments: ${nestedInvestments}`);
-    const cashInvestment = nestedInvestments.find(investment => investment.investmentType.name === "cash") || null;
-    return cashInvestment;
-}
-
-async function updateIncomeEvents(incomeEvents:Event[], year:number, currentInvestmentEvent:Event){
-    // incomeEvents: array of income events obtained from initializeEvents
-    // year: current year of simulation to check if event should apply
-
-    let curYearIncome = 0;
-    let curYearSS = 0;
-
-    const cashInvestment = findCashInvestment(currentInvestmentEvent);
-    if (cashInvestment === null){
-        console.log(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
-        return null;
-    }
-    console.log(`Cash investment found in ${currentInvestmentEvent.name}: ${cashInvestment}`);
-
-    for (let i = 0; i < incomeEvents.length; i++){
-        const incomeEvent = incomeEvents[i];
-        const incomeEventStartYear = incomeEvent.startYear as FixedYear; // should be fixedyears
-        const incomeEventDuration = incomeEvent.duration as FixedYear; // should be fixedyears
-        const withinDuration = (year >= incomeEventStartYear.year) && (year <= (incomeEventStartYear.year + incomeEventDuration.year)); // should be fixedYears
-        if (withinDuration){
-            // Inflation adjustment
-            const incomeEventType = incomeEvent.eventType as IncomeEvent;
-            if (incomeEventType.inflationAdjustment){
-                if (incomeEventType.expectedAnnualChange.type === "normal"){
-                    const normal = randomNormal(incomeEventType.expectedAnnualChange.mean, incomeEventType.expectedAnnualChange.stdDev);
-                    incomeEventType.amount *= normal();
-                }
-                else if (incomeEventType.expectedAnnualChange.type === "uniform"){
-                    const uniform = Math.random() * (incomeEventType.expectedAnnualChange.max - incomeEventType.expectedAnnualChange.min) + incomeEventType.expectedAnnualChange.min;
-                    incomeEventType.amount *= uniform;
-                }
-                else {
-                    incomeEventType.amount *= incomeEventType.expectedAnnualChange.value;
-                }
-            }
-
-            // TODO: handle couple income calculation percentage
-
-
-
-            cashInvestment.value += incomeEventType.amount;
-            curYearIncome += incomeEventType.amount;
-            console.log(`Income for current year ${year}: ${curYearIncome}`);
-            if (incomeEventType.socialSecurity){
-                curYearSS += incomeEventType.amount;
-                console.log(`curYearSS has been updated: ${curYearSS}`);
-            }
-        }
-    }
-}
