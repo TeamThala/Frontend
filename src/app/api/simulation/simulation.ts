@@ -6,6 +6,7 @@ import { randomNormal } from 'd3-random';
 import { SingleScenario } from '@/types/scenario';
 // import { getInflationRate } from './inflation';
 import { updateIncomeEvents } from './updateIncomeEvents';
+import { updateInvestmentEvent } from './updateInvestmentEvent';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -94,9 +95,17 @@ export async function simulation(scenario: Scenario){
         }
 
         // TODO: Run income events, add to cash investment
-        await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent);
+        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent);
+        if (incomeResults === null){
+            console.log("Error: Could not update income events.");
+            return null;
+        }
+        const curYearIncome = incomeResults.curYearIncome;
+        const curYearSS = incomeResults.curYearSS;
+        console.log(`Income for current year ${year}: ${curYearIncome}`);
+        console.log(`Social Security for current year ${year}: ${curYearSS}`);
         // TODO: Perform RMD for previous year
-        // TODO: Update the values of investments
+        updateInvestmentEvent(currentInvestmentEvent, curYearIncome);
         // TODO: Run Roth conversion optimizer if enabled
         // TODO: Pay non-discretionary expenses and previous year's taxes
         // TODO: Pay discretionary expenses in spending strategy

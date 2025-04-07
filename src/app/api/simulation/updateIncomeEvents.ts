@@ -66,4 +66,5 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
             }
         }
     }
+    return { curYearIncome, curYearSS };
 }
