@@ -52,6 +52,7 @@ const eventTypeSchema = new Schema(
     inflationAdjustment: { type: Boolean },
     percentageOfIncome: { type: Number },
     socialSecurity: { type: Boolean },
+    wage: { type: Boolean },
 
     // Fields for ExpenseEvent
     discretionary: { type: Boolean },

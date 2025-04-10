@@ -1,0 +1,11 @@
+{
+    "type": "income",
+    "amount": 70000,
+    "inflationAdjustment": true,
+    "socialSecurity": false,
+    "wage": true,
+    "expectedAnnualChange": {
+        "type": "fixed",
+        "value": 1
+    }    
+}

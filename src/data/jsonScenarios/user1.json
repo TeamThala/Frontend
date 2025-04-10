@@ -1,0 +1,9 @@
+{
+    "id": "user1",
+    "name": "John Doe",
+    "email": "johndoe@test.com",
+    "image": "https://example.com/johndoe.jpg",
+    "createdScenarios": ["scenario1"],
+    "readScenarios": [],
+    "readWriteScenarios": []
+}
