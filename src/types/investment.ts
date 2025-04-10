@@ -7,13 +7,13 @@ export interface Investment {
     taxStatus: "non-retirement" | "pre-tax" | "after-tax";
 }
 
-interface InvestmentType {
+export interface InvestmentType {
     id: string;
     name: string;
     description: string;
-    expectedAnnualReturn: FixedValues | NormalDistributionValues;
+    expectedAnnualReturn: FixedValues | NormalDistributionValues | null;
     expenseRatio: number;
-    expectedAnnualIncome: FixedValues | NormalDistributionValues;
+    expectedAnnualIncome: FixedValues | NormalDistributionValues | null;
     taxability: boolean;
 }
 
