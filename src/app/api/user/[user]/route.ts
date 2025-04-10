@@ -7,16 +7,16 @@ import "@/models/Scenario";
 
 import Scenario from "@/models/Scenario";
 
-export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ user: string }> }) {
   await dbConnect();
-  const { userId } = params;
+  const { user } = await params;
 
   try {
     const scenarios = await Scenario.find({
       $or: [
-        { owner: userId },
-        { viewPermissions: userId },
-        { editPermissions: userId }
+        { owner: user },
+        { viewPermissions: user },
+        { editPermissions: user }
       ]
     })
     .populate('investments')

@@ -13,7 +13,6 @@ import Investment from "@/models/Investment";
 import InvestmentType from "@/models/InvestmentType";
 import Event from "@/models/Event";
 import type { ScenarioFormData } from "@/app/scenarios/create/page";
-import { AssetAllocationFixed } from '@/types/event';
 
 
 
@@ -248,7 +247,7 @@ export async function GET() {
 // }
 export async function POST(request: NextRequest) {
   await dbConnect();
-  
+
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
@@ -275,6 +274,7 @@ export async function POST(request: NextRequest) {
     // Store Investments
     for (const inv of body.investments.investments) {
       const { id: invTypeId, ...invTypePayload } = inv.investmentType;
+       console.log( invTypeId);
 
       const invTypeDoc = await InvestmentType.create(invTypePayload);
 
@@ -295,15 +295,96 @@ export async function POST(request: NextRequest) {
       const event = structuredClone(evt);
 
       const { id, ...eventWithoutId } = event;
+      console.log(id);
 
-      if (eventWithoutId.eventType.type === "investment") {
-        if (eventWithoutId.eventType.targetAsset && investmentIdMap[eventWithoutId.eventType.targetAsset]) {
-          eventWithoutId.eventType.targetAsset = investmentIdMap[eventWithoutId.eventType.targetAsset].toString();
+      if (eventWithoutId.eventType.type === "investment" || eventWithoutId.eventType.type === "rebalance") {
+        // Process investment and rebalance events which have assetAllocation
+        // eslint-disable-next-line
+        const eventWithInvestments = eventWithoutId.eventType as any;
+        
+        // Process targetAsset if present
+        if (eventWithInvestments.targetAsset && investmentIdMap[eventWithInvestments.targetAsset]) {
+          eventWithInvestments.targetAsset = investmentIdMap[eventWithInvestments.targetAsset].toString();
+        }
+        
+        // Deep process assetAllocation array if it exists
+        if (eventWithInvestments.assetAllocation && Array.isArray(eventWithInvestments.assetAllocation)) {
+          console.log(`Processing asset allocation for event ${id}`);
+          
+          // Create a new array completely replacing the existing one
+          const processedAllocation = [];
+          
+          for (const allocation of eventWithInvestments.assetAllocation) {
+            // Create a new allocation object without investment
+            const newAllocation = { ...allocation };
+            delete newAllocation.investment;
+            
+            // Extract investment ID from different possible formats
+            let investmentId = null;
+            if (typeof allocation.investment === 'string') {
+              investmentId = allocation.investment;
+            } else if (allocation.investment && typeof allocation.investment === 'object') {
+              if ('id' in allocation.investment) {
+                investmentId = allocation.investment.id;
+              }
+            }
+            
+            // If we found a valid ID that maps to a MongoDB ObjectId, use it
+            if (investmentId && investmentIdMap[investmentId]) {
+              newAllocation.investment = investmentIdMap[investmentId];
+              processedAllocation.push(newAllocation);
+            } else {
+              console.warn(`Could not map investment ID for allocation: ${JSON.stringify(allocation)}`);
+              // Skip invalid allocations to prevent database validation errors
+            }
+          }
+          
+          // Replace the original array with our processed version
+          eventWithInvestments.assetAllocation = processedAllocation;
         }
       }
 
-      const createdEvent = await Event.create(eventWithoutId);
-      eventIdMap[evt.id] = createdEvent._id;
+      // Handle investment references in any nested fields for all event types
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const processNestedInvestments = (obj: any) => {
+        if (!obj || typeof obj !== 'object') return;
+        
+        // Process arrays recursively
+        if (Array.isArray(obj)) {
+          obj.forEach(item => processNestedInvestments(item));
+          return;
+        }
+        
+        // Process each property in object
+        for (const key in obj) {
+          const value = obj[key];
+          
+          // If the key is 'investment' and the value has an 'id' that's mapped
+          if (key === 'investment') {
+            if (typeof value === 'string' && investmentIdMap[value]) {
+              obj[key] = investmentIdMap[value];
+            } else if (value && typeof value === 'object' && 'id' in value && investmentIdMap[value.id]) {
+              obj[key] = investmentIdMap[value.id];
+            }
+          } 
+          // Process nested objects recursively
+          else if (value && typeof value === 'object') {
+            processNestedInvestments(value);
+          }
+        }
+      };
+      
+      // Process the entire event for any investment references
+      processNestedInvestments(eventWithoutId);
+
+      try {
+        const createdEvent = await Event.create(eventWithoutId);
+        eventIdMap[evt.id] = createdEvent._id;
+      } catch (error) {
+        console.error(`Failed to create event ${id}:`, error);
+        console.error(`Event data:`, JSON.stringify(eventWithoutId, null, 2));
+        throw error;
+      }
     }
 
     const scenarioData = {

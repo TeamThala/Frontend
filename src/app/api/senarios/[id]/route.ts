@@ -17,7 +17,7 @@ import type { ScenarioFormData } from "@/app/scenarios/create/page";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
-  const scenarioId = (await params).id; 
+  const scenarioId = (await params).id;
 
   if (!scenarioId || !mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json({ success: false, error: "Invalid scenario ID" }, { status: 400 });
@@ -126,8 +126,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // 2. Handle investments
     // First clear existing investments 
     await Investment.deleteMany({ _id: { $in: scenario.investments } });
-    await InvestmentType.deleteMany({ _id: { $in: scenario.investments.map((inv: Investment) => inv.investmentType) } });
-    
+    //eslint-disable-next-line
+    await InvestmentType.deleteMany({ _id: { $in: scenario.investments.map((inv:any) => inv.investmentType) } });
     // Then add new investments
     const investmentIds: mongoose.Types.ObjectId[] = [];
     const investmentIdMap: Record<string, mongoose.Types.ObjectId> = {};

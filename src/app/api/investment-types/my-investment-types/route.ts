@@ -42,12 +42,13 @@ export async function GET() {
       ]
     }).select('investments');
 
+    //eslint-disable-next-line
     const investmentIds = scenarios.flatMap((scenario: any) => scenario.investments);
 
     const investments = await Investment.find({ _id: { $in: investmentIds } })
       .populate('investmentType');
 
-    // ✅ Extract unique investment types
+    // Extract unique investment types
     const uniqueInvestmentTypesMap = new Map();
     investments.forEach(investment => {
       const type = investment.investmentType;

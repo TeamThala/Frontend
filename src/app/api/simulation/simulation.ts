@@ -1,33 +1,48 @@
-/* eslint-disable */
-
 import { Scenario } from '@/types/scenario';
-import { Event, FixedYear, IncomeEvent, ExpenseEvent, InvestmentEvent, RebalanceEvent } from '@/types/event';
+import { Event, FixedYear, EventYear } from '@/types/event';
 import { randomNormal } from 'd3-random';
-import { getTaxData } from '@/types/taxScraper';
-import { FixedValues, NormalDistributionValues, UniformDistributionValues } from '@/types/utils';
-import client from '@/lib/db';
-import { Investment } from '@/types/investment';
+// import { getTaxData } from '@/types/taxScraper';
+// import client from '@/lib/db';
+import { SingleScenario } from '@/types/scenario';
+// import { getInflationRate } from './inflation';
+import { updateIncomeEvents } from './updateIncomeEvents';
+import { updateInvestmentEvent } from './updateInvestmentEvent';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
-    var age = currentYear - scenario.ownerBirthYear;
-    var year = currentYear;
-    console.log(scenario.ownerBirthYear);
-    console.log(typeof scenario.ownerBirthYear);
+    let year = currentYear;
+    console.log(`Owner birthyear: ${scenario.ownerBirthYear} of type ${typeof scenario.ownerBirthYear}`);
 
     // Sample life expectancy
-    var ownerLifeExpectancy = null;
+    let ownerLifeExpectancy: number | null = null;
     if (scenario.ownerLifeExpectancy.type === "fixed"){
         ownerLifeExpectancy = scenario.ownerLifeExpectancy.value;
     }
     else{
         const normal = randomNormal(scenario.ownerLifeExpectancy.mean, scenario.ownerLifeExpectancy.stdDev);
         ownerLifeExpectancy = Math.floor(normal()); // Life expectancy should be a whole number for the loop
+        console.log(`Owner normal life expectancy rolled as ${ownerLifeExpectancy}`);
+    }
+    if (ownerLifeExpectancy === null){
+        console.log("Error: Could not sample life expectancy.");
+        return null;
+    }
+
+    // Sample spouse life expectancy
+    let spouseLifeExpectancy: number | null = null;
+    if (scenario.type === "couple"){
+        if(scenario.spouseLifeExpectancy.type !== "fixed"){
+            const normal = randomNormal(scenario.spouseLifeExpectancy.mean, scenario.spouseLifeExpectancy.stdDev);
+            spouseLifeExpectancy = Math.floor(normal()); // Life expectancy should be a whole number for the loop
+        }
+        else{
+            spouseLifeExpectancy = scenario.spouseLifeExpectancy.value;
+        }
     }
 
     // Obtain initial tax brackets with which to use for simulation
-    const initialTaxBrackets = await getTaxData(currentYear, scenario.residenceState);
-    var prevTaxBrackets = initialTaxBrackets;
+    // const initialTaxBrackets = await getTaxData(currentYear, scenario.residenceState);
+    // let prevTaxBrackets = initialTaxBrackets;
     console.log(`Fetched initial tax brackets for ${scenario.residenceState} in ${currentYear}`);
 
     // Initialize durations for all events and sort all of them by type
@@ -36,13 +51,14 @@ export async function simulation(scenario: Scenario){
         console.log("Error: Could not initialize events.");
         return null;
     }
-    var incomeEvents:Event[], expenseEvents:Event[], investmentEvents:Event[], rebalanceEvents:Event[];
+    console.log(`Initialized events: ${eventArrays}`);
+    let incomeEvents:Event[], investmentEvents:Event[]//, expenseEvents:Event[],  rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
         incomeEvents = eventArrays[0];
-        expenseEvents = eventArrays[1];
+        // expenseEvents = eventArrays[1];
         investmentEvents = eventArrays[2];
-        rebalanceEvents = eventArrays[3];
+        // rebalanceEvents = eventArrays[3];
     }
     else {
         console.log("Error: No events found.");
@@ -51,15 +67,15 @@ export async function simulation(scenario: Scenario){
 
     // Simulation loop
     console.log("=====================SIMULATION STARTED=====================");
-    for(var age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
+    for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
-        console.log(incomeEvents[0])
+        // console.log(incomeEvents[0])
         // Inflation assumption calculation for this year
-        const inflation = getInflationRate(scenario.inflationRate);
+        // const inflation = getInflationRate(scenario.inflationRate);
         // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
 
         // Adjust this year's tax brackets for inflation
-        var taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
+        // const taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
         // console.log(`Adjusted tax brackets for age ${age}`);
 
         // TODO: update retirement account contributions annual limits
@@ -67,10 +83,29 @@ export async function simulation(scenario: Scenario){
         // console.log(`Age: ${age}`);
         // console.log(`Year: ${year}`);
 
+        // Find the current investment event
+        const currentInvestmentEvent = investmentEvents.find(event => event.startYear.type === "fixed" && 
+            event.duration.type === "fixed" && 
+            event.startYear.year <= year && 
+            (event.startYear.year + event.duration.year) >= year);
+
+        if (!currentInvestmentEvent) {
+            console.log(`Error: Could not find investment event for year ${year}`);
+            return null;
+        }
+
         // TODO: Run income events, add to cash investment
-        await updateIncomeEvents(incomeEvents, year, scenario.investments);
+        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent);
+        if (incomeResults === null){
+            console.log("Error: Could not update income events.");
+            return null;
+        }
+        const curYearIncome = incomeResults.curYearIncome;
+        const curYearSS = incomeResults.curYearSS;
+        console.log(`Income for current year ${year}: ${curYearIncome}`);
+        console.log(`Social Security for current year ${year}: ${curYearSS}`);
         // TODO: Perform RMD for previous year
-        // TODO: Update the values of investments
+        updateInvestmentEvent(currentInvestmentEvent, curYearIncome);
         // TODO: Run Roth conversion optimizer if enabled
         // TODO: Pay non-discretionary expenses and previous year's taxes
         // TODO: Pay discretionary expenses in spending strategy
@@ -80,93 +115,79 @@ export async function simulation(scenario: Scenario){
 
         // End of loop calculations
         year++;
-        prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
+        // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
+
+        // Check if spouse is alive
+        if (scenario.type === "couple" && spouseLifeExpectancy !== null && currentYear > scenario.spouseBirthYear + spouseLifeExpectancy){
+            const newScenario: SingleScenario = {
+                id: scenario.id,
+                name: scenario.name,
+                description: scenario.description,
+                financialGoal: scenario.financialGoal,
+                investments: scenario.investments,
+                eventSeries: scenario.eventSeries,
+                spendingStrategy: scenario.spendingStrategy,
+                expenseWithdrawalStrategy: scenario.expenseWithdrawalStrategy,
+                inflationRate: scenario.inflationRate,
+                RothConversionStrategy: scenario.RothConversionStrategy,
+                RMDStrategy: scenario.RMDStrategy,
+                rothConversion: scenario.rothConversion,
+                residenceState: scenario.residenceState,
+                owner: scenario.owner,
+                ownerBirthYear: scenario.ownerBirthYear,
+                ownerLifeExpectancy: scenario.ownerLifeExpectancy,
+                viewPermissions: scenario.viewPermissions,
+                editPermissions: scenario.editPermissions,
+                type: "individual",
+                updatedAt: new Date()
+            }
+            scenario = newScenario; // convert current scenario into a single scenario
+        }
     }
     console.log("=====================SIMULATION FINISHED=====================");
     return;
 }
 
-function getInflationRate(inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues){
-    if (inflationRate.type === "fixed"){
-        return inflationRate.value;
-    }
-    else if (inflationRate.type === "normal"){
-        const normal = randomNormal(inflationRate.mean, inflationRate.stdDev);
-        return normal();
-    }
-    else {
-        const uniform = Math.random() * (inflationRate.max - inflationRate.min) + inflationRate.min;
-        return uniform;
-    }
-}
 
-function updateTaxBrackets(taxBrackets: any, inflationRate: number){
-    // MATH CURRENTLY ASSUMES INFLATION INCREASES ARE VALUES > 1
-    // (IF NOT, CHANGE TRUEINFLATION TO 1 + INFLATIONRATE)
-    const trueInflation = inflationRate;
 
-    taxBrackets.federal.incomeBrackets.lower *= trueInflation;
-    taxBrackets.federal.incomeBrackets.upper *= trueInflation;
-    taxBrackets.federal.incomeBrackets.rate *= trueInflation;
 
-    taxBrackets.state.incomeBrackets.lower *= trueInflation;
-    taxBrackets.state.incomeBrackets.upper *= trueInflation;
-    taxBrackets.state.incomeBrackets.rate *= trueInflation;
 
-    return taxBrackets;
-}
-
-async function initializeEvents(events: any, noID = false){ // assuming it is only invoked on scenario.eventSeries
+async function initializeEvents(events: Event[]){ // assuming it is only invoked on scenario.eventSeries
     // Resolves all durations and start years that are not fixed
     // Collects events into arrays by type
-    // noID is true if the events passed are already loaded in-memory as type Event
 
     // Initialize durations for all events
     console.log("Initializing event durations...");
-    const db = client.db("main");
 
-    var incomeEvents: Event[] = [];
-    var expenseEvents: Event[] = [];
-    var investmentEvents: Event[] = [];
-    var rebalanceEvents: Event[] = [];
+    const incomeEvents: Event[] = [];
+    const expenseEvents: Event[] = [];
+    const investmentEvents: Event[] = [];
+    const rebalanceEvents: Event[] = [];
+    // let cashInvestment: Investment | null = null; // Default to null
 
-    for (var i = 0; i < events.length; i++){
-        var event: Event;
-        var eventFromDB;
-        if (noID === false){
-            var eventID = events[i];
-            eventFromDB = await db.collection("events").findOne({_id: eventID});
-        }
-        // console.log(eventFromDB);
-        if (eventFromDB !== null){
-            if (noID === false && eventFromDB !== undefined){
-                console.log(`Initializing event with name: ${eventFromDB.name}...`);
-                event = {
-                    name: eventFromDB.name,
-                    eventType: eventFromDB.eventType,
-                    startYear: eventFromDB.startYear,
-                    duration: eventFromDB.duration
-                };
-            }
-            else { // noID is true and the events passed are already loaded in-memory as type Event
-                console.log(`Initializing event with name: ${events[i].name}...`);
-                event = events[i];
-            }
+    for (let i = 0; i < events.length; i++){
+        let event: Event = events[i];
+        console.log(`Initializing event with name: ${events[i].name}...`);
+        event = events[i];
+        // console.log(event);
+        if (event !== null){
             if (event.duration.type === "uniform"){
                 const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
-                var simDuration: FixedYear = {
+                const simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
                 event.duration = simDuration;
+                console.log(`Event ${event.name}'s uniform duration rolled duration of ${event.duration.year}`);
             }
             else if (event.duration.type === "normal"){
                 const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
-                var simDuration: FixedYear = {
+                const simDuration: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
                 event.duration = simDuration;
+                console.log(`Event ${event.name}'s normal duration rolled duration of ${event.duration.year}`);
             }
             else { // type is "fixed"
                 // console.log(`Event ${event.name} has a fixed duration of ${event.duration.year}`);
@@ -177,28 +198,45 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             // Resolve start year
             if (event.startYear.type === "uniform"){
                 const uniform = Math.random() * (event.startYear.year.max - event.startYear.year.min) + event.startYear.year.min;
-                var simStartYear: FixedYear = {
+                const simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(uniform)
                 }
                 event.startYear = simStartYear;
+                console.log(`Event ${event.name}'s uniform startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "normal"){
                 const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
-                var simStartYear: FixedYear = {
+                const simStartYear: FixedYear = {
                     type: "fixed",
                     year: Math.floor(normal())
                 }
                 event.startYear = simStartYear;
+                console.log(`Event ${event.name}'s normal startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "event"){
                 // recursively resolve start years until we reach a fixed start year
-                await initializeEvents([event.startYear.event], true);
+                const startYear = event.startYear as EventYear;
+                const matchingEvent = events.find(e => e.id === startYear.eventId);
+                if (!matchingEvent) {
+                    console.log(`Error: Could not find event with id ${event.startYear.eventId}`);
+                    return null;
+                }
+                await initializeEvents([matchingEvent]);
                 if (event.startYear.eventTime === "start"){
-                    event.startYear = event.startYear.event.startYear.year; // this should be fixed year after the recursive call
+                    const finalStartYear = matchingEvent.startYear as FixedYear; // should be resolved to a fixed year
+                    event.startYear = {
+                        type: "fixed",
+                        year: finalStartYear.year
+                    }; // this should be fixed year after the recursive call
                 }
                 else{
-                    event.startYear = event.startYear.event.startYear.year + event.startYear.event.duration.year;
+                    const finalStartYear = matchingEvent.startYear as FixedYear; // Should be resolved to a fixed year
+                    const finalDuration = matchingEvent.duration as FixedYear; // Should be resolved to a fixed year
+                    event.startYear = {
+                        type: "fixed",
+                        year: finalStartYear.year + finalDuration.year
+                    };
                 }
             }
             else{ // type is "fixed"
@@ -216,63 +254,22 @@ async function initializeEvents(events: any, noID = false){ // assuming it is on
             }
             else if (event.eventType.type === "investment"){
                 investmentEvents.push(event);
+                const nestedInvestments = event.eventType.assetAllocation.investments;
+                if (nestedInvestments === null){
+                    console.log(`Error: Could not find the investments nested inside ${event.id}, ${event.name}`);
+                    return null;
+                }
+                // cashInvestment = nestedInvestments.find(investment => investment.investmentType.name === "cash") || null;
             }
             else{
                 rebalanceEvents.push(event);
             }
         }
         else {
-            console.log(`Could not find event.`);
+            console.log(`Error: During initializeEvents(), event ${i} is null`);
             return null;
         }
     }
     return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
 }
 
-async function updateIncomeEvents(incomeEvents:Event[], year:number, investments:Investment[]){
-    // incomeEvents: array of income events obtained from initializeEvents
-    // year: current year of simulation to check if event should apply
-    const db = client.db("main");
-    const cashInvestmentType = await db.collection("investmenttypes").findOne({name: "Cash"});
-
-    var curYearIncome = 0;
-    var curYearSS = 0;
-
-    if (cashInvestmentType === null){
-        console.log("Error: Could not find the default cash investment type in MongoDB.");
-        return null;
-    }
-    const cashInvestment = investments.find((investment) => investment.investmentType.id === cashInvestmentType._id.toString());
-    if (cashInvestment === undefined){
-        console.log("Error: Could not find the default cash investment in the scenario.");
-        return null;
-    }
-    for (var i = 0; i < incomeEvents.length; i++){
-        var incomeEvent = incomeEvents[i];
-        const withinDuration = (year >= incomeEvent.startYear.year) && (year <= (incomeEvent.startYear.year + incomeEvent.duration.year)); // should be fixedYears
-        if (withinDuration){
-            // Inflation adjustment
-            if (incomeEvent.eventType.inflationAdjustment){{
-                if (incomeEvent.eventType.expectedAnnualChange.type === "normal"){
-                    const normal = randomNormal(incomeEvent.eventType.expectedAnnualChange.mean, incomeEvent.eventType.expectedAnnualChange.stdDev);
-                    incomeEvent.eventType.amount *= normal();
-                }
-                else if (incomeEvent.eventType.expectedAnnualChange.type === "uniform"){
-                    const uniform = Math.random() * (incomeEvent.eventType.expectedAnnualChange.max - incomeEvent.eventType.expectedAnnualChange.min) + incomeEvent.eventType.expectedAnnualChange.min;
-                    incomeEvent.eventType.amount *= uniform;
-                }
-                else {
-                    incomeEvent.eventType.amount *= incomeEvent.eventType.expectedAnnualChange.value;
-                }
-            }
-
-            // TODO: handle couple income calculation percentage
-
-            cashInvestment.value += incomeEvent.eventType.amount;
-            curYearIncome += incomeEvent.eventType.amount;
-            if (incomeEvent.eventType.socialSecurity){
-                curYearSS += incomeEvent.eventType.amount;
-            }
-        }
-    }
-}

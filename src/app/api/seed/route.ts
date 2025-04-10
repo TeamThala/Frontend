@@ -197,7 +197,7 @@ export async function POST() {
     });
 
     const coupleScenario = await Scenario.create({
-      type: "couple",
+      type: "married",
       name: "Couple Financial Plan",
       description: "Financial plan for a married couple",
       financialGoal: 1500000,
