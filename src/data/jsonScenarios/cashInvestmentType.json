@@ -4,12 +4,14 @@
     "description": "Default cash investment",
     "expectedAnnualReturn": {
         "type": "fixed",
+        "valueType": "percentage",
         "value": 1
     },
     "expenseRatio": 0,
     "expectedAnnualIncome": {
         "type": "fixed",
-        "value": 1
+        "valueType": "amount",
+        "value": 0
     },
     "taxability": true
 }

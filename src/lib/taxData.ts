@@ -35,7 +35,7 @@ interface NYSTaxBracket {
   of_excess_over: number;
 }
 
-interface TaxData {
+export interface TaxData {
   taxBrackets: {
     single: Array<{ rate: string; from: string; upto: string }>;
     'married-joint': Array<{ rate: string; from: string; upto: string }>;

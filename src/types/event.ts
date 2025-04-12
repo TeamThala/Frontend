@@ -7,7 +7,6 @@ export interface Event {
     description?: string;
     startYear: FixedYear | UniformYear | NormalYear | EventYear;
     duration: FixedYear | UniformYear | NormalYear;
-    durationType: 'years' | 'months' | 'weeks' | 'days';
     eventType: IncomeEvent | ExpenseEvent | InvestmentEvent | RebalanceEvent;
 }
 

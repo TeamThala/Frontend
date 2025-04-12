@@ -5,6 +5,7 @@ export interface Investment {
     value: number;
     investmentType: InvestmentType;
     taxStatus: "non-retirement" | "pre-tax" | "after-tax";
+    purchasePrice: number;
 }
 
 export interface InvestmentType {

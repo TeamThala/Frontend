@@ -1,12 +1,14 @@
 import { Scenario } from '@/types/scenario';
 import { Event, FixedYear, EventYear } from '@/types/event';
 import { randomNormal } from 'd3-random';
-// import { getTaxData } from '@/types/taxScraper';
+import { getTaxData } from '@/lib/taxData';
 // import client from '@/lib/db';
 import { SingleScenario } from '@/types/scenario';
-// import { getInflationRate } from './inflation';
+import { getInflationRate } from './inflation';
 import { updateIncomeEvents } from './updateIncomeEvents';
 import { updateInvestmentEvent } from './updateInvestmentEvent';
+import { payNondiscExpenses } from './payNondiscExpenses';
+import { updateTaxBrackets } from './taxInflation';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -52,11 +54,11 @@ export async function simulation(scenario: Scenario){
         return null;
     }
     console.log(`Initialized events: ${eventArrays}`);
-    let incomeEvents:Event[], investmentEvents:Event[]//, expenseEvents:Event[],  rebalanceEvents:Event[];
+    let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[];//,  rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
         incomeEvents = eventArrays[0];
-        // expenseEvents = eventArrays[1];
+        expenseEvents = eventArrays[1];
         investmentEvents = eventArrays[2];
         // rebalanceEvents = eventArrays[3];
     }
@@ -65,14 +67,20 @@ export async function simulation(scenario: Scenario){
         return null;
     }
 
+    // Variables to be carried into the next iteration of the loop
+    let curYearGains: number = 0;
+    let curYearEarlyWithdrawals: number = 0;
+    const taxData = getTaxData();
+    let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
+
     // Simulation loop
     console.log("=====================SIMULATION STARTED=====================");
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         // console.log(incomeEvents[0])
         // Inflation assumption calculation for this year
-        // const inflation = getInflationRate(scenario.inflationRate);
-        // console.log(`Inflation rate for age ${age} calculated to be ${inflation}`);
+        const inflation = getInflationRate(scenario.inflationRate);
+        console.log(`Inflation rate for age ${age} parsed as ${inflation}`);
 
         // Adjust this year's tax brackets for inflation
         // const taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
@@ -81,7 +89,8 @@ export async function simulation(scenario: Scenario){
         // TODO: update retirement account contributions annual limits
 
         // console.log(`Age: ${age}`);
-        // console.log(`Year: ${year}`);
+        console.log(`=====================Year: ${year}=====================`);
+
 
         // Find the current investment event
         const currentInvestmentEvent = investmentEvents.find(event => event.startYear.type === "fixed" && 
@@ -105,9 +114,20 @@ export async function simulation(scenario: Scenario){
         console.log(`Income for current year ${year}: ${curYearIncome}`);
         console.log(`Social Security for current year ${year}: ${curYearSS}`);
         // TODO: Perform RMD for previous year
+
         updateInvestmentEvent(currentInvestmentEvent, curYearIncome);
         // TODO: Run Roth conversion optimizer if enabled
         // TODO: Pay non-discretionary expenses and previous year's taxes
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        if (nondiscExpenseRet === null){
+            console.log(`Ending simulation run...`);
+            return null;
+        }
+        curYearGains += nondiscExpenseRet;
+
+        // After using previous year's variables, reset these values to be used the next year
+        curYearGains = 0;
+        curYearEarlyWithdrawals = 0;
         // TODO: Pay discretionary expenses in spending strategy
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
@@ -115,6 +135,7 @@ export async function simulation(scenario: Scenario){
 
         // End of loop calculations
         year++;
+        updateTaxBrackets(taxData, inflation); // Update tax brackets for next year
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
         // Check if spouse is alive
