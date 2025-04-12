@@ -75,7 +75,19 @@ export default function ScenarioCard({ scenario, accessType }: { scenario: Scena
               Share
             </Button>
           )}
-          <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {alert("Export functionality will be implemented here")}}>
+          <Button variant="outline" className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900" onClick={() => {
+    const fileName = scenario.name.replace(/\s+/g, "_") + ".yaml";
+    fetch(`/api/export-scenario?id=${scenario._id}`)
+      .then(res => res.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      });
+  }}>
             Export
           </Button>
         </div>

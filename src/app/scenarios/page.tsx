@@ -75,15 +75,11 @@ export default function ScenariosPage() {
               Create a Scenario
             </Button>
           </Link>
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700"
-            onClick={() => {
-              alert("Import functionality will be implemented here");
-              // setShowImportDialog(true);
-            }}
-          >
-            Import a Scenario
-          </Button>
+          <Link href="/import-scenario">
+            <Button className="bg-purple-600 hover:bg-purple-700">
+              Import a Scenario
+            </Button>
+          </Link>
         </div>
       </div>
 

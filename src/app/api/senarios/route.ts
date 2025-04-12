@@ -5,7 +5,7 @@ import "@/models/Investment";
 import "@/models/Event";
 import "@/models/User";
 import "@/models/InvestmentType";
-import Scenario from  '@/models/Scenario';
+import Scenario from '@/models/Scenario';
 import mongoose from 'mongoose';
 import { authOptions } from '@/lib/auth';
 import User from "@/models/User";
@@ -13,25 +13,23 @@ import Investment from "@/models/Investment";
 import InvestmentType from "@/models/InvestmentType";
 import Event from "@/models/Event";
 import type { ScenarioFormData } from "@/app/scenarios/create/page";
-
-
+import { Event as EventType } from '@/types/event';
 
 export async function GET() {
-  await dbConnect();
-
-  // Get the user session
-  const session = await getServerSession(authOptions);
-  // Check if user is authenticated
-  if (!session || !session.user?.email) {
-    return NextResponse.json(
-      { success: false, error: 'Authentication required' }, 
-      { status: 401 }
-    );
-  }
-
   try {
+    await dbConnect();
+
+    // Get the user session
+    const session = await getServerSession(authOptions);
+    // Check if user is authenticated
+    if (!session || !session.user?.email) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' }, 
+        { status: 401 }
+      );
+    }
+
     // First find the user by email
-    const User = mongoose.model('User');
     const user = await User.findOne({ email: session.user.email });
     
     if (!user) {
@@ -69,7 +67,7 @@ export async function GET() {
     .populate('expenseWithdrawalStrategy')
     .populate('owner', 'name email')
     .populate('viewPermissions', 'name email')
-    .populate('editPermissions', 'name email')
+    .populate('editPermissions', 'name email');
 
     // Find scenarios where the user has read and write permissions
     const readWriteScenarios = await Scenario.find({
@@ -84,167 +82,31 @@ export async function GET() {
     .populate('expenseWithdrawalStrategy')
     .populate('owner', 'name email')
     .populate('viewPermissions', 'name email')
-    .populate('editPermissions', 'name email')
+    .populate('editPermissions', 'name email');
     
     const responsePayload = {
-      "createdScenarios": createdScenarios,
-      "readScenarios": readScenarios,
-      "readWriteScenarios": readWriteScenarios
-    }
+      success: true,
+      createdScenarios: createdScenarios || [],
+      readScenarios: readScenarios || [],
+      readWriteScenarios: readWriteScenarios || []
+    };
 
     return NextResponse.json(responsePayload, { status: 200 });
   } catch (error) {
     console.error('Error fetching user scenarios:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch user scenarios' }, 
+      { 
+        success: false, 
+        error: `Failed to fetch user scenarios: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        createdScenarios: [],
+        readScenarios: [],
+        readWriteScenarios: [] 
+      }, 
       { status: 500 }
     );
   }
 }
 
-
-// export async function POST(request: NextRequest) {
-//   await dbConnect();
-
-//   const session = await getServerSession(authOptions);
-//   if (!session || !session.user?.email) {
-//     return NextResponse.json(
-//       { success: false, error: "Authentication required" },
-//       { status: 401 }
-//     );
-//   }
-
-//   const user = await User.findOne({ email: session.user.email });
-
-//   const body: ScenarioFormData = await request.json();
-
-//   try {
-//     const investmentIds: mongoose.Types.ObjectId[] = [];
-//     const investmentIdMap: Record<string, mongoose.Types.ObjectId> = {};
-
-//     // Store Investments
-//     for (const inv of body.investments.investments) {
-//       const invTypeDoc = await InvestmentType.create(inv.investmentType);
-//       const investmentDoc = await Investment.create({
-//         value: inv.value,
-//         taxStatus: inv.taxStatus,
-//         investmentType: invTypeDoc._id,
-//       });
-//       investmentIds.push(investmentDoc._id);
-//       investmentIdMap[inv.id] = investmentDoc._id;
-//     }
-
-//     // Store Events
-//     const eventIdMap: Record<string, mongoose.Types.ObjectId> = {};
-//     for (const evt of body.eventSeries.events) {
-//       const event = structuredClone(evt) ;
-
-//       // Remap investments inside InvestmentEvent
-//       if (event.eventType.type === "investment") {
-//         const allocation = event.eventType.assetAllocation as AssetAllocationFixed;
-//         allocation.investment.id = investmentIdMap[allocation.investment.id].toString();
-//       }
-      
-
-//       const createdEvent = await Event.create(event);
-//       eventIdMap[evt.id] = createdEvent._id;
-//     }
-
-//     // Build Scenario with references
-//     const scenario = await Scenario.create({
-//       type: body.generalInformation.scenarioType.toLowerCase(),
-//       name: body.generalInformation.scenarioName,
-//       description: body.generalInformation.scenarioDescription,
-//       financialGoal: body.generalInformation.financialGoal,
-//       residenceState: body.generalInformation.residenceState,
-//       investments: investmentIds,
-//       eventSeries: Object.values(eventIdMap),
-//       spendingStrategy: body.spendingStrategy.expensePriorityOrder.map(id => eventIdMap[id]),
-//       expenseWithdrawalStrategy: body.expenseWithdrawalStrategy.withdrawalOrder.map(id => {
-//         const mappedId = investmentIdMap[id];
-//         if (!mappedId) throw new Error(`Investment ${id} not found`);
-//         return mappedId;
-//       }),
-//       inflationRate: body.rothAndRMD.inflationRate,
-//       rothConversion: {
-//         rothConversion: false, //TODO: Add roth conversion
-//       },
-//       rmdEnabled: false, //TODO: Add RMD
-//       owner: user._id,
-//       userBirthYear: body.generalInformation.userBirthYear,
-//       userLifeExpectancy: {
-//         type: "fixed",
-//         valueType: "year",
-//         value: body.generalInformation.userLifeExpectancy,
-//       },
-//       spouseBirthYear: body.generalInformation.spouseBirthYear,
-//       spouseLifeExpectancy: body.generalInformation.spouseLifeExpectancy
-//         ? {
-//             type: "fixed",
-//             valueType: "year",
-//             value: body.generalInformation.spouseLifeExpectancy
-//           }
-//         : undefined,
-//     });
-
-//     // Link scenario to user
-//     if (!user) {
-//       return NextResponse.json(
-//         // TODO: Store in local storage
-//         { success: false, error: "User not found" },
-//         { status: 404 }
-//       );
-//     }
-
-//     user.createdScenarios.push(scenario._id);
-//     await user.save();
-
-//     return NextResponse.json({
-//       success: true,
-//       message: "Scenario created successfully",
-//       scenarioId: scenario._id
-//     });
-//   } catch (error) {
-//     console.error("Scenario creation failed:", error);
-//     return NextResponse.json(
-//       { success: false, error: "Scenario creation failed" },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
-
-// import { NextResponse } from 'next/server';
-// import dbConnect from '@/lib/dbConnect';
-// import "@/models/Investment";
-// import "@/models/Event";
-// import "@/models/User";
-// import "@/models/InvestmentType";
-// import Scenario from '@/models/Scenario';
-
-// export async function GET() {
-//   await dbConnect();
-
-//   try {
-//     const scenarios = await Scenario.find({})
-//       .populate({
-//         path: 'investments',
-//         populate: { path: 'investmentType' }
-//       })
-//       .populate('eventSeries')
-//       .populate('spendingStrategy')
-//       .populate('expenseWithdrawalStrategy')
-//       .populate('owner', 'name email')
-//       .populate('viewPermissions', 'name email')
-//       .populate('editPermissions', 'name email');
-
-//     return NextResponse.json({ success: true, data: scenarios }, { status: 200 });
-//   } catch (error) {
-//     console.error('Error fetching scenarios:', error);
-//     return NextResponse.json({ success: false, error: 'Failed to fetch scenarios' }, { status: 500 });
-//   }
-// }
 export async function POST(request: NextRequest) {
   await dbConnect();
 
@@ -266,174 +128,211 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ScenarioFormData = await request.json();
-    //console.log("Received scenario form data:", JSON.stringify(body, null, 2));
+
+    // Generate unique IDs for investments and events
+    const generateUniqueId = () => new mongoose.Types.ObjectId().toString();
 
     const investmentIds: mongoose.Types.ObjectId[] = [];
     const investmentIdMap: Record<string, mongoose.Types.ObjectId> = {};
 
     // Store Investments
     for (const inv of body.investments.investments) {
-      const { id: invTypeId, ...invTypePayload } = inv.investmentType;
-       console.log( invTypeId);
+      const clientInvId = inv.id;
+      const uniqueId = generateUniqueId();
 
-      const invTypeDoc = await InvestmentType.create(invTypePayload);
+      // Create InvestmentType with ID
+      const invTypeDoc = await InvestmentType.create({
+        id: generateUniqueId(),
+        name: inv.investmentType.name,
+        description: inv.investmentType.description || 'No description',
+        expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
+        expenseRatio: inv.investmentType.expenseRatio,
+        expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
+        taxability: inv.investmentType.taxability
+      });
 
+      // Create Investment with ID
       const investmentDoc = await Investment.create({
+        id: uniqueId,
         value: inv.value,
         taxStatus: inv.taxStatus,
         investmentType: invTypeDoc._id,
       });
 
       investmentIds.push(investmentDoc._id);
-      investmentIdMap[inv.id] = investmentDoc._id;
+      investmentIdMap[clientInvId] = investmentDoc._id;
     }
-
 
     // Store Events
     const eventIdMap: Record<string, mongoose.Types.ObjectId> = {};
     for (const evt of body.eventSeries.events) {
-      const event = structuredClone(evt);
+      const clientEventId = evt.id;
+      const uniqueId = generateUniqueId();
+      
+      // Create a deep clone to avoid modifying the original
+      const eventData: any = structuredClone(evt);
+      
+      // Set the ID field required by our schema
+      eventData.id = uniqueId;
+      
+      // Ensure we have the durationType field
+      if (!eventData.durationType) {
+        eventData.durationType = 'years';
+      }
 
-      const { id, ...eventWithoutId } = event;
-      console.log(id);
-
-      if (eventWithoutId.eventType.type === "investment" || eventWithoutId.eventType.type === "rebalance") {
-        // Process investment and rebalance events which have assetAllocation
-        // eslint-disable-next-line
-        const eventWithInvestments = eventWithoutId.eventType as any;
-        
-        // Process targetAsset if present
-        if (eventWithInvestments.targetAsset && investmentIdMap[eventWithInvestments.targetAsset]) {
-          eventWithInvestments.targetAsset = investmentIdMap[eventWithInvestments.targetAsset].toString();
-        }
-        
-        // Deep process assetAllocation array if it exists
-        if (eventWithInvestments.assetAllocation && Array.isArray(eventWithInvestments.assetAllocation)) {
-          console.log(`Processing asset allocation for event ${id}`);
+      // Process investment references in event types
+      if (eventData.eventType.type === "investment") {
+        if (eventData.eventType.assetAllocation) {
+          const assetAllocation = eventData.eventType.assetAllocation;
           
-          // Create a new array completely replacing the existing one
-          const processedAllocation = [];
-          
-          for (const allocation of eventWithInvestments.assetAllocation) {
-            // Create a new allocation object without investment
-            const newAllocation = { ...allocation };
-            delete newAllocation.investment;
-            
-            // Extract investment ID from different possible formats
-            let investmentId = null;
-            if (typeof allocation.investment === 'string') {
-              investmentId = allocation.investment;
-            } else if (allocation.investment && typeof allocation.investment === 'object') {
-              if ('id' in allocation.investment) {
-                investmentId = allocation.investment.id;
+          // Process fixed asset allocation
+          if (assetAllocation.type === "fixed" && assetAllocation.investments) {
+            const investmentRefs: any[] = [];
+            for (const investment of assetAllocation.investments) {
+              const investmentId = typeof investment === 'string' ? investment : investment.id;
+              if (investmentIdMap[investmentId]) {
+                investmentRefs.push(investmentIdMap[investmentId]);
               }
             }
-            
-            // If we found a valid ID that maps to a MongoDB ObjectId, use it
-            if (investmentId && investmentIdMap[investmentId]) {
-              newAllocation.investment = investmentIdMap[investmentId];
-              processedAllocation.push(newAllocation);
-            } else {
-              console.warn(`Could not map investment ID for allocation: ${JSON.stringify(allocation)}`);
-              // Skip invalid allocations to prevent database validation errors
+            assetAllocation.investments = investmentRefs;
+          } 
+          // Process glidePath asset allocation
+          else if (assetAllocation.type === "glidePath" && assetAllocation.investments) {
+            const investmentRefs: any[] = [];
+            for (const investment of assetAllocation.investments) {
+              const investmentId = typeof investment === 'string' ? investment : investment.id;
+              if (investmentIdMap[investmentId]) {
+                investmentRefs.push(investmentIdMap[investmentId]);
+              }
             }
+            assetAllocation.investments = investmentRefs;
           }
+        }
+      } 
+      // Process rebalance event
+      else if (eventData.eventType.type === "rebalance") {
+        if (eventData.eventType.portfolioDistribution) {
+          const distribution = eventData.eventType.portfolioDistribution;
           
-          // Replace the original array with our processed version
-          eventWithInvestments.assetAllocation = processedAllocation;
+          // Process fixed distribution
+          if (distribution.type === "fixed" && distribution.investments) {
+            const investmentRefs: any[] = [];
+            for (const investment of distribution.investments) {
+              const investmentId = typeof investment === 'string' ? investment : investment.id;
+              if (investmentIdMap[investmentId]) {
+                investmentRefs.push(investmentIdMap[investmentId]);
+              }
+            }
+            distribution.investments = investmentRefs;
+          } 
+          // Process glidePath distribution
+          else if (distribution.type === "glidePath" && distribution.investments) {
+            const investmentRefs: any[] = [];
+            for (const investment of distribution.investments) {
+              const investmentId = typeof investment === 'string' ? investment : investment.id;
+              if (investmentIdMap[investmentId]) {
+                investmentRefs.push(investmentIdMap[investmentId]);
+              }
+            }
+            distribution.investments = investmentRefs;
+          }
+        }
+      }
+      
+      // Handle EventYear type references for startYear
+      if (eventData.startYear && eventData.startYear.type === "event" && eventData.startYear.eventId) {
+        const mappedEventId = eventIdMap[eventData.startYear.eventId];
+        if (mappedEventId) {
+          eventData.startYear.eventId = mappedEventId.toString();
         }
       }
 
-      // Handle investment references in any nested fields for all event types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const processNestedInvestments = (obj: any) => {
-        if (!obj || typeof obj !== 'object') return;
-        
-        // Process arrays recursively
-        if (Array.isArray(obj)) {
-          obj.forEach(item => processNestedInvestments(item));
-          return;
-        }
-        
-        // Process each property in object
-        for (const key in obj) {
-          const value = obj[key];
-          
-          // If the key is 'investment' and the value has an 'id' that's mapped
-          if (key === 'investment') {
-            if (typeof value === 'string' && investmentIdMap[value]) {
-              obj[key] = investmentIdMap[value];
-            } else if (value && typeof value === 'object' && 'id' in value && investmentIdMap[value.id]) {
-              obj[key] = investmentIdMap[value.id];
-            }
-          } 
-          // Process nested objects recursively
-          else if (value && typeof value === 'object') {
-            processNestedInvestments(value);
-          }
-        }
-      };
-      
-      // Process the entire event for any investment references
-      processNestedInvestments(eventWithoutId);
-
       try {
-        const createdEvent = await Event.create(eventWithoutId);
-        eventIdMap[evt.id] = createdEvent._id;
+        const createdEvent = await Event.create(eventData);
+        eventIdMap[clientEventId] = createdEvent._id;
       } catch (error) {
-        console.error(`Failed to create event ${id}:`, error);
-        console.error(`Event data:`, JSON.stringify(eventWithoutId, null, 2));
+        console.error(`Failed to create event ${clientEventId}:`, error);
+        console.error(`Event data:`, JSON.stringify(eventData, null, 2));
         throw error;
       }
     }
 
-    const scenarioData = {
-      type: (body.generalInformation.scenarioType || 'default').toLowerCase(),
+    // Create unique scenario ID
+    const scenarioId = generateUniqueId();
+    
+    // Extract scenario type from form data, defaulting to "individual" 
+    // Convert the scenario type to match our database enum values
+    let scenarioType = "individual";
+    
+    if (body.generalInformation.scenarioType) {
+      const type = body.generalInformation.scenarioType.toLowerCase();
+      if (type === "married" || type === "couple") {
+        scenarioType = "couple";
+      } else if (type === "single") {
+        scenarioType = "individual";
+      } else {
+        scenarioType = type; // Keep whatever it is
+      }
+    }
+    
+    // Prepare scenario data
+    const scenarioData: any = {
+      id: scenarioId,
+      type: scenarioType,
       name: body.generalInformation.scenarioName || 'Untitled Scenario',
       description: body.generalInformation.scenarioDescription || '',
       financialGoal: body.generalInformation.financialGoal || 0,
-      residenceState: body.generalInformation.residenceState || 'Default State',
-      inflationRate: body.rothAndRMD?.inflationRate || 0.02,
+      investments: investmentIds,
+      eventSeries: Object.values(eventIdMap),
+      spendingStrategy: (body.spendingStrategy?.expensePriorityOrder || [])
+        .filter(id => eventIdMap[id])
+        .map(id => eventIdMap[id]),
+      expenseWithdrawalStrategy: (body.expenseWithdrawalStrategy?.withdrawalOrder || [])
+        .filter(id => investmentIdMap[id])
+        .map(id => investmentIdMap[id]),
+      inflationRate: body.rothAndRMD?.inflationRate || {
+        type: "fixed",
+        valueType: "percentage",
+        value: 0.02
+      },
+      RothConversionStrategy: [],
+      RMDStrategy: [],
+      // Set a default value for rothConversion to avoid validation errors
       rothConversion: {
         rothConversion: false,
         RothConversionStartYear: null,
         RothConversionEndYear: null
       },
-      RothConversionStrategy: [],
-      RMDStrategy: [],
-      rmdEnabled: false,
+      residenceState: body.generalInformation.residenceState || 'Default State',
       owner: user._id,
       userBirthYear: body.generalInformation.userBirthYear || 1980,
       userLifeExpectancy: {
         type: "fixed",
-        valueType: "year",
+        valueType: "percentage",
         value: body.generalInformation.userLifeExpectancy || 85,
       },
-      spouseBirthYear: body.generalInformation.spouseBirthYear,
-      spouseLifeExpectancy: body.generalInformation.spouseLifeExpectancy
-        ? {
-            type: "fixed",
-            valueType: "year",
-            value: body.generalInformation.spouseLifeExpectancy
-          }
-        : undefined,
       viewPermissions: [],
-      editPermissions: []
+      editPermissions: [],
+      updatedAt: new Date()
     };
 
+    // Add spouse data if scenario type is couple or married
+    if (scenarioType === "couple" || scenarioType === "married") {
+      scenarioData.spouseBirthYear = body.generalInformation.spouseBirthYear;
+      scenarioData.spouseLifeExpectancy = body.generalInformation.spouseLifeExpectancy
+        ? {
+            type: "fixed",
+            valueType: "percentage",
+            value: body.generalInformation.spouseLifeExpectancy
+          }
+        : undefined;
+    }
+
+    // Create and save the scenario
     const scenario = await Scenario.create(scenarioData);
-    scenario.investments = investmentIds;
-    scenario.eventSeries = Object.values(eventIdMap);
-    scenario.spendingStrategy = (body.spendingStrategy?.expensePriorityOrder || [])
-      .filter(id => eventIdMap[id])
-      .map(id => eventIdMap[id]);
-    scenario.expenseWithdrawalStrategy = (body.expenseWithdrawalStrategy?.withdrawalOrder || [])
-      .filter(id => investmentIdMap[id])
-      .map(id => investmentIdMap[id]);
-    await scenario.save();
 
     // Link scenario to user
-    user.createdScenarios.push(scenario._id);
+    user.createdScenarios.push(scenarioId);
     await user.save();
 
     return NextResponse.json({
