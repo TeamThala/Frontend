@@ -34,20 +34,28 @@ export async function GET() {
     const capitalGains = await scrapeCapitalGains(capitalGainsUrl);
     await saveToYaml({ capitalGainsRates: capitalGains }, 'capital_gains.yaml');
 
-    // 4. NYS Tax Rate Table Scraper
-    const nysTaxRatesUrl = process.env.NYS_TAX_RATES_URL;
-    if (!nysTaxRatesUrl) {
-      throw new Error('NYS_TAX_RATES_URL is not defined in environment variables');
+    // 4. State Tax Data Scraper
+    const stateTaxUrls = {
+      NY: process.env.NYS_TAX_RATES_URL,
+      NJ: process.env.NJ_TAX_RATES_URL,
+      CT: process.env.CT_TAX_RATES_URL
+    };
+
+    let stateTaxData = {};
+    for (const [stateCode, url] of Object.entries(stateTaxUrls)) {
+      if (url) {
+        const stateData = await scrapeStateTaxData(stateCode, url);
+        stateTaxData = { ...stateTaxData, ...stateData };
+      }
     }
-    const nysTaxRates = await scrapeNysTaxRates(nysTaxRatesUrl);
-    await saveToYaml({ nysTaxRates }, 'nys_tax_rate_schedules.yaml');
+    await saveToYaml(stateTaxData, 'state_tax_data.yaml');
 
     // Return all results
     return NextResponse.json({
-        taxBrackets,
-        standardDeductions,
-        capitalGains,
-        nysTaxRates
+      taxBrackets,
+      standardDeductions,
+      capitalGains,
+      stateTaxData
     });
 
   } catch (error) {
@@ -56,6 +64,7 @@ export async function GET() {
   }
 }
 
+// The actual tax calculations use the data from state_tax_data.yaml, not this scraping function
 async function scrapeTaxBrackets(url) {
   const { data: html } = await axios.get(url, {
     headers: {
@@ -265,73 +274,94 @@ async function scrapeCapitalGains(url) {
   }
 }
 
-// NY State Income Tax Tables
-async function scrapeNysTaxRates(url) {
+// IMPORTANT: This function is ONLY used to update state_tax_data.yaml
+// It scrapes state tax data from government websites and saves it to the YAML file
+// The actual tax calculations use the data from state_tax_data.yaml, not this scraping function
+// State Tax Data Scraper
+async function scrapeStateTaxData(stateCode, url) {
   try {
     const browser = await puppeteer.launch({
       headless: 'new'
     });
     const page = await browser.newPage();
     
-    // Navigate to the page and wait for it to load
     await page.goto(url, {
       waitUntil: 'networkidle0'
     });
 
-    // Wait for tables to be present
-    await page.waitForSelector('.tableborder');
+    // Wait for tax tables to be present
+    await page.waitForSelector('table');
 
-    const result = {};
+    const result = {
+      [stateCode]: {
+        [new Date().getFullYear()]: {
+          married_jointly_or_surviving_spouse: [],
+          single_or_married_separately: [],
+          head_of_household: []
+        }
+      }
+    };
 
     // Function to parse table data
-    const parseTable = async (tableId/*, label*/) => {
-      const data = await page.evaluate((selector) => {
-        const rows = document.querySelectorAll(`${selector} tbody tr`);
+    const parseTable = async (selector, filingStatus) => {
+      const data = await page.evaluate((sel) => {
+        const rows = document.querySelectorAll(`${sel} tbody tr`);
         const tableData = [];
         
-        // Skip first two header rows
-        for (let i = 2; i < rows.length; i++) {
+        for (let i = 0; i < rows.length; i++) {
           const cols = rows[i].querySelectorAll('td');
-          if (cols.length === 7) {
-            const over = cols[0].textContent.trim().replace('$', '').replace(/,/g, '');
-            const butNotOver = cols[1].textContent.trim();
-            const baseTax = cols[2].textContent.trim().replace('$', '').replace(/,/g, '') || '0';
+          if (cols.length >= 6) {
+            const over = cols[0].textContent.trim().replace(/[$,]/g, '');
+            const butNotOver = cols[1].textContent.trim().replace(/[$,]/g, '');
+            const baseTax = cols[2].textContent.trim().replace(/[$,]/g, '') || '0';
+            const plus = cols[3].textContent.trim() || null;
             const rate = cols[4].textContent.trim().replace('%', '');
-            const excessOver = cols[6].textContent.trim().replace('$', '').replace(/,/g, '') || '0';
+            const excessOver = cols[5].textContent.trim().replace(/[$,]/g, '') || '0';
 
-            tableData.push({
-              over: Number(over),
-              but_not_over: butNotOver === '----' ? null : Number(butNotOver.replace('$', '').replace(/,/g, '')),
-              base_tax: Number(baseTax),
-              plus: cols[3].textContent.trim() || null,
-              rate: Number(rate),
-              of_excess_over: Number(excessOver)
-            });
+            if (over && rate) {
+              tableData.push({
+                over: Number(over),
+                but_not_over: butNotOver === '----' ? null : Number(butNotOver),
+                base_tax: Number(baseTax),
+                plus: plus,
+                rate: Number(rate),
+                of_excess_over: Number(excessOver)
+              });
+            }
           }
         }
         return tableData;
-      }, `#${tableId}`);
+      }, selector);
 
       return data;
     };
 
-    // Parse each table
-    const tables = {
-      'table-28': 'married_jointly_or_surviving_spouse',
-      'table-29': 'single_or_married_separately',
-      'table-30': 'head_of_household'
-    };
+    // Try different table selectors
+    const selectors = [
+      'table.table',
+      'table.table-bordered',
+      'table.table-striped',
+      'table'
+    ];
 
-    for (const [tableId, label] of Object.entries(tables)) {
-      result[label] = await parseTable(tableId, label);
-      console.log(`Processed ${label}: ${result[label].length} entries`);
+    for (const selector of selectors) {
+      const marriedBrackets = await parseTable(selector, 'married_jointly_or_surviving_spouse');
+      const singleBrackets = await parseTable(selector, 'single_or_married_separately');
+      const headBrackets = await parseTable(selector, 'head_of_household');
+
+      if (marriedBrackets.length > 0 || singleBrackets.length > 0 || headBrackets.length > 0) {
+        result[stateCode][new Date().getFullYear()].married_jointly_or_surviving_spouse = marriedBrackets;
+        result[stateCode][new Date().getFullYear()].single_or_married_separately = singleBrackets;
+        result[stateCode][new Date().getFullYear()].head_of_household = headBrackets;
+        break;
+      }
     }
 
     await browser.close();
     return result;
 
   } catch (error) {
-    console.error('Error scraping tax rates:', error);
+    console.error(`Error scraping state tax data for ${stateCode}:`, error);
     throw error;
   }
 }
