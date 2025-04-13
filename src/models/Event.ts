@@ -9,7 +9,6 @@ const yearSchema = new Schema(
     type: {
       type: String,
       enum: ["fixed", "uniform", "normal", "event"],
-      required: true,
     },
     // For "fixed":
     year: { type: Number },
@@ -32,19 +31,17 @@ const eventTypeSchema = new Schema(
     type: {
       type: String,
       enum: ["income", "expense", "investment", "rebalance"],
-      required: true,
     },
 
     // Fields for IncomeEvent
-    amount: { type: Number, required: true },
+    amount: { type: Number },
     
     expectedAnnualChange: {
       type: {
         type: String,
         enum: ["fixed", "normal", "uniform"],
-        required: true,
       },
-      valueType: { type: String, enum: ["amount", "percentage"], required: true },
+      valueType: { type: String, enum: ["amount", "percentage"] },
       value: { type: Number },
       mean: { type: Number },
       stdDev: { type: Number },
@@ -65,7 +62,6 @@ const eventTypeSchema = new Schema(
         type: {
           type: String,
           enum: ["fixed", "glidePath"],
-          required: true,
         },
         investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
         percentages: [{ type: Number }],
@@ -73,7 +69,7 @@ const eventTypeSchema = new Schema(
         finalPercentage: [{ type: Number }],
       },
     ],
-    maximumCash: { type: Number, required: true },
+    maximumCash: { type: Number },
   },
   { _id: false }
 );
@@ -87,16 +83,15 @@ const eventSchema = new Schema(
       type: {
         type: String,
         enum: ["fixed", "normal", "uniform"],
-        required: true,
       },
-    valueType: { type: String, enum: ["amount"], required: true },
-    value: { type: Number, default: 85 },
-    mean: { type: Number, default: 85 },
-    stdDev: { type: Number, default: 5 },
-    min: { type: Number, default: 80 },
-    max: { type: Number, default: 90 },
+    valueType: { type: String, enum: ["amount"] },
+    value: { type: Number },
+    mean: { type: Number },
+    stdDev: { type: Number },
+    min: { type: Number },
+    max: { type: Number },
   },
-    eventType: { type: eventTypeSchema, required: true },
+    eventType: { type: eventTypeSchema },
   },
   { timestamps: true }
 );
