@@ -7,14 +7,14 @@
         "year": 2025
     },
     "duration": 20,
-    "durationType": "years",
     "eventType": {
         "type": "income",
         "amount": 70000,
         "inflationAdjustment": true,
         "expectedAnnualChange": {
             "type": "fixed",
-            "value": 1
+            "valueType": "percentage",
+            "value": 100
         }
     }
 }

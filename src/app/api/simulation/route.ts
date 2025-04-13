@@ -24,7 +24,6 @@ export async function POST(/*req: NextRequest*/) {
             console.log("Scenario found, running simulation...");
             // console.log(scenario);
             await simulation(scenario);
-            console.log(typeof scenario);
         }
         else{
             return NextResponse.json({ message: "Error: Scenario Not Found" });

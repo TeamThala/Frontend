@@ -7,7 +7,6 @@
         "year": 2025
     },
     "duration": 30,
-    "durationType": "years",
     "eventType": {
         "discretionary": false,
         "type": "expense",
@@ -15,7 +14,8 @@
         "inflationAdjustment": true,
         "expectedAnnualChange": {
             "type": "fixed",
-            "value": 1
+            "valueType": "percentage",
+            "value": 100
         }
     }
 }
