@@ -109,7 +109,7 @@ export async function simulation(scenario: Scenario){
             console.log("Error: Could not update income events.");
             return null;
         }
-        const curYearIncome = incomeResults.curYearIncome;
+        let curYearIncome = incomeResults.curYearIncome;
         const curYearSS = incomeResults.curYearSS;
         console.log(`Income for current year ${year}: ${curYearIncome}`);
         console.log(`Social Security for current year ${year}: ${curYearSS}`);
@@ -118,12 +118,13 @@ export async function simulation(scenario: Scenario){
         updateInvestmentEvent(currentInvestmentEvent, curYearIncome);
         // TODO: Run Roth conversion optimizer if enabled
         // TODO: Pay non-discretionary expenses and previous year's taxes
-        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
         if (nondiscExpenseRet === null){
             console.log(`Ending simulation run...`);
             return null;
         }
-        curYearGains += nondiscExpenseRet;
+        curYearGains += nondiscExpenseRet[0];
+        curYearIncome += nondiscExpenseRet[1];
 
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;

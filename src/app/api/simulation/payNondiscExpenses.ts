@@ -3,7 +3,7 @@ import { Investment } from "@/types/investment";
 import { getTaxData, getNumericRate } from "@/lib/taxData"
 import { findCashInvestment } from "./updateIncomeEvents";
 
-export function payNondiscExpenses(curYearIncome: number, curYearSS: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[]){
+export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[]){
     let prevYearTaxes: number = 0;
     const taxData = getTaxData();
     const fedTaxBrackets = married ? taxData.taxBrackets['married-joint'] : taxData.taxBrackets.single;
@@ -43,6 +43,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, yea
 
     // Withdraw until cash investment is 0
     let dCurYearGains = 0; // to return this change in curYearGains from withdrawing investments
+    let dCurYearIncome = 0; // to return this change in curYearIncome from withdrawing investments (cap gains on pre-tax investments)
     for(let i=0; i<expenseWithdrawalStrategy.length; i++){
         const investment = expenseWithdrawalStrategy[i];
         if (cashInvestment.value >= 0){ // withdraw until cash is 0
@@ -52,7 +53,13 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, yea
         if (investment.value > 0){
             const withdrawalAmount = Math.min(investment.value, -1 * cashInvestment.value);
             const f = withdrawalAmount / investment.value; // fraction of investment value withdrawn
-            dCurYearGains += f * (investment.value - investment.purchasePrice);
+            if (investment.taxStatus === "pre-tax"){
+                dCurYearIncome += f * (investment.value - investment.purchasePrice); // capital gains on pre-tax investments
+            }
+            else if (investment.taxStatus === "non-retirement"){
+                dCurYearGains += f * (investment.value - investment.purchasePrice);
+            }
+            // after-tax does not have taxes on capital gains
             investment.value -= withdrawalAmount;
             cashInvestment.value += withdrawalAmount;
             
@@ -66,5 +73,5 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, yea
         return null;
     }
 
-    return dCurYearGains;
+    return {dCurYearGains, dCurYearIncome};
 }
