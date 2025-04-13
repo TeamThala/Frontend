@@ -10,25 +10,36 @@ import puppeteer from 'puppeteer';
 export async function GET() {
   try {
     // 1. Tax Brackets Scraper
-    const taxBracketsUrl = 'https://www.irs.gov/filing/federal-income-tax-rates-and-brackets';
-    const labels = ["rate", "from", "upto"];
-    const mainLabels = ["single", "married-joint", "married-separate", "head-of-household"];
+    const taxBracketsUrl = process.env.TAX_BRACKETS_URL;
+    if (!taxBracketsUrl) {
+      throw new Error('TAX_BRACKETS_URL is not defined in environment variables');
+    }
     
-    const taxBrackets = await scrapeTaxBrackets(taxBracketsUrl, labels, mainLabels);
+    const taxBrackets = await scrapeTaxBrackets(taxBracketsUrl);
     await saveToYaml(taxBrackets, 'tax_brackets.yaml');
 
     // 2. Standard Deductions Scraper
-    const deductionsUrl = 'https://www.irs.gov/publications/p17#en_US_2024_publink1000283782';
+    const deductionsUrl = process.env.STANDARD_DEDUCTIONS_URL;
+    if (!deductionsUrl) {
+      throw new Error('STANDARD_DEDUCTIONS_URL is not defined in environment variables');
+    }
     const standardDeductions = await scrapeStandardDeductions(deductionsUrl);
     await saveToYaml({ standardDeductions }, 'standard_deductions.yaml');
 
     // 3. Capital Gains Scraper
-    const capitalGainsUrl = 'https://www.irs.gov/taxtopics/tc409';
+    const capitalGainsUrl = process.env.CAPITAL_GAINS_URL;
+    if (!capitalGainsUrl) {
+      throw new Error('CAPITAL_GAINS_URL is not defined in environment variables');
+    }
     const capitalGains = await scrapeCapitalGains(capitalGainsUrl);
     await saveToYaml({ capitalGainsRates: capitalGains }, 'capital_gains.yaml');
 
     // 4. NYS Tax Rate Table Scraper
-    const nysTaxRates = await scrapeNysTaxRates();
+    const nysTaxRatesUrl = process.env.NYS_TAX_RATES_URL;
+    if (!nysTaxRatesUrl) {
+      throw new Error('NYS_TAX_RATES_URL is not defined in environment variables');
+    }
+    const nysTaxRates = await scrapeNysTaxRates(nysTaxRatesUrl);
     await saveToYaml({ nysTaxRates }, 'nys_tax_rate_schedules.yaml');
 
     // Return all results
@@ -41,11 +52,11 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error in main scraper:', error);
-    return NextResponse.json({ error: 'Failed to scrape data' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to scrape data' }, { status: 500 });
   }
 }
 
-async function scrapeTaxBrackets(url, labels, mainLabels) {
+async function scrapeTaxBrackets(url) {
   const { data: html } = await axios.get(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -53,49 +64,68 @@ async function scrapeTaxBrackets(url, labels, mainLabels) {
   });
 
   const $ = cheerio.load(html);
-  const table = $('table.table.complex-table.table-striped.table-bordered.table-responsive');
-  const result = {};
-  let currentMainLabel = mainLabels[0];
-  let currentIndex = 0;
+  const taxBrackets = {
+    single: [],
+    'married-joint': [],
+    'married-separate': [],
+    'head-of-household': []
+  };
 
-  table.find('tbody tr').each((i, tr) => {
-    const row = {};
-    const cells = $(tr).find('td');
-    
-    if (cells.length > 0) {
-      cells.each((j, td) => {
-        const cellText = $(td).text().trim();
-        if (cellText) {
-          row[labels[j]] = cellText;
+  // Find all tax rate tables
+  const tables = $('table.table.complex-table.table-striped.table-bordered.table-responsive');
+  
+  if (tables.length === 0) {
+    console.error('No tax rate tables found');
+    return taxBrackets;
+  }
+
+  // Process each table
+  tables.each((tableIndex, table) => {
+    const rows = $(table).find('tbody tr');
+    const currentBrackets = [];
+
+    rows.each((rowIndex, row) => {
+      const cells = $(row).find('td');
+      if (cells.length === 3) { // Ensure it's a data row
+        const rate = $(cells[0]).text().trim();
+        const from = $(cells[1]).text().trim();
+        const upto = $(cells[2]).text().trim();
+
+        if (rate && from && upto) {
+          currentBrackets.push({
+            rate,
+            from,
+            upto
+          });
         }
-      });
+      }
+    });
 
-      if (Object.keys(row).length > 0) {
-        if (!result[currentMainLabel]) {
-          result[currentMainLabel] = [];
-        }
-
-        const currentSection = result[currentMainLabel];
-        const has10PercentRate = currentSection.some(item => item.rate === "10%");
-        const previousRate = currentSection.length > 0 ? 
-          currentSection[currentSection.length - 1].rate : null;
-
-        if (row.rate === "10%" && (has10PercentRate || previousRate === "37%")) {
-          currentIndex++;
-          if (currentIndex < mainLabels.length) {
-            currentMainLabel = mainLabels[currentIndex];
-            if (!result[currentMainLabel]) {
-              result[currentMainLabel] = [];
-            }
-          }
-        }
-
-        result[currentMainLabel].push(row);
+    // Assign the brackets to the appropriate category based on the table index
+    if (currentBrackets.length > 0) {
+      switch (tableIndex) {
+        case 0:
+          taxBrackets.single = currentBrackets;
+          break;
+        case 1:
+          taxBrackets['married-joint'] = currentBrackets;
+          break;
+        case 2:
+          taxBrackets['married-separate'] = currentBrackets;
+          break;
+        case 3:
+          taxBrackets['head-of-household'] = currentBrackets;
+          break;
       }
     }
   });
 
-  return result;
+  // Log the number of brackets found for each category
+  Object.entries(taxBrackets).forEach(([key, brackets]) => {
+    console.log(`Found ${brackets.length} brackets for ${key}`);
+  });
+
+  return taxBrackets;
 }
 
 async function scrapeStandardDeductions(url) {
@@ -116,6 +146,7 @@ async function scrapeStandardDeductions(url) {
 
   return result;
 }
+
 
 async function scrapeCapitalGains(url) {
   try {
@@ -235,7 +266,7 @@ async function scrapeCapitalGains(url) {
 }
 
 // NY State Income Tax Tables
-async function scrapeNysTaxRates() {
+async function scrapeNysTaxRates(url) {
   try {
     const browser = await puppeteer.launch({
       headless: 'new'
@@ -243,7 +274,7 @@ async function scrapeNysTaxRates() {
     const page = await browser.newPage();
     
     // Navigate to the page and wait for it to load
-    await page.goto('https://www.tax.ny.gov/forms/current-forms/it/it201i.htm#nys-tax-rate-schedule', {
+    await page.goto(url, {
       waitUntil: 'networkidle0'
     });
 

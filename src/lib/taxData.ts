@@ -9,12 +9,14 @@ import path from 'path';
 //   rate: number;
 // }
 
+// Standard deductions with exact IRS terminology
 interface StandardDeductions {
-  'Single': number; 
+  'Single': number;
   'Married Filing Jointly': number;
   'Head of Household': number;
 }
 
+// Capital gains structure
 interface CapitalGainsData {
   zeroPercent: Array<{ status: string; threshold: string }>;
   fifteenPercent: Array<{ status: string; range: { from: string; to: string } }>;
@@ -26,6 +28,7 @@ interface CapitalGainsData {
   };
 }
 
+// NY State tax bracket structure
 interface NYSTaxBracket {
   over: number;
   but_not_over: number | null;
