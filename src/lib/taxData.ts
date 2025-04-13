@@ -2,19 +2,21 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
 
-// Match the scraped data structure
+// Basic tax bracket structure
 interface TaxBracket {
   lowerBound: number;
   upperBound: number;
   rate: number;
 }
 
+// Standard deductions with exact IRS terminology
 interface StandardDeductions {
-  'Single': number; 
+  'Single': number;
   'Married Filing Jointly': number;
   'Head of Household': number;
 }
 
+// Capital gains structure
 interface CapitalGainsData {
   zeroPercent: Array<{ status: string; threshold: string }>;
   fifteenPercent: Array<{ status: string; range: { from: string; to: string } }>;
@@ -26,6 +28,7 @@ interface CapitalGainsData {
   };
 }
 
+// NY State tax bracket structure
 interface NYSTaxBracket {
   over: number;
   but_not_over: number | null;
