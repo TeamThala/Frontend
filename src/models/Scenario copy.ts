@@ -1,12 +1,5 @@
 import { Schema, model, models } from "mongoose";
-import "@/models/Investment";
-import "@/models/Event";
-import "@/models/User";
-import "@/models/InvestmentType";
-/**
- * Sub-schemas for distribution-like fields:
- * (FixedValues, NormalDistributionValues, UniformDistributionValues)
- */
+
 const scenarioSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String, default: "" },
@@ -68,4 +61,6 @@ const scenarioSchema = new Schema({
 });
 
 const Scenario = models.Scenario || model("Scenario", scenarioSchema);
+
 export default Scenario;
+

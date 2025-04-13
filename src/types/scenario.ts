@@ -1,8 +1,11 @@
 import { Investment } from "./investment";
 import { User } from "./user";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "./utils";
+import { Event } from "./event";
 
 export type Scenario = SingleScenario | CoupleScenario;
+
+// Event is the most specific version (in event vs. investmentEvent vs. investment)
 
 export interface BaseScenario {
     _id?: string;
@@ -11,13 +14,13 @@ export interface BaseScenario {
     description: string;
     financialGoal: number;
     investments: Investment[];
-    eventSeries: Event[];
-    spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expenses
-    expenseWithdrawalStrategy: Event[]; // * Assume this is sorted and only contains Investment Events
+    eventSeries: Event[]; // all events in the scenario
+    spendingStrategy: Event[]; // * Assume this is sorted and only contains discretionary expense events
+    expenseWithdrawalStrategy: Investment[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
     RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
     RMDStrategy: Investment[]; // Todo: Add RMD Strategy
-    rothConversion: WithRothConversion | WithoutRothConversion;
+    rothConversion: WithRothConversion | null;
     residenceState: string
     owner: User;
     ownerBirthYear: number;
@@ -40,7 +43,7 @@ export type LifeExpectancy = FixedValues | NormalDistributionValues;
 
 // Scenario where there is only one user
 export interface SingleScenario extends BaseScenario {
-    type: "single";
+    type: "individual";
 }
 
 // Scenario where there is a couple (user + spouse)
@@ -63,9 +66,9 @@ interface WithRothConversion {
     RothConversionEndYear: number;
 }
 
-interface WithoutRothConversion {
-    rothConversion: false;
-    RothConversionStartYear?: never;
-    RothConversionEndYear?: never;
-    RothConversionStrategy?: never;
-}
+// interface WithoutRothConversion {
+//     rothConversion: false;
+//     RothConversionStartYear?: never;
+//     RothConversionEndYear?: never;
+//     RothConversionStrategy?: never;
+// }

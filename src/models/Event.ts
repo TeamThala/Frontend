@@ -36,23 +36,26 @@ const eventTypeSchema = new Schema(
     },
 
     // Fields for IncomeEvent
-    amount: { type: Number },
+    amount: { type: Number, required: true },
+    
     expectedAnnualChange: {
       type: {
         type: String,
         enum: ["fixed", "normal", "uniform"],
+        required: true,
       },
-      valueType: { type: String, enum: ["amount", "percentage"] },
+      valueType: { type: String, enum: ["amount", "percentage"], required: true },
       value: { type: Number },
       mean: { type: Number },
       stdDev: { type: Number },
       min: { type: Number },
       max: { type: Number },
     },
-    inflationAdjustment: { type: Boolean },
+    inflationAdjustment: { type: Boolean, default: true },
     percentageOfIncome: { type: Number },
-    socialSecurity: { type: Boolean },
-
+    socialSecurity: { type: Boolean, default: false },
+    wage: { type: Boolean, default: true },
+    
     // Fields for ExpenseEvent
     discretionary: { type: Boolean },
 
@@ -62,14 +65,15 @@ const eventTypeSchema = new Schema(
         type: {
           type: String,
           enum: ["fixed", "glidePath"],
+          required: true,
         },
-        investment: { type: Schema.Types.ObjectId, ref: "Investment" },
-        percentage: { type: Number },
-        initialPercentage: { type: Number },
-        finalPercentage: { type: Number },
+        investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
+        percentages: [{ type: Number }],
+        initialPercentage: [{ type: Number }],
+        finalPercentage: [{ type: Number }],
       },
     ],
-    maximumCash: { type: Number },
+    maximumCash: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -79,7 +83,19 @@ const eventSchema = new Schema(
     name: { type: String, required: true },
     description: { type: String },
     startYear: { type: yearSchema, required: true },
-    duration: { type: yearSchema },
+    duration: { 
+      type: {
+        type: String,
+        enum: ["fixed", "normal", "uniform"],
+        required: true,
+      },
+    valueType: { type: String, enum: ["amount"], required: true },
+    value: { type: Number, default: 85 },
+    mean: { type: Number, default: 85 },
+    stdDev: { type: Number, default: 5 },
+    min: { type: Number, default: 80 },
+    max: { type: Number, default: 90 },
+  },
     eventType: { type: eventTypeSchema, required: true },
   },
   { timestamps: true }

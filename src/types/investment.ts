@@ -5,15 +5,16 @@ export interface Investment {
     value: number;
     investmentType: InvestmentType;
     taxStatus: "non-retirement" | "pre-tax" | "after-tax";
+    purchasePrice: number
 }
 
-interface InvestmentType {
+export interface InvestmentType {
     id: string;
     name: string;
     description: string;
-    expectedAnnualReturn: FixedValues | NormalDistributionValues;
+    expectedAnnualReturn: FixedValues | NormalDistributionValues | null;
     expenseRatio: number;
-    expectedAnnualIncome: FixedValues | NormalDistributionValues;
+    expectedAnnualIncome: FixedValues | NormalDistributionValues | null;
     taxability: boolean;
 }
 

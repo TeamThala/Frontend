@@ -2,12 +2,12 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
 
-// Basic tax bracket structure
-interface TaxBracket {
-  lowerBound: number;
-  upperBound: number;
-  rate: number;
-}
+// Match the scraped data structure
+// interface TaxBracket {
+//   lowerBound: number;
+//   upperBound: number;
+//   rate: number;
+// }
 
 // Standard deductions with exact IRS terminology
 interface StandardDeductions {

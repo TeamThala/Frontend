@@ -284,7 +284,7 @@ async function scrapeNysTaxRates(url) {
     const result = {};
 
     // Function to parse table data
-    const parseTable = async (tableId, label) => {
+    const parseTable = async (tableId/*, label*/) => {
       const data = await page.evaluate((selector) => {
         const rows = document.querySelectorAll(`${selector} tbody tr`);
         const tableData = [];
