@@ -4,7 +4,7 @@ import "@/models/User";
 import "@/models/Scenario";
 const investmentSchema = new Schema(
   {
-    value: { type: Number, required: true },
+    value: { type: Number, required: true, default: 0 },
     investmentType: {
       type: Schema.Types.ObjectId,
       ref: "InvestmentType",
@@ -15,6 +15,7 @@ const investmentSchema = new Schema(
       enum: ["non-retirement", "pre-tax", "after-tax"],
       required: true,
     },
+    purchasePrice: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 );

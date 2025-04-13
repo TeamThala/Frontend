@@ -13,16 +13,19 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "percentage",
+                    "value": 100
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "amount",
+                    "value": 0
                 },
                 "taxability": true
             },
-            "taxStatus": "non-retirement"
+            "taxStatus": "non-retirement",
+            "purchasePrice": 0
         }
     ],
     "eventSeries":[
@@ -38,7 +41,6 @@
                 "type": "fixed",
                 "year": 99
             },
-            "durationType": "years",
             "eventType": {
                 "type": "investment",
                 "inflationAdjustment": true,
@@ -54,16 +56,19 @@
                                 "description": "Default cash investment",
                                 "expectedAnnualReturn": {
                                     "type": "fixed",
-                                    "value": 1
+                                    "valueType": "percentage",
+                                    "value": 100
                                 },
                                 "expenseRatio": 0,
                                 "expectedAnnualIncome": {
                                     "type": "fixed",
-                                    "value": 1
+                                    "valueType": "amount",
+                                    "value": 0
                                 },
                                 "taxability": true
                             },
-                            "taxStatus": "non-retirement"
+                            "taxStatus": "non-retirement",
+                            "purchasePrice": 0
                         }
                     ],
                     "percentages": [100]
@@ -83,7 +88,6 @@
                 "type": "fixed",
                 "year": 30
             },
-            "durationType": "years",
             "eventType": {
                 "discretionary": false,
                 "type": "expense",
@@ -91,7 +95,8 @@
                 "inflationAdjustment": true,
                 "expectedAnnualChange": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "percentage",
+                    "value": 100
                 }
             }
         },
@@ -107,7 +112,6 @@
                 "type": "fixed",
                 "year": 10
             },
-            "durationType": "years",
             "eventType": {
                 "type": "income",
                 "amount": 70000,
@@ -116,7 +120,8 @@
                 "wage": true,
                 "expectedAnnualChange": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "percentage",
+                    "value": 100
                 }    
             }
         }
@@ -132,21 +137,25 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "percentage",
+                    "value": 100
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "amount",
+                    "value": 0
                 },
                 "taxability": true
             },
-            "taxStatus": "non-retirement"
+            "taxStatus": "non-retirement",
+            "purchasePrice": 0
         }
     ],
     "inflationRate": {
         "type": "fixed",
-        "value": 0
+        "valueType": "percentage",
+        "value": 100
     },
     "RothConversionStrategy": [],
     "RMDStrategy": [
@@ -159,16 +168,19 @@
                 "description": "Default cash investment",
                 "expectedAnnualReturn": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "percentage",
+                    "value": 100
                 },
                 "expenseRatio": 0,
                 "expectedAnnualIncome": {
                     "type": "fixed",
-                    "value": 1
+                    "valueType": "amount",
+                    "value": 0
                 },
                 "taxability": true
             },
-            "taxStatus": "non-retirement"
+            "taxStatus": "non-retirement",
+            "purchasePrice": 0
         }
     ],
     "rothConversion": null,
@@ -185,9 +197,11 @@
     "ownerBirthYear": 1980,
     "ownerLifeExpectancy": {
         "type": "fixed",
+        "valueType": "amount",
         "value": 85
     },
     "viewPermissions": [],
     "editPermissions": [],
-    "updatedAt": "2023-10-05T14:30:00Z"
+    "updatedAt": "2023-10-05T14:30:00Z",
+    "type": "individual"
 }
