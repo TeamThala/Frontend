@@ -3,18 +3,18 @@ import "@/models/Event";
 import "@/models/User";
 import "@/models/Scenario";
 import "@/models/Investment";
+
 const investmentTypeSchema = new Schema(
   {
-    name: { type: String, required: true },
-    description: { type: String },
-    // We store either "fixed" or "normal" in the same field
+    name: { type: String, required: true, default: "Cash" },
+    description: { type: String, default: "Cash account" },
     expectedAnnualReturn: {
       type: {
         type: String,
-        enum: ["fixed", "normal", "uniform"], // Add more if needed
+        enum: ["fixed", "normal", "uniform"],
         required: true,
       },
-      valueType: { type: String, enum: ["amount", "percentage"] },
+      valueType: { type: String, enum: ["amount", "percentage"], required: true },
       value: { type: Number },
       mean: { type: Number },
       stdDev: { type: Number },
@@ -28,7 +28,7 @@ const investmentTypeSchema = new Schema(
         enum: ["fixed", "normal", "uniform"],
         required: true,
       },
-      valueType: { type: String, enum: ["amount", "percentage"] },
+      valueType: { type: String, enum: ["amount", "percentage"], required: true },
       value: { type: Number },
       mean: { type: Number },
       stdDev: { type: Number },

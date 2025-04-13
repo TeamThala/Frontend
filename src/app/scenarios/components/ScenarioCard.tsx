@@ -127,7 +127,7 @@ export default function ScenarioCard({ scenario, accessType }: { scenario: Scena
               {scenario.name}
             </CardTitle>
             <div className="px-2 py-1 bg-zinc-900 rounded text-sm border border-[#8F4DA2]">
-              {scenario.type === "single" ? "Single" : "Married"}
+              {scenario.type === "individual" ? "Single" : "Couple"}
             </div>
           </div>
         </CardHeader>
@@ -214,7 +214,7 @@ export default function ScenarioCard({ scenario, accessType }: { scenario: Scena
 
       <ShareScenarioModal
         open={shareOpen}
-        onClose={() => setShareOpen(false)}
+        onOpenChange={setShareOpen}
         scenarioId={scenario._id as string}
       />
     </>
