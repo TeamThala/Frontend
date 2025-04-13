@@ -4,17 +4,16 @@ import "@/models/User";
 import "@/models/Scenario";
 const investmentSchema = new Schema(
   {
-    value: { type: Number, required: true },
+    value: { type: Number, required: true, default: 0 },
     investmentType: {
       type: Schema.Types.ObjectId,
-      ref: "InvestmentType",
-      required: true,
+      ref: "InvestmentType"
     },
     taxStatus: {
       type: String,
       enum: ["non-retirement", "pre-tax", "after-tax"],
-      required: true,
     },
+    purchasePrice: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

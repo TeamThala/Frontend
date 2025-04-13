@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import ScenarioCard from "./components/ScenarioCard";
 import ScenarioSkeleton from "./components/ScenarioSkeleton";
 import { Scenario } from "@/types/scenario"; 
+import ImportScenarioDialog from "@/components/import-scenario-dialog";
+import CreateScenarioDialog from "@/components/create-scenario-dialog";
 
 export default function ScenariosPage() {
   const [isGuest, setIsGuest] = useState(false);
@@ -13,6 +14,8 @@ export default function ScenariosPage() {
   const [readScenarios, setReadScenarios] = useState<Scenario[]>([]);
   const [readWriteScenarios, setReadWriteScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFirstScenarioDialogOpen, setIsFirstScenarioDialogOpen] = useState(false);
   
   useEffect(() => {
     // Ensure the page has a black background
@@ -22,7 +25,7 @@ export default function ScenariosPage() {
     
     const fetchScenarios = async () => {
       try {
-        const response = await fetch('/api/senarios');
+        const response = await fetch('/api/scenarios');
         if (!response.ok) {
           if (response.status === 401) {
             // TODO: Get from local storage
@@ -70,20 +73,16 @@ export default function ScenariosPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-white">Scenarios</h1>
         <div className="flex gap-4">
-          <Link href="/scenarios/create">
+          <CreateScenarioDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <Button className="bg-purple-600 hover:bg-purple-700">
               Create a Scenario
             </Button>
-          </Link>
-          <Button 
-            className="bg-purple-600 hover:bg-purple-700"
-            onClick={() => {
-              alert("Import functionality will be implemented here");
-              // setShowImportDialog(true);
-            }}
-          >
-            Import a Scenario
-          </Button>
+          </CreateScenarioDialog>
+          <ImportScenarioDialog>
+            <Button className="bg-purple-600 hover:bg-purple-700">
+              Import a Scenario
+            </Button>
+          </ImportScenarioDialog>
         </div>
       </div>
 
@@ -100,11 +99,15 @@ export default function ScenariosPage() {
           ) : (
             <p className="text-white text-lg mb-4">No scenarios found.</p>
           )}
-          <Link href="/scenarios/create">
+          <CreateScenarioDialog 
+            open={isFirstScenarioDialogOpen} 
+            onOpenChange={setIsFirstScenarioDialogOpen}
+            title="Create Your First Scenario"
+          >
             <Button className="bg-purple-600 hover:bg-purple-700">
               Create Your First Scenario {isGuest ? "as a guest (won't be saved)" : ""}
             </Button>
-          </Link>
+          </CreateScenarioDialog>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

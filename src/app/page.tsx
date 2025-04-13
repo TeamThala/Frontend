@@ -1,7 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Jacques_Francois_Shadow } from "next/font/google";
+import { Button } from "@/components/ui/button";
+import ImportScenarioDialog from "@/components/import-scenario-dialog";
+import CreateScenarioDialog from "@/components/create-scenario-dialog";
 
 const jacquesFrancoisShadow = Jacques_Francois_Shadow({
   weight: "400",
@@ -23,18 +25,16 @@ export default function Home() {
 
         {/* CTA Buttons */}
         <div className="mt-12 flex gap-6">
-          <Link
-            href="/scenarios/create"
-            className="px-8 py-4 bg-[#7F56D9] text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-[#6b46c1] transition"
-          >
-            Create a Scenario
-          </Link>
-          <Link
-            href="/import-scenario"
-            className="px-8 py-4 bg-[#7F56D9] text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-[#6b46c1] transition"
-          >
-            Import a Scenario
-          </Link>
+          <CreateScenarioDialog>
+            <Button className="px-8 py-4 bg-[#7F56D9] text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-[#6b46c1] transition">
+              Create a Scenario
+            </Button>
+          </CreateScenarioDialog>
+          <ImportScenarioDialog>
+            <Button className="px-8 py-4 bg-[#7F56D9] text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-[#6b46c1] transition">
+              Import a Scenario
+            </Button>
+          </ImportScenarioDialog>
         </div>
       </div>
     </div>

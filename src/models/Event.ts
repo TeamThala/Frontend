@@ -9,7 +9,6 @@ const yearSchema = new Schema(
     type: {
       type: String,
       enum: ["fixed", "uniform", "normal", "event"],
-      required: true,
     },
     // For "fixed":
     year: { type: Number },
@@ -32,11 +31,11 @@ const eventTypeSchema = new Schema(
     type: {
       type: String,
       enum: ["income", "expense", "investment", "rebalance"],
-      required: true,
     },
 
     // Fields for IncomeEvent
     amount: { type: Number },
+    
     expectedAnnualChange: {
       type: {
         type: String,
@@ -49,11 +48,11 @@ const eventTypeSchema = new Schema(
       min: { type: Number },
       max: { type: Number },
     },
-    inflationAdjustment: { type: Boolean },
+    inflationAdjustment: { type: Boolean, default: true },
     percentageOfIncome: { type: Number },
-    socialSecurity: { type: Boolean },
-    wage: { type: Boolean },
-
+    socialSecurity: { type: Boolean, default: false },
+    wage: { type: Boolean, default: true },
+    
     // Fields for ExpenseEvent
     discretionary: { type: Boolean },
 
@@ -64,10 +63,10 @@ const eventTypeSchema = new Schema(
           type: String,
           enum: ["fixed", "glidePath"],
         },
-        investment: { type: Schema.Types.ObjectId, ref: "Investment" },
-        percentage: { type: Number },
-        initialPercentage: { type: Number },
-        finalPercentage: { type: Number },
+        investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
+        percentages: [{ type: Number }],
+        initialPercentage: [{ type: Number }],
+        finalPercentage: [{ type: Number }],
       },
     ],
     maximumCash: { type: Number },
@@ -80,8 +79,19 @@ const eventSchema = new Schema(
     name: { type: String, required: true },
     description: { type: String },
     startYear: { type: yearSchema, required: true },
-    duration: { type: yearSchema },
-    eventType: { type: eventTypeSchema, required: true },
+    duration: { 
+      type: {
+        type: String,
+        enum: ["fixed", "normal", "uniform"],
+      },
+    valueType: { type: String, enum: ["amount"] },
+    value: { type: Number },
+    mean: { type: Number },
+    stdDev: { type: Number },
+    min: { type: Number },
+    max: { type: Number },
+  },
+    eventType: { type: eventTypeSchema },
   },
   { timestamps: true }
 );

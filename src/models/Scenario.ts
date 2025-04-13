@@ -7,97 +7,63 @@ import "@/models/InvestmentType";
  * Sub-schemas for distribution-like fields:
  * (FixedValues, NormalDistributionValues, UniformDistributionValues)
  */
-const distributionSchema = new Schema(
-  {
+const scenarioSchema = new Schema({
+  name: { type: String, required: true },
+  description: { type: String, default: "" },
+  financialGoal: { type: Number, default: 0 },
+  investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
+  eventSeries: [{ type: Schema.Types.ObjectId, ref: "Event" }],
+  spendingStrategy: [{ type: Schema.Types.ObjectId, ref: "Event" }], // only discretionary events
+  expenseWithdrawalStrategy: [{ type: Schema.Types.ObjectId, ref: "Investment" }], // only investment events
+  inflationRate: { 
     type: {
-      type: String,
-      enum: ["fixed", "normal", "uniform"],
-      required: true,
-    },
-    valueType: { type: String, enum: ["amount", "percentage", "year"] },
-    // For "fixed":
-    value: { type: Number },
-    // For "normal":
-    mean: { type: Number },
-    stdDev: { type: Number },
-    // For "uniform":
-    min: { type: Number },
-    max: { type: Number },
-  },
-  { _id: false }
-);
-
-// RothConversion subdoc
-const rothConversionStrategySchema = new Schema(
-  {
-    startYear: { type: Number, required: true },
-    endYear: { type: Number, required: true },
-    investmentOrder: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
-    maxTaxBracket: { type: Number }, // optional
-  },
-  { _id: false }
-);
-
-// RMD subdoc
-const rmdSchema = new Schema(
-  {
-    startAge: { type: Number, required: true },
-    investmentOrder: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
-    percentage: {
-      type: {
         type: String,
         enum: ["fixed", "normal", "uniform"],
       },
-      valueType: { type: String, enum: ["amount", "percentage"] },
-      value: { type: Number },
-      mean: { type: Number },
-      stdDev: { type: Number },
-      min: { type: Number },
-      max: { type: Number },
+      valueType: { type: String, enum: ["percentage"] },
+      value: { type: Number},
+      mean: { type: Number},
+      stdDev: { type: Number},
+      min: { type: Number},
+      max: { type: Number},
     },
-  },
-  { _id: false }
-);
-
-// Subdoc for WithRothConversion or WithoutRothConversion
-const withOrWithoutRothSchema = new Schema(
-  {
-    rothConversion: { type: Boolean, required: true },
-    RothConversionStartYear: { type: Number },
-    RothConversionEndYear: { type: Number },
-  },
-  { _id: false }
-);
-
-const scenarioSchema = new Schema(
-  {
-    type: { type: String, enum: ["single", "married"], required: true },
-    name: { type: String, required: true },
-    description: { type: String },
-    financialGoal: { type: Number, required: true },
-    investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
-    eventSeries: [{ type: Schema.Types.ObjectId, ref: "Event" }],
-    spendingStrategy: [{ type: Schema.Types.ObjectId, ref: "Event" }], // only discretionary events
-    expenseWithdrawalStrategy: [{ type: Schema.Types.ObjectId, ref: "Event" }], // only investment events
-    inflationRate: { type: distributionSchema, required: true },
-    RothConversionStrategy: [rothConversionStrategySchema],
-    RMDStrategy: [rmdSchema],
-    rothConversion: { type: withOrWithoutRothSchema, required: true },
-    residenceState: { type: String },
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    viewPermissions: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    editPermissions: [{ type: Schema.Types.ObjectId, ref: "User" }],
-
-    // single scenario
-    userBirthYear: { type: Number },
-    userLifeExpectancy: { type: distributionSchema },
-
-    // couple scenario
-    spouseBirthYear: { type: Number },
-    spouseLifeExpectancy: { type: distributionSchema },
-  },
-  { timestamps: true }
-);
+  RothConversionStrategy: [{ type: Schema.Types.ObjectId, ref: "RothConversionStrategy" }],
+  //RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "RMDStrategy" }],
+  //rothConversion: { type: Object, default: null },
+  residenceState: { type: String, default: "NY" },
+  owner: { type: Schema.Types.ObjectId, ref: "User", default: "Guest" },
+  ownerBirthYear: { type: Number, default: 2000 },
+  ownerLifeExpectancy: { 
+    type: {
+        type: String,
+        enum: ["fixed", "normal", "uniform"],
+    },
+    valueType: { type: String, enum: ["amount"] },
+    value: { type: Number},
+    mean: { type: Number},
+    stdDev: { type: Number},
+    min: { type: Number},
+    max: { type: Number},
+    },
+  viewPermissions: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  editPermissions: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  updatedAt: { type: Date, default: Date.now },
+  type: { type: String, default: "individual", enum: ["individual", "couple"]},
+  spouseBirthYear: { type: Number },
+  spouseLifeExpectancy: { 
+    type: {
+        type: String,
+        enum: ["fixed", "normal", "uniform"],
+      },
+      valueType: { type: String, enum: ["amount"] },
+      value: { type: Number},
+      mean: { type: Number},
+      stdDev: { type: Number},
+      min: { type: Number},
+      max: { type: Number},
+    },
+    step: { type: Number, default: 0 },
+});
 
 const Scenario = models.Scenario || model("Scenario", scenarioSchema);
 export default Scenario;
