@@ -7,14 +7,17 @@
         "description": "Default cash investment",
         "expectedAnnualReturn": {
             "type": "fixed",
-            "value": 1
+            "valueType": "percentage",
+            "value": 100
         },
         "expenseRatio": 0,
         "expectedAnnualIncome": {
             "type": "fixed",
-            "value": 1
+            "valueType": "amount",
+            "value": 0
         },
         "taxability": true
     },
-    "taxStatus": "non-retirement"
+    "taxStatus": "non-retirement",
+    "purchasePrice": 0
 }

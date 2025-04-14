@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle } from "lucide-react";
 
 interface CreateScenarioDialogProps {
   children: React.ReactNode;
@@ -30,24 +31,54 @@ export default function CreateScenarioDialog({
 }: CreateScenarioDialogProps) {
   const [scenarioName, setScenarioName] = useState("");
   const [scenarioDescription, setScenarioDescription] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleCreateScenario = (e: React.FormEvent) => {
+  const handleCreateScenario = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setError(null);
     
-    // Navigate to create page with query params
-    router.push(`/scenarios/create?name=${encodeURIComponent(scenarioName)}&description=${encodeURIComponent(scenarioDescription)}`);
-    
-    // Reset form and close dialog
-    resetForm();
-    if (onOpenChange) {
-      onOpenChange(false);
+    try {
+      const response = await fetch('/api/scenarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: scenarioName,
+          description: scenarioDescription,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.scenario) {
+        // Navigate to the created scenario page
+        router.push(`/scenarios/${data.scenario._id}`);
+        
+        // Reset form and close dialog
+        resetForm();
+        if (onOpenChange) {
+          onOpenChange(false);
+        }
+      } else {
+        console.error('Failed to create scenario:', data.error);
+        setError(data.error || 'Failed to create scenario');
+      }
+    } catch (error) {
+      console.error('Error creating scenario:', error);
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const resetForm = () => {
     setScenarioName("");
     setScenarioDescription("");
+    setError(null);
   };
 
   return (
@@ -63,6 +94,12 @@ export default function CreateScenarioDialog({
           <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleCreateScenario} className="space-y-4 py-4">
+          {error && (
+            <div className="bg-red-900/30 border border-red-600 p-3 rounded-md flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-300">{error}</p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-white">Scenario Name</Label>
             <Input 
@@ -88,9 +125,9 @@ export default function CreateScenarioDialog({
             <Button 
               type="submit" 
               className="bg-purple-600 hover:bg-purple-700 w-full"
-              disabled={!scenarioName}
+              disabled={!scenarioName || isLoading}
             >
-              Create Scenario
+              {isLoading ? "Creating..." : "Create Scenario"}
             </Button>
           </DialogFooter>
         </form>

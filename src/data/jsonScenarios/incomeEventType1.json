@@ -6,6 +6,7 @@
     "wage": true,
     "expectedAnnualChange": {
         "type": "fixed",
-        "value": 1
+        "valueType": "percentage",
+        "value": 100
     }    
 }

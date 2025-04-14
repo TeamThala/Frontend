@@ -13,8 +13,6 @@ import Investment from "@/models/Investment";
 import InvestmentType from "@/models/InvestmentType";
 import Event from "@/models/Event";
 import type { ScenarioFormData } from "@/app/scenarios/create/page";
-import { Event as EventType } from '@/types/event';
-
 export async function GET() {
   try {
     await dbConnect();

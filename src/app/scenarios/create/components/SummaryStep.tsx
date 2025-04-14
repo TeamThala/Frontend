@@ -13,7 +13,7 @@ export default function SummaryStep({ scenarioData }: { scenarioData: ScenarioFo
             setIsLoading(true);
             setError(null);
             
-            const response = await fetch("/api/senarios", {
+            const response = await fetch("/api/scenarios", {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json'

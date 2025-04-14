@@ -9,12 +9,14 @@ import path from 'path';
 //   rate: number;
 // }
 
+// Standard deductions with exact IRS terminology
 interface StandardDeductions {
-  'Single': number; 
+  'Single': number;
   'Married Filing Jointly': number;
   'Head of Household': number;
 }
 
+// Capital gains structure
 interface CapitalGainsData {
   zeroPercent: Array<{ status: string; threshold: string }>;
   fifteenPercent: Array<{ status: string; range: { from: string; to: string } }>;
@@ -26,13 +28,24 @@ interface CapitalGainsData {
   };
 }
 
-interface NYSTaxBracket {
+// State tax bracket structure
+interface StateTaxBracket {
   over: number;
   but_not_over: number | null;
   base_tax: number;
   plus: string | null;
   rate: number;
   of_excess_over: number;
+}
+
+interface StateTaxData {
+  [stateCode: string]: {
+    [year: string]: {
+      married_jointly_or_surviving_spouse: StateTaxBracket[];
+      single_or_married_separately: StateTaxBracket[];
+      head_of_household: StateTaxBracket[];
+    }
+  }
 }
 
 interface TaxData {
@@ -46,11 +59,7 @@ interface TaxData {
     standardDeductions: StandardDeductions;
   };
   capitalGainsRates: CapitalGainsData;
-  nysTaxRates: {
-    married_jointly_or_surviving_spouse: NYSTaxBracket[];
-    single_or_married_separately: NYSTaxBracket[];
-    head_of_household: NYSTaxBracket[];
-  };
+  stateTaxData: StateTaxData;
 }
 
 export function getTaxData(): TaxData {
@@ -69,15 +78,15 @@ export function getTaxData(): TaxData {
       fs.readFileSync(path.join(rootDir, 'capital_gains.yaml'), 'utf8')
     ) as { capitalGainsRates: CapitalGainsData };
     
-    const nysTaxRates = yaml.load(
-      fs.readFileSync(path.join(rootDir, 'nys_tax_rate_schedules.yaml'), 'utf8')
-    ) as { nysTaxRates: TaxData['nysTaxRates'] };
+    const stateTaxData = yaml.load(
+      fs.readFileSync(path.join(rootDir, 'state_tax_data.yaml'), 'utf8')
+    ) as StateTaxData;
 
     return {
       taxBrackets,
       standardDeductions,
       capitalGainsRates: capitalGains.capitalGainsRates,
-      nysTaxRates: nysTaxRates.nysTaxRates
+      stateTaxData
     };
   } catch (error) {
     console.error('Error loading tax data:', error);

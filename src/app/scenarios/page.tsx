@@ -25,7 +25,7 @@ export default function ScenariosPage() {
     
     const fetchScenarios = async () => {
       try {
-        const response = await fetch('/api/senarios');
+        const response = await fetch('/api/scenarios');
         if (!response.ok) {
           if (response.status === 401) {
             // TODO: Get from local storage
