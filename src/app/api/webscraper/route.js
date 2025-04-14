@@ -211,22 +211,22 @@ async function scrapeCapitalGains(url) {
         { 
           status: 'Single', 
           range: { 
-            from: `$${fifteenMatch[1]}`, 
-            to: `$${fifteenMatch[2]}` 
+            from: fifteenMatch[1].replace(/[$,]/g, ''), 
+            to: fifteenMatch[2].replace(/[$,]/g, '') 
           } 
         },
         { 
           status: 'Married Filing Jointly', 
           range: { 
-            from: `$${fifteenMatch[3]}`, 
-            to: `$${fifteenMatch[4]}` 
+            from: fifteenMatch[3].replace(/[$,]/g, ''), 
+            to: fifteenMatch[4].replace(/[$,]/g, '') 
           } 
         },
         {
           status: 'Married Filing Separately',
           range: {
-            from: `$${fifteenMatch[5]}`,
-            to: `$${fifteenMatch[6]}`
+            from: fifteenMatch[5].replace(/[$,]/g, ''),
+            to: fifteenMatch[6].replace(/[$,]/g, '')
           }
         }
       ];
@@ -237,21 +237,39 @@ async function scrapeCapitalGains(url) {
     const zeroMatch = normalized.match(zeroPattern);
     if (zeroMatch) {
       result.zeroPercent = [
-        { status: 'Single', threshold: `$${zeroMatch[1]}` },
-        { status: 'Married Filing Jointly', threshold: `$${zeroMatch[2]}` },
-        { status: 'Head of Household', threshold: `$${zeroMatch[3]}` }
+        { 
+          status: 'Single', 
+          range: { 
+            from: "0", 
+            to: zeroMatch[1].replace(/[$,]/g, '') 
+          } 
+        },
+        { 
+          status: 'Married Filing Jointly', 
+          range: { 
+            from: "0", 
+            to: zeroMatch[2].replace(/[$,]/g, '') 
+          } 
+        },
+        { 
+          status: 'Head of Household', 
+          range: { 
+            from: "0", 
+            to: zeroMatch[3].replace(/[$,]/g, '') 
+          } 
+        }
       ];
     }
 
-    // Twenty percent match
-    const twentyPattern = /20% applies to the extent that your taxable income exceeds the thresholds set for the 15% capital gain rate/i;
-    const twentyMatch = normalized.match(twentyPattern);
-    if (twentyMatch) {
-      result.twentyPercent = [
-        { status: 'Single', threshold: 'Above 15% threshold' },
-        { status: 'Married Filing Jointly', threshold: 'Above 15% threshold' },
-        { status: 'Head of Household', threshold: 'Above 15% threshold' }
-      ];
+    // Twenty percent match - use the upper bounds from 15% as the lower bounds for 20%
+    if (result.fifteenPercent.length > 0) {
+      result.twentyPercent = result.fifteenPercent.map(bracket => ({
+        status: bracket.status,
+        range: {
+          from: bracket.range.to,
+          to: "Infinity"
+        }
+      }));
     }
 
     // Special rates match

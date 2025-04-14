@@ -841,7 +841,7 @@ export async function POST(request: NextRequest) {
     const scenarioId = generateUniqueId();
     
     // Determine scenario type (single or couple)
-    const scenarioType = scenarioData.maritalStatus === 'couple' ? 'married' : 'single';
+    const scenarioType = scenarioData.maritalStatus;
     
     // Process spending strategy and expense withdrawal strategy
     const spendingStrategy: Types.ObjectId[] = [];
@@ -941,9 +941,10 @@ export async function POST(request: NextRequest) {
       editPermissions: [],
       updatedAt: new Date()
     });
+    console.log(scenarioType);
 
     // Add spouse data if it's a couple scenario
-    if (scenarioType === 'married' && scenarioData.birthYears && scenarioData.birthYears.length > 1) {
+    if (scenarioType === 'couple' && scenarioData.birthYears && scenarioData.birthYears.length > 1) {
       scenarioDoc.spouseBirthYear = scenarioData.birthYears[1];
       
       if (scenarioData.lifeExpectancy && scenarioData.lifeExpectancy.length > 1) {

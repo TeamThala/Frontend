@@ -7,9 +7,9 @@ const userSchema = new Schema(
     image: { type: String },
 
     // References to scenarios the user created or can read/write
-    createdScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario" }],
-    readScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario" }],
-    readWriteScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario" }],
+    createdScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario", default: [] }],
+    readScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario", default: [] }],
+    readWriteScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario", default: [] }],
   },
   { timestamps: true }
 );
