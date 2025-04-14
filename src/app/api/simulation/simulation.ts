@@ -104,7 +104,7 @@ export async function simulation(scenario: Scenario){
         }
 
         // TODO: Run income events, add to cash investment
-        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent);
+        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType);
         if (incomeResults === null){
             console.log("Error: Could not update income events.");
             return null;

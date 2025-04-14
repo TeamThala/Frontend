@@ -36,25 +36,28 @@
                         },
                         "taxability": true
                     },
-                    "taxStatus": "non-retirement"
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 0
                 },
                 {
                     "id": "investment1",
                     "value": 10000,
                     "investmentType": {
-                        "id": "cash",
-                        "name": "Cash Account",
-                        "description": "Default cash investment",
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
                         "expectedAnnualReturn": {
-                            "type": "fixed",
+                            "type": "normal",
                             "valueType": "percentage",
-                            "value": 100
+                            "mean": 100,
+                            "stdDev": 1
                         },
                         "expenseRatio": 0,
                         "expectedAnnualIncome": {
-                            "type": "fixed",
+                            "type": "normal",
                             "valueType": "amount",
-                            "value": 0
+                            "mean": 1000,
+                            "stdDev": 50
                         },
                         "taxability": true
                     },
