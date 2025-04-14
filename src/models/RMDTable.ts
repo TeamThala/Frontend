@@ -1,4 +1,3 @@
-// models/RMDTable.js
 import client from '@/lib/db';
 
 export async function findOneAndUpdate(filter, update, options) {
