@@ -34,7 +34,8 @@ export async function GET() {
     const capitalGains = await scrapeCapitalGains(capitalGainsUrl);
     await saveToYaml({ capitalGainsRates: capitalGains }, 'capital_gains.yaml');
 
-    // 4. State Tax Data Scraper
+    // 4. State Tax Data Scraper - Commented out as we use static YAML file
+    /*
     const stateTaxUrls = {
       NY: process.env.NYS_TAX_RATES_URL,
       NJ: process.env.NJ_TAX_RATES_URL,
@@ -49,13 +50,14 @@ export async function GET() {
       }
     }
     await saveToYaml(stateTaxData, 'state_tax_data.yaml');
+    */
 
     // Return all results
     return NextResponse.json({
       taxBrackets,
       standardDeductions,
       capitalGains,
-      stateTaxData
+      // stateTaxData - removed from response
     });
 
   } catch (error) {
@@ -292,10 +294,8 @@ async function scrapeCapitalGains(url) {
   }
 }
 
-// IMPORTANT: This function is ONLY used to update state_tax_data.yaml
-// It scrapes state tax data from government websites and saves it to the YAML file
-// The actual tax calculations use the data from state_tax_data.yaml, not this scraping function
-// State Tax Data Scraper
+// Comment out the scrapeStateTaxData function since it's not used anymore
+/*
 async function scrapeStateTaxData(stateCode, url) {
   try {
     const browser = await puppeteer.launch({
@@ -383,6 +383,7 @@ async function scrapeStateTaxData(stateCode, url) {
     throw error;
   }
 }
+*/
 
 async function saveToYaml(data, filename) {
   try {
