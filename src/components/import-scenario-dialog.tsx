@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -68,11 +69,12 @@ export default function ImportScenarioDialog({
       if (response.ok) {
         setSuccess("Scenario imported successfully!");
         setTimeout(() => {
-          router.push("/scenarios");
           if (onOpenChange) {
             onOpenChange(false);
           }
-        }, 2000);
+          router.refresh();
+          router.push(`/scenarios?t=${Date.now()}`);
+        }, 1000);
       } else {
         setError(result.error || "Failed to import scenario");
       }
@@ -89,6 +91,12 @@ export default function ImportScenarioDialog({
     setError("");
     setSuccess("");
   };
+
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {

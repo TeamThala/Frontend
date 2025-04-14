@@ -50,8 +50,8 @@ export default function ImportScenario() {
         setSuccess("Scenario imported successfully!");
         console.log(result.scenarioId);
         setTimeout(() => {
-          router.push(`/scenarios/${result.scenarioId}`);
-          router.push(`/scenarios/${result.scenarioId}`);
+          router.refresh();
+          router.push(`/scenarios?t=${Date.now()}`);
         }, 1000);
       } else {
         setError(result.error || "Failed to import scenario");
