@@ -1,9 +1,9 @@
 import { Schema, model, models } from "mongoose";
-import mongoose from "mongoose";
 import "@/models/Investment";
 import "@/models/Event";
 import "@/models/User";
 import "@/models/InvestmentType";
+import "@/models/RothConversionStrategy";
 /**
  * Sub-schemas for distribution-like fields:
  * (FixedValues, NormalDistributionValues, UniformDistributionValues)
@@ -29,8 +29,7 @@ const scenarioSchema = new Schema({
       max: { type: Number},
     },
   RothConversionStrategy: [{ type: Schema.Types.ObjectId, ref: "RothConversionStrategy" }],
-  //RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "RMDStrategy" }],
-  //rothConversion: { type: Object, default: null },
+  RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
   residenceState: { type: String, default: "NY" },
   owner: { type: Schema.Types.ObjectId, ref: "User", required: false },
   ownerBirthYear: { type: Number, default: 2000 },

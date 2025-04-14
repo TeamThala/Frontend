@@ -45,12 +45,14 @@ export default function ImportScenario() {
       });
 
       const result = await response.json();
-
+      console.log(result.scenarioId);
       if (response.ok) {
         setSuccess("Scenario imported successfully!");
+        console.log(result.scenarioId);
         setTimeout(() => {
-          router.push("/scenarios");
-        }, 2000);
+          router.push(`/scenarios/${result.scenarioId}`);
+          router.push(`/scenarios/${result.scenarioId}`);
+        }, 1000);
       } else {
         setError(result.error || "Failed to import scenario");
       }
@@ -120,4 +122,4 @@ export default function ImportScenario() {
       </div>
     </div>
   );
-} 
+}
