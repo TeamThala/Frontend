@@ -1,4 +1,4 @@
-import { /*NextRequest, */NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { promises as fs } from "fs"
 // import { ObjectId } from 'mongodb'
 import { Scenario } from '@/types/scenario'
@@ -11,13 +11,14 @@ import { simulation } from './simulation'
 // import { FixedYear, UniformYear, NormalYear, EventYear } from '@/types/event'
 
 
-export async function POST(/*req: NextRequest*/) {
+export async function POST(req: NextRequest) {
     // Expects the POST request to send {"id": id} as a body to the server
     // Expects raw JSON file from body of the request (not form-data)
     try{
-        // const data = await req.json(); // Assuming body is never null
+        const data = await req.json(); // Assuming body is never null
+        const filepath = data.filepath;
         // const scenario = await getScenario(data.id);
-        const scenario = await loadScenario(); // Placeholder to load scenario data from JSON
+        const scenario = await loadScenario(filepath); // Placeholder to load scenario data from JSON
         // console.log("LOADSCENARIO RESPONSE:")
         // console.log(scenario);
         if (scenario !== null){

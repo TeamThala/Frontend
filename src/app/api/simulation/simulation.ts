@@ -93,9 +93,9 @@ export async function simulation(scenario: Scenario){
 
 
         // Find the current investment event
-        const currentInvestmentEvent = investmentEvents.find(event => event.startYear.type === "fixed" && 
-            event.duration.type === "fixed" && 
-            event.startYear.year <= year && 
+        const currentInvestmentEvent = investmentEvents.find(event => (event.startYear.type === "fixed") && 
+            (event.duration.type === "fixed") && 
+            (event.startYear.year <= year) && 
             (event.startYear.year + event.duration.year) >= year);
 
         if (!currentInvestmentEvent) {
@@ -115,16 +115,22 @@ export async function simulation(scenario: Scenario){
         console.log(`Social Security for current year ${year}: ${curYearSS}`);
         // TODO: Perform RMD for previous year
 
-        updateInvestmentEvent(currentInvestmentEvent, curYearIncome);
+        const investmentResults = updateInvestmentEvent(currentInvestmentEvent);
+        if (investmentResults === null){
+            console.log("Error: Could not update investment events.");
+            return null;
+        }
+
+        curYearIncome += investmentResults;
         // TODO: Run Roth conversion optimizer if enabled
         // TODO: Pay non-discretionary expenses and previous year's taxes
-        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData);
         if (nondiscExpenseRet === null){
             console.log(`Ending simulation run...`);
             return null;
         }
-        curYearGains += nondiscExpenseRet[0];
-        curYearIncome += nondiscExpenseRet[1];
+        curYearGains += nondiscExpenseRet.dCurYearGains;
+        curYearIncome += nondiscExpenseRet.dCurYearIncome;
 
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;
@@ -137,6 +143,7 @@ export async function simulation(scenario: Scenario){
         // End of loop calculations
         year++;
         updateTaxBrackets(taxData, inflation); // Update tax brackets for next year
+        standardDeductions *= inflation; // Update standard deductions for next year
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
         // Check if spouse is alive

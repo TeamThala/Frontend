@@ -16,6 +16,7 @@ export function findCashInvestment(investmentEvent: Event): Investment | null {
 }
 
 export async function updateIncomeEvents(incomeEvents:Event[], year:number, currentInvestmentEvent:Event){
+    console.log(`=== UPDATING INCOME EVENTS FOR ${year} ===`);
     // incomeEvents: array of income events obtained from initializeEvents
     // year: current year of simulation to check if event should apply
 

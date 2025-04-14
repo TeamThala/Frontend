@@ -1,24 +1,49 @@
 import { Event, ExpenseEvent, FixedYear } from "@/types/event";
 import { Investment } from "@/types/investment";
-import { getTaxData, getNumericRate } from "@/lib/taxData"
+import { getNumericRate } from "@/lib/taxData"
 import { findCashInvestment } from "./updateIncomeEvents";
+import { randomNormal } from "d3-random";
+import { TaxData } from "@/lib/taxData";
 
-export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[]){
+export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData){
+    console.log(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
     let prevYearTaxes: number = 0;
-    const taxData = getTaxData();
     const fedTaxBrackets = married ? taxData.taxBrackets['married-joint'] : taxData.taxBrackets.single;
     let fedTaxRate = 0;
+    let finalUpperLimit = 0;
+    let finalRate = 0;
     for (let i=0; i<fedTaxBrackets.length; i++){
         const bracket = fedTaxBrackets[i];
         const upperLimit = parseFloat(bracket.upto.substring(1).split(",").join("")); // Get rid of "$" and ","
         if (upperLimit !== null && curYearIncome <= upperLimit){
             fedTaxRate = getNumericRate(bracket.rate); // Get rid of "%"
             console.log(`Found federal tax rate of ${fedTaxRate} for income of ${curYearIncome}`);
+            finalUpperLimit = upperLimit;
+            finalRate = fedTaxRate;
             break;
         }
     }
     prevYearTaxes += fedTaxRate * (curYearIncome - standardDeductions + curYearSS * 0.85); // federal taxes
+    console.log(`Federal taxes for ${year} are calculated to ${prevYearTaxes} {upperLimit: ${finalUpperLimit}, rate: ${finalRate}}`);
     // TODO: Add state taxes
+    if (!taxData.stateTaxData[state] || !taxData.stateTaxData[state].hasOwnProperty(year)) {
+        console.log(`Error: Could not find state tax data for ${state} in ${year}`);
+        return null;
+    }
+    const stateTaxBrackets = taxData.stateTaxData[state][year][married ? 'married_jointly_or_surviving_spouse' : 'single_or_married_separately'];
+    
+    let stateTaxAmount = 0;
+    for(let i=0; i<stateTaxBrackets.length; i++){
+        const bracket = stateTaxBrackets[i];
+        const upperLimit = bracket.but_not_over;;
+        if (upperLimit !== null && curYearIncome <= upperLimit){
+            const ofExcessOver = bracket.of_excess_over === null ? bracket.over : bracket.of_excess_over;
+            stateTaxAmount = bracket.base_tax + (curYearIncome - ofExcessOver) * bracket.rate / 100;
+            console.log(`Found state tax rate of ${stateTaxAmount} for income of ${curYearIncome} {upperLimit: ${upperLimit}, rate: ${bracket.rate}, ofExcessOver: ${ofExcessOver}, over: ${bracket.over}, baseTax: ${bracket.base_tax}}`);
+            break;
+        }
+    }
+
     // TODO: Add capital gains taxes
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
@@ -38,7 +63,9 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         console.log(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;
     }
+    console.log(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
     cashInvestment.value -= totalPayments;
+    console.log(`Cash investment with value ${cashInvestment.value} is going to have ${prevYearTaxes} withdrawn for prevYearTaxes`);
     cashInvestment.value -= prevYearTaxes;
 
     // Withdraw until cash investment is 0
@@ -71,6 +98,50 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
     if (cashInvestment.value < 0){
         console.log(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
         return null;
+    }
+
+    // Update non-discretionary expense events
+    for(let i=0; i<expenseEvents.length; i++){
+        const event = expenseEvents[i];
+        const eventType = event.eventType as ExpenseEvent;
+        if (eventType.discretionary === false){
+            const eventStartYear = event.startYear as FixedYear;
+            const eventDuration = event.duration as FixedYear;
+            const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
+            if (withinDuration){
+                if (eventType.inflationAdjustment){
+                    if (eventType.expectedAnnualChange.type === "normal"){
+                        const normal = randomNormal(eventType.expectedAnnualChange.mean, eventType.expectedAnnualChange.stdDev);
+                        const iterValue = normal();
+                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${iterValue} of type ${eventType.expectedAnnualChange.valueType}`);
+                        if (eventType.expectedAnnualChange.valueType === "percentage"){
+                            eventType.amount *= iterValue/100;
+                        }
+                        else{
+                            eventType.amount += iterValue;
+                        }
+                    }
+                    else if (eventType.expectedAnnualChange.type === "uniform"){
+                        const uniform = Math.random() * (eventType.expectedAnnualChange.max - eventType.expectedAnnualChange.min) + eventType.expectedAnnualChange.min;
+                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${uniform} of type ${eventType.expectedAnnualChange.valueType}`);
+                        if (eventType.expectedAnnualChange.valueType === "percentage"){
+                            eventType.amount *= uniform/100;
+                        }
+                        else{
+                            eventType.amount += uniform;
+                        }
+                    }
+                    else {
+                        if (eventType.expectedAnnualChange.valueType === "percentage"){
+                            eventType.amount *= eventType.expectedAnnualChange.value/100;
+                        }
+                        else{
+                            eventType.amount += eventType.expectedAnnualChange.value;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return {dCurYearGains, dCurYearIncome};
