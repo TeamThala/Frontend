@@ -36,7 +36,8 @@
                         },
                         "taxability": true
                     },
-                    "taxStatus": "non-retirement"
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 0
                 }
             ],
             "percentages": [100]
