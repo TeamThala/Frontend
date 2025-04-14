@@ -18,9 +18,9 @@ interface StandardDeductions {
 
 // Capital gains structure
 interface CapitalGainsData {
-  zeroPercent: Array<{ status: string; threshold: string }>;
+  zeroPercent: Array<{ status: string; range: { from: string; to: string } }>;
   fifteenPercent: Array<{ status: string; range: { from: string; to: string } }>;
-  twentyPercent: Array<{ status: string; threshold: string }>;
+  twentyPercent: Array<{ status: string; range: { from: string; to: string } }>;
   specialRates: {
     qualifiedSmallBusinessStock: string;
     collectibles: string;
