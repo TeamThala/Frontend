@@ -38,25 +38,32 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
         if (withinDuration){
             // Update income event
             const incomeEventType = incomeEvent.eventType as IncomeEvent;
+            console.log(`Income event ${incomeEvent.name} is within duration for year ${year} with amount ${incomeEventType.amount}`);
             if (incomeEventType.expectedAnnualChange.type === "normal"){
                 const normal = randomNormal(incomeEventType.expectedAnnualChange.mean, incomeEventType.expectedAnnualChange.stdDev);
                 if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
-                    incomeEventType.amount *= normal()/100;
+                    const iterValue = normal();
+                    console.log(`Income Event ${incomeEvent.name} annual change has rolled a value of ${iterValue} of type ${incomeEventType.expectedAnnualChange.valueType}`);
+                    incomeEventType.amount *= iterValue/100;
                 }
                 else{
-                    incomeEventType.amount += normal();
+                    const iterValue = normal();
+                    console.log(`Income Event ${incomeEvent.name} annual change has rolled a value of ${iterValue} of type ${incomeEventType.expectedAnnualChange.valueType}`);
+                    incomeEventType.amount += iterValue;
                 }
             }
             else if (incomeEventType.expectedAnnualChange.type === "uniform"){
-                const uniform = Math.random() * (incomeEventType.expectedAnnualChange.max - incomeEventType.expectedAnnualChange.min) + incomeEventType.expectedAnnualChange.min;
+                const iterValue = Math.random() * (incomeEventType.expectedAnnualChange.max - incomeEventType.expectedAnnualChange.min) + incomeEventType.expectedAnnualChange.min;
+                console.log(`Income Event ${incomeEvent.name} ${incomeEventType.expectedAnnualChange.type} annual change has rolled a value of ${iterValue} of type ${incomeEventType.expectedAnnualChange.valueType}`);
                 if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
-                    incomeEventType.amount *= uniform/100;
+                    incomeEventType.amount *= iterValue/100;
                 }
                 else{
-                    incomeEventType.amount += uniform;
+                    incomeEventType.amount += iterValue;
                 }
             }
             else {
+                console.log(`Income Event ${incomeEvent.name} has fixed annual change value of ${incomeEventType.expectedAnnualChange.value} of type ${incomeEventType.expectedAnnualChange.valueType}`);
                 if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
                     incomeEventType.amount *= incomeEventType.expectedAnnualChange.value/100;
                 }
@@ -67,10 +74,10 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
 
             // Inflation adjustment
             // console.log(`Income event ${incomeEvent.name} is within duration for year ${year}`);
-            
             if (incomeEventType.inflationAdjustment){
+                console.log(`Adjusting income event ${incomeEvent.name} for inflation with amount ${inflation} of type ${inflationType}`);
                 if (inflationType === "percentage"){
-                    incomeEventType.amount *= inflation/100;
+                    incomeEventType.amount *= inflation;
                 }
                 else{
                     incomeEventType.amount += inflation;
@@ -83,7 +90,7 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
 
             // console.log(incomeEventType);
             cashInvestment.value += incomeEventType.amount;
-            console.log(`Cash investment value has been updated: ${cashInvestment.value}`);
+            console.log(`Cash investment value has been updated to ${cashInvestment.value} (change of ${incomeEventType.amount})`);
             curYearIncome += incomeEventType.amount;
             // console.log(`Income for current year ${year}: ${curYearIncome}`);
             if (incomeEventType.socialSecurity){

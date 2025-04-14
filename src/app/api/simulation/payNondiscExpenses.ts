@@ -8,6 +8,8 @@ import { TaxData } from "@/lib/taxData";
 export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData){
     console.log(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
     let prevYearTaxes: number = 0;
+
+    // Federal taxes
     const fedTaxBrackets = married ? taxData.taxBrackets['married-joint'] : taxData.taxBrackets.single;
     let fedTaxRate = 0;
     let finalUpperLimit = 0;
@@ -25,7 +27,9 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
     }
     prevYearTaxes += fedTaxRate * (curYearIncome - standardDeductions + curYearSS * 0.85); // federal taxes
     console.log(`Federal taxes for ${year} are calculated to ${prevYearTaxes} {upperLimit: ${finalUpperLimit}, rate: ${finalRate}}`);
-    // TODO: Add state taxes
+    // console.log(taxData.capitalGainsRates.zeroPercent[0].range);
+
+    // State taxes
     if (!taxData.stateTaxData[state] || !taxData.stateTaxData[state].hasOwnProperty(year)) {
         console.log(`Error: Could not find state tax data for ${state} in ${year}`);
         return null;
@@ -39,12 +43,30 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         if (upperLimit !== null && curYearIncome <= upperLimit){
             const ofExcessOver = bracket.of_excess_over === null ? bracket.over : bracket.of_excess_over;
             stateTaxAmount = bracket.base_tax + (curYearIncome - ofExcessOver) * bracket.rate / 100;
-            console.log(`Found state tax rate of ${stateTaxAmount} for income of ${curYearIncome} {upperLimit: ${upperLimit}, rate: ${bracket.rate}, ofExcessOver: ${ofExcessOver}, over: ${bracket.over}, baseTax: ${bracket.base_tax}}`);
+            console.log(`Found state tax rate for income of ${curYearIncome} {upperLimit: ${upperLimit}, rate: ${bracket.rate}, ofExcessOver: ${ofExcessOver}, over: ${bracket.over}, baseTax: ${bracket.base_tax}}`);
             break;
         }
     }
+    prevYearTaxes += stateTaxAmount; // state taxes
+    console.log(`State taxes for ${year} are calculated to ${stateTaxAmount}`);
 
     // TODO: Add capital gains taxes
+    const capitalGainsRates = taxData.capitalGainsRates;
+    let capitalGainsTaxAmount = 0;
+    if (prevYearGains >= parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.to)){
+        capitalGainsTaxAmount = 0; // 0% rate
+        console.log(`Using 0% tax for capital gains`)
+    }
+    else if (prevYearGains >= parseFloat(capitalGainsRates.fifteenPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.fifteenPercent[married ? 1:0].range.to)){
+        capitalGainsTaxAmount = prevYearGains * 0.15; // 15% rate
+        console.log(`Using 15% tax for capital gains`)
+    }
+    else if (prevYearGains >= parseFloat(capitalGainsRates.twentyPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.twentyPercent[married ? 1:0].range.to)){
+        capitalGainsTaxAmount = prevYearGains * 0.2; // 20% rate
+        console.log(`Using 20% tax for capital gains`)
+    }
+    prevYearTaxes += capitalGainsTaxAmount; // capital 
+    console.log(`Capital gains taxes for ${year} are calculated to ${capitalGainsTaxAmount}`);
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
         const event = expenseEvents[i];
@@ -54,6 +76,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
             if (withinDuration){
+                console.log(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
                 totalPayments += eventType.amount;
             }
         }
