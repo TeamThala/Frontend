@@ -8,11 +8,11 @@ import "@/models/InvestmentType";
 import Scenario from '@/models/Scenario';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import Investment from "@/models/Investment";
-import InvestmentType from "@/models/InvestmentType";
-import Event from "@/models/Event";
+// import Investment from "@/models/Investment";
+// import InvestmentType from "@/models/InvestmentType";
+// import Event from "@/models/Event";
 import User from "@/models/User";
-import type { ScenarioFormData } from "@/app/scenarios/create/page";
+import { CoupleScenario } from "@/types/scenario";
 
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,9 +22,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!scenarioId || !mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json({ success: false, error: "Invalid scenario ID" }, { status: 400 });
   }
+  
+  // Get the user session
+  const session = await getServerSession(authOptions);
+  // Check if user is authenticated
+  if (!session || !session.user?.email) {
+    return NextResponse.json(
+      { success: false, error: 'Authentication required' }, 
+      { status: 401 }
+    );
+  }
 
   try {
     const scenario = await Scenario.findById(scenarioId)
+    // Local storage for guest user
       .populate({
         path: 'investments',
         populate: { path: 'investmentType' }
@@ -32,15 +43,50 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       .populate('eventSeries')
       .populate('spendingStrategy')
       .populate('expenseWithdrawalStrategy')
-      .populate('owner', 'name email')
-      .populate('viewPermissions', 'name email')
-      .populate('editPermissions', 'name email');
 
     if (!scenario) {
       return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: scenario }, { status: 200 });
+    // Check if this is a guest scenario (no owner or owner is "Guest")
+    const isGuestScenario = !scenario.owner || scenario.owner.toString() === "Guest";
+    
+    if (isGuestScenario) {
+      // For guest scenarios, anyone with the session can view
+      return NextResponse.json({ 
+        success: true, 
+        scenario, 
+        isOwner: false, 
+        hasEditPermission: true,  // Allow editing for guest scenarios
+        hasViewPermission: true 
+      }, { status: 200 });
+    }
+
+    // For non-guest scenarios, check permissions
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if user has permission to view this scenario
+    const isOwner = scenario.owner.toString() === user._id.toString();
+    const hasEditPermission = user.readWriteScenarios.some(
+      (id: mongoose.Types.ObjectId) => id.toString() === scenarioId
+    );
+    const hasViewPermission = scenario.viewPermissions.some(
+      (id: mongoose.Types.ObjectId) => id.toString() === user._id.toString()
+    );
+
+    if (!isOwner && !hasViewPermission && !hasEditPermission) {
+      return NextResponse.json(
+        { success: false, error: 'You do not have permission to view this scenario' }, 
+        { status: 401 }
+      );
+    }
+
+    
+
+    return NextResponse.json({ success: true, scenario, isOwner, hasEditPermission, hasViewPermission }, { status: 200 });
   } catch (error) {
     console.error('Error fetching scenario:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch scenario' }, { status: 500 });
@@ -73,102 +119,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
     }
 
-    // Check if user has permission to edit this scenario
-    const user = await User.findOne({ email: session.user.email });
-    
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
-    }
-
-    // Check if user is the owner or has edit permissions
-    const isOwner = scenario.owner.toString() === user._id.toString();
-    const hasEditPermission = user.readWriteScenarios.some(
-      (id: mongoose.Types.ObjectId) => id.toString() === scenarioId
-    );
-
-    if (!isOwner && !hasEditPermission) {
-      return NextResponse.json(
-        { success: false, error: 'You do not have permission to edit this scenario' }, 
-        { status: 403 }
-      );
-    }
-
     // Parse the request body
-    const body: ScenarioFormData = await req.json();
-
-    // Update scenario with new data
-    // 1. Update basic information
-    scenario.name = body.generalInformation.scenarioName;
-    scenario.description = body.generalInformation.scenarioDescription;
-    scenario.type = body.generalInformation.scenarioType.toLowerCase();
-    scenario.financialGoal = body.generalInformation.financialGoal;
-    scenario.residenceState = body.generalInformation.residenceState;
-    scenario.userBirthYear = body.generalInformation.userBirthYear;
-    scenario.userLifeExpectancy = {
-      type: "fixed",
-      valueType: "year",
-      value: body.generalInformation.userLifeExpectancy
-    };
-    
-    if (body.generalInformation.scenarioType === 'Married') {
-      scenario.spouseBirthYear = body.generalInformation.spouseBirthYear;
-      scenario.spouseLifeExpectancy = {
-        type: "fixed",
-        valueType: "year",
-        value: body.generalInformation.spouseLifeExpectancy
-      };
-    } else {
-      // Remove spouse data if scenario type is Single
-      scenario.spouseBirthYear = undefined;
-      scenario.spouseLifeExpectancy = undefined;
+    const body: CoupleScenario = await req.json();
+    // 1. Update General Information
+    scenario.name = body.name;
+    scenario.description = body.description;
+    scenario.financialGoal = body.financialGoal;
+    scenario.residenceState = body.residenceState;
+    scenario.inflationRate = body.inflationRate;
+    scenario.ownerBirthYear = body.ownerBirthYear;
+    scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
+    scenario.type = body.type;
+    if (scenario.type === "couple") {
+      scenario.spouseBirthYear = body.spouseBirthYear;
+      scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
     }
+    // 2. Update Investments
 
-    // 2. Handle investments
-    // First clear existing investments 
-    await Investment.deleteMany({ _id: { $in: scenario.investments } });
-    //eslint-disable-next-line
-    await InvestmentType.deleteMany({ _id: { $in: scenario.investments.map((inv:any) => inv.investmentType) } });
-    // Then add new investments
-    const investmentIds: mongoose.Types.ObjectId[] = [];
-    const investmentIdMap: Record<string, mongoose.Types.ObjectId> = {};
+    // 3. Update Events
 
-    for (const inv of body.investments.investments) {
-      const invTypeDoc = await InvestmentType.create(inv.investmentType);
-      const investmentDoc = await Investment.create({
-        value: inv.value,
-        taxStatus: inv.taxStatus,
-        investmentType: invTypeDoc._id,
-      });
-      investmentIds.push(investmentDoc._id);
-      investmentIdMap[inv.id] = investmentDoc._id;
-    }
-    
-    scenario.investments = investmentIds;
+    // 4. Update Spending Strategy
 
-    // 3. Handle events
-    // Clear existing events
-    await Event.deleteMany({ _id: { $in: scenario.eventSeries } });
-    
-    // Add new events
-    const eventIdMap: Record<string, mongoose.Types.ObjectId> = {};
-    for (const evt of body.eventSeries.events) {
-      const event = structuredClone(evt);
-      const createdEvent = await Event.create(event);
-      eventIdMap[evt.id] = createdEvent._id;
-    }
-    
-    scenario.eventSeries = Object.values(eventIdMap);
+    // 5. Update Expense Withdrawal Strategy
 
-    // 4. Update spending strategy and withdrawal strategy
-    scenario.spendingStrategy = body.spendingStrategy.expensePriorityOrder.map(id => eventIdMap[id]);
-    scenario.expenseWithdrawalStrategy = body.expenseWithdrawalStrategy.withdrawalOrder.map(id => {
-      const mappedId = investmentIdMap[id];
-      if (!mappedId) throw new Error(`Investment ${id} not found`);
-      return mappedId;
-    });
+    // 6. Update Inflation Rate
 
-    // 5. Update inflation rate and other settings
-    scenario.inflationRate = body.rothAndRMD.inflationRate;
+    // 7. Update Roth and RMD
 
     // Save the updated scenario
     await scenario.save();

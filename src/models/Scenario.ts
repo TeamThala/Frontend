@@ -1,4 +1,5 @@
 import { Schema, model, models } from "mongoose";
+import mongoose from "mongoose";
 import "@/models/Investment";
 import "@/models/Event";
 import "@/models/User";
@@ -31,7 +32,7 @@ const scenarioSchema = new Schema({
   //RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "RMDStrategy" }],
   //rothConversion: { type: Object, default: null },
   residenceState: { type: String, default: "NY" },
-  owner: { type: Schema.Types.ObjectId, ref: "User", default: "Guest" },
+  owner: { type: Schema.Types.ObjectId, ref: "User", required: false },
   ownerBirthYear: { type: Number, default: 2000 },
   ownerLifeExpectancy: { 
     type: {
