@@ -14,19 +14,24 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
         console.log(`Investment ${investment.id} has a starting value of ${startValue}`);
         
         // Handle expected income
-        if (investment.investmentType.expectedAnnualIncome !== null){
+        if (investment.investmentType.expectedAnnualIncome !== null){ // TODO: CHECK IF THIS IS ALWAYS AMOUNT
             if (investment.investmentType.expectedAnnualIncome.type === "fixed"){
                 investment.value += investment.investmentType.expectedAnnualIncome.value;
-                curYearIncome += investment.investmentType.expectedAnnualIncome.value;
-                console.log(`Current year income has been updated: ${curYearIncome}`);
+                if (investment.taxStatus === "pre-tax"){
+                    curYearIncome += investment.investmentType.expectedAnnualIncome.value;
+                    console.log(`Current year income has been updated: ${curYearIncome}`);
+                }
+                
             }
             else { // normal distribution
                 const normal = randomNormal(investment.investmentType.expectedAnnualIncome.mean, investment.investmentType.expectedAnnualIncome.stdDev);
                 const iterValue = normal();
                 console.log(`Investment ${investment.id} has rolled a value of ${iterValue}`);
-                investment.value += normal();
-                curYearIncome += iterValue;
-                console.log(`Current year income has been updated: ${curYearIncome}`);
+                investment.value += iterValue;
+                if (investment.taxStatus === "pre-tax"){
+                    curYearIncome += iterValue;
+                    console.log(`Current year income has been updated: ${curYearIncome}`);
+                }
             }
         }
         else {
@@ -37,13 +42,23 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
         // Handle expected return
         if (investment.investmentType.expectedAnnualReturn !== null){
             if (investment.investmentType.expectedAnnualReturn.type === "fixed"){
-                investment.value += investment.investmentType.expectedAnnualReturn.value;
+                if (investment.investmentType.expectedAnnualReturn.valueType === "percentage"){
+                    investment.value *= investment.investmentType.expectedAnnualReturn.value/100;
+                }
+                else{
+                    investment.value += investment.investmentType.expectedAnnualReturn.value;
+                }
                 console.log(`Investment ${investment.id} has a fixed expected return of ${investment.investmentType.expectedAnnualReturn.value}`);
             }
             else { // normal distribution
                 const normal = randomNormal(investment.investmentType.expectedAnnualReturn.mean, investment.investmentType.expectedAnnualReturn.stdDev);
                 const iterValue = normal();
-                investment.value += iterValue;
+                if (investment.investmentType.expectedAnnualReturn.valueType === "percentage"){
+                    investment.value *= iterValue/100;
+                }
+                else{
+                    investment.value += iterValue;
+                }
                 console.log(`Investment ${investment.id} has rolled a value of ${iterValue}`);
             }
         }

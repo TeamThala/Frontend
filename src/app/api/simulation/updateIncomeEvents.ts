@@ -2,7 +2,7 @@ import { Event, InvestmentEvent, IncomeEvent, FixedYear } from "@/types/event";
 import { Investment } from "@/types/investment";
 import { randomNormal } from "d3-random";
 
-function findCashInvestment(investmentEvent: Event): Investment | null {
+export function findCashInvestment(investmentEvent: Event): Investment | null {
     // Find the cash investment in the investment event
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const nestedInvestments = investmentEventType.assetAllocation.investments;
@@ -41,14 +41,29 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
             if (incomeEventType.inflationAdjustment){
                 if (incomeEventType.expectedAnnualChange.type === "normal"){
                     const normal = randomNormal(incomeEventType.expectedAnnualChange.mean, incomeEventType.expectedAnnualChange.stdDev);
-                    incomeEventType.amount *= normal();
+                    if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
+                        incomeEventType.amount *= normal()/100;
+                    }
+                    else{
+                        incomeEventType.amount += normal();
+                    }
                 }
                 else if (incomeEventType.expectedAnnualChange.type === "uniform"){
                     const uniform = Math.random() * (incomeEventType.expectedAnnualChange.max - incomeEventType.expectedAnnualChange.min) + incomeEventType.expectedAnnualChange.min;
-                    incomeEventType.amount *= uniform;
+                    if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
+                        incomeEventType.amount *= uniform/100;
+                    }
+                    else{
+                        incomeEventType.amount += uniform;
+                    }
                 }
                 else {
-                    incomeEventType.amount *= incomeEventType.expectedAnnualChange.value;
+                    if (incomeEventType.expectedAnnualChange.valueType === "percentage"){
+                        incomeEventType.amount *= incomeEventType.expectedAnnualChange.value/100;
+                    }
+                    else{
+                        incomeEventType.amount += incomeEventType.expectedAnnualChange.value;
+                    }
                 }
             }
 
@@ -59,7 +74,7 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
             cashInvestment.value += incomeEventType.amount;
             console.log(`Cash investment value has been updated: ${cashInvestment.value}`);
             curYearIncome += incomeEventType.amount;
-            console.log(`Income for current year ${year}: ${curYearIncome}`);
+            // console.log(`Income for current year ${year}: ${curYearIncome}`);
             if (incomeEventType.socialSecurity){
                 curYearSS += incomeEventType.amount;
                 console.log(`curYearSS has been updated: ${curYearSS}`);
