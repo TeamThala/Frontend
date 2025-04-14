@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
 
     const yamlData = {
       name: scenario.name,
-      maritalStatus: scenario.type === "married" ? "couple" : "single",
+      maritalStatus: scenario.type,
       birthYears: [scenario.userBirthYear, scenario.spouseBirthYear].filter(Boolean),
       lifeExpectancy: [
         scenario.userLifeExpectancy ? serializeDistribution(scenario.userLifeExpectancy) : null,
