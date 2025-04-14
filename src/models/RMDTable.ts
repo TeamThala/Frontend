@@ -1,16 +1,17 @@
 // models/RMDTable.js
-import mongoose from 'mongoose';
+import client from '@/lib/db';
 
-const RMDTableSchema = new mongoose.Schema({
-  year: { type: Number, required: true },
-  table: [{
-    age: { type: Number, required: true },
-    distributionPeriod: { type: Number, required: true }
-  }],
-  updatedAt: { type: Date, default: Date.now }
-});
+export async function findOneAndUpdate(filter, update, options) {
+  const collection = client.db().collection('rmdtables');
+  return collection.findOneAndUpdate(filter, { $set: update }, { ...options });
+}
 
-RMDTableSchema.index({ year: 1 }, { unique: true });
+export async function findOne(filter) {
+  const collection = client.db().collection('rmdtables');
+  return collection.findOne(filter);
+}
 
-export default mongoose.models.RMDTable || 
-  mongoose.model('RMDTable', RMDTableSchema);
+export default {
+  findOneAndUpdate,
+  findOne
+};

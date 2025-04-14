@@ -1,7 +1,5 @@
 import { RmdTable, RmdTableData, Investment, RmdStrategy, RmdDistribution } from '@/types/rmd';
 import RMDTable from '@/models/RMDTable';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
 
 export class RMDService {
   private static instance: RMDService;
@@ -39,7 +37,7 @@ export class RMDService {
   }
 
   /**
-   * Get the RMD table for a given year, fetching from database or scraping if needed
+   * Get the RMD table for a given year, fetching from database or using scraper endpoint if needed
    */
   public async getRmdTable(year: number): Promise<RmdTable> {
     // Try to get from database first
@@ -54,59 +52,23 @@ export class RMDService {
       return table;
     }
 
-    // If not in database, scrape and store
-    const scrapedTable = await this.scrapeRmdTable();
-    await this.storeRmdTable(scrapedTable, year);
-    this.currentRmdTable = scrapedTable.table;
-    return scrapedTable.table;
-  }
-
-  /**
-   * Scrape the RMD table from IRS website
-   */
-  private async scrapeRmdTable(): Promise<RmdTableData> {
+    // If not in database, use the scraper endpoint
     try {
-      const url = 'https://www.irs.gov/publications/p590b#en_US_2024_publink100090310';
-      const { data: html } = await axios.get(url);
-      const $ = cheerio.load(html);
-      
-      const rmdTable: RmdTable = {};
-      const tableSection = $('a[name="en_US_2024_publink100090310"]').closest('.table');
-      
-      if (tableSection.length > 0) {
-        tableSection.find('table tr').each((index, row) => {
-          const cells = $(row).find('td');
-          if (cells.length >= 4) {
-            // First pair (left side of table)
-            const age1 = parseInt($(cells[0]).text().trim());
-            const period1 = parseFloat($(cells[1]).text().trim());
-            
-            // Second pair (right side of table)
-            const age2 = parseInt($(cells[2]).text().trim());
-            const period2 = parseFloat($(cells[3]).text().trim());
-            
-            if (!isNaN(age1) && !isNaN(period1)) {
-              rmdTable[age1] = period1;
-            }
-            
-            if (!isNaN(age2) && !isNaN(period2)) {
-              rmdTable[age2] = period2;
-            }
-          }
-        });
+      const response = await fetch('/api/rmdscraper');
+      if (!response.ok) {
+        throw new Error('Failed to fetch RMD table from scraper');
       }
+      const data = await response.json();
+      const scrapedTable = data.rmdTable as RmdTableData;
 
-      if (Object.keys(rmdTable).length === 0) {
-        throw new Error('Failed to scrape RMD table');
-      }
-
-      return {
-        year: new Date().getFullYear(),
-        table: rmdTable
-      };
+      // Store in database for future use
+      await this.storeRmdTable(scrapedTable, year);
+      
+      this.currentRmdTable = scrapedTable.table;
+      return scrapedTable.table;
     } catch (error) {
-      console.error('Error scraping RMD table:', error);
-      throw error;
+      console.error('Error fetching RMD table:', error);
+      throw new Error('Failed to get RMD table');
     }
   }
 
@@ -114,17 +76,40 @@ export class RMDService {
    * Store the RMD table in the database
    */
   private async storeRmdTable(tableData: RmdTableData, year: number): Promise<void> {
-    // Convert from our internal format to database format
-    const tableEntries = Object.entries(tableData.table).map(([age, period]) => ({
-      age: parseInt(age),
-      distributionPeriod: period
-    }));
+    try {
+      console.log('Converting RMD table data for storage:', { year, tableSize: Object.keys(tableData.table).length });
+      
+      // Convert from our internal format to database format
+      const tableEntries = Object.entries(tableData.table).map(([age, distributionPeriod]) => ({
+        age: parseInt(age),
+        distributionPeriod
+      }));
 
-    await RMDTable.create({
-      year,
-      table: tableEntries,
-      updatedAt: new Date()
-    });
+      console.log('Converted table entries:', tableEntries);
+
+      // Create or update the table for the year
+      const result = await RMDTable.findOneAndUpdate(
+        { year },
+        {
+          year,
+          table: tableEntries,
+          updatedAt: new Date()
+        },
+        { upsert: true, new: true }
+      );
+
+      console.log('Stored RMD table in database:', {
+        year: result.value?.year,
+        entriesCount: result.value?.table?.length,
+        id: result.value?._id
+      });
+    } catch (error: any) {
+      console.error('Error storing RMD table:', {
+        error: error.message,
+        stack: error.stack
+      });
+      throw new Error(`Failed to store RMD table in database: ${error.message}`);
+    }
   }
 
   /**
