@@ -135,6 +135,7 @@ export async function simulation(scenario: Scenario){
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;
         curYearEarlyWithdrawals = 0;
+        console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // TODO: Pay discretionary expenses in spending strategy
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
