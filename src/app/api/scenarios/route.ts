@@ -8,6 +8,8 @@ import "@/models/InvestmentType";
 import Scenario from '@/models/Scenario';
 import { authOptions } from '@/lib/auth';
 import User from "@/models/User";
+import InvestmentType from '@/models/InvestmentType';
+import Investment from '@/models/Investment';
 
 export async function GET() {
   try {
@@ -130,6 +132,30 @@ export async function POST(request: NextRequest) {
     const { name, description } = await request.json();
     
     try {
+      const cashInvestmentType = await InvestmentType.create({
+        name: "Cash Account",
+        description: "Default cash investment",
+        expectedAnnualReturn: {
+          type: "fixed",
+          valueType: "percentage",
+          value: 100
+        },
+        expenseRatio: 0,
+        expectedAnnualIncome: {
+          type: "fixed",
+          valueType: "amount",
+          value: 0
+        },
+        taxability: true
+      });
+
+      const cashInvestment = await Investment.create({
+        value: 10000,
+        investmentType: cashInvestmentType._id,
+        taxStatus: "non-retirement",
+        purchasePrice: 0,
+      });
+
       // Create the scenario with all required nested fields
       const scenario = await Scenario.create({ 
         name,
@@ -147,7 +173,7 @@ export async function POST(request: NextRequest) {
           value: 90
         },
         // Initialize arrays as empty
-        investments: [],
+        investments: [cashInvestment._id],
         eventSeries: [],
         spendingStrategy: [],
         expenseWithdrawalStrategy: [],

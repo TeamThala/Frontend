@@ -1,11 +1,45 @@
-//merged route.js
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { NextResponse } from 'next/server';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
-import puppeteer from 'puppeteer';
+
+interface TaxBracket {
+  rate: string;
+  from: string;
+  upto: string;
+}
+
+interface TaxBrackets {
+  single: TaxBracket[];
+  'married-joint': TaxBracket[];
+  'married-separate': TaxBracket[];
+  'head-of-household': TaxBracket[];
+}
+
+interface StandardDeductions {
+  [key: string]: number;
+}
+
+interface CapitalGainsRange {
+  status: string;
+  range: {
+    from: string;
+    to: string;
+  };
+}
+
+interface CapitalGains {
+  zeroPercent: CapitalGainsRange[];
+  fifteenPercent: CapitalGainsRange[];
+  twentyPercent: CapitalGainsRange[];
+  specialRates: {
+    qualifiedSmallBusinessStock: string;
+    collectibles: string;
+    unrecaptured1250Gain: string;
+  };
+}
 
 export async function GET() {
   try {
@@ -34,38 +68,20 @@ export async function GET() {
     const capitalGains = await scrapeCapitalGains(capitalGainsUrl);
     await saveToYaml({ capitalGainsRates: capitalGains }, 'capital_gains.yaml');
 
-    // 4. State Tax Data Scraper
-    const stateTaxUrls = {
-      NY: process.env.NYS_TAX_RATES_URL,
-      NJ: process.env.NJ_TAX_RATES_URL,
-      CT: process.env.CT_TAX_RATES_URL
-    };
-
-    let stateTaxData = {};
-    for (const [stateCode, url] of Object.entries(stateTaxUrls)) {
-      if (url) {
-        const stateData = await scrapeStateTaxData(stateCode, url);
-        stateTaxData = { ...stateTaxData, ...stateData };
-      }
-    }
-    await saveToYaml(stateTaxData, 'state_tax_data.yaml');
-
     // Return all results
     return NextResponse.json({
       taxBrackets,
       standardDeductions,
       capitalGains,
-      stateTaxData
     });
 
   } catch (error) {
     console.error('Error in main scraper:', error);
-    return NextResponse.json({ error: error.message || 'Failed to scrape data' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to scrape data' }, { status: 500 });
   }
 }
 
-// The actual tax calculations use the data from state_tax_data.yaml, not this scraping function
-async function scrapeTaxBrackets(url) {
+async function scrapeTaxBrackets(url: string): Promise<TaxBrackets> {
   const { data: html } = await axios.get(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -73,7 +89,7 @@ async function scrapeTaxBrackets(url) {
   });
 
   const $ = cheerio.load(html);
-  const taxBrackets = {
+  const taxBrackets: TaxBrackets = {
     single: [],
     'married-joint': [],
     'married-separate': [],
@@ -91,7 +107,7 @@ async function scrapeTaxBrackets(url) {
   // Process each table
   tables.each((tableIndex, table) => {
     const rows = $(table).find('tbody tr');
-    const currentBrackets = [];
+    const currentBrackets: TaxBracket[] = [];
 
     rows.each((rowIndex, row) => {
       const cells = $(row).find('td');
@@ -137,11 +153,11 @@ async function scrapeTaxBrackets(url) {
   return taxBrackets;
 }
 
-async function scrapeStandardDeductions(url) {
+async function scrapeStandardDeductions(url: string): Promise<StandardDeductions> {
   const { data } = await axios.get(url);
   const $ = cheerio.load(data);
   const table = $('a[name="en_US_2024_publink1000283782"]').closest('.table');
-  const result = {};
+  const result: StandardDeductions = {};
   
   table.find('tr').each((i, row) => {
     if (i > 0 && i < 4) {
@@ -156,8 +172,7 @@ async function scrapeStandardDeductions(url) {
   return result;
 }
 
-
-async function scrapeCapitalGains(url) {
+async function scrapeCapitalGains(url: string): Promise<CapitalGains> {
   try {
     console.log('Fetching capital gains data from:', url);
     const { data: html } = await axios.get(url);
@@ -178,11 +193,15 @@ async function scrapeCapitalGains(url) {
     
     console.log('\nFirst 500 characters of normalized text:', normalized.substring(0, 500));
     
-    const result = {
+    const result: CapitalGains = {
       zeroPercent: [],
       fifteenPercent: [],
       twentyPercent: [],
-      specialRates: {}
+      specialRates: {
+        qualifiedSmallBusinessStock: '',
+        collectibles: '',
+        unrecaptured1250Gain: ''
+      }
     };
 
     // Try to find any mention of 15%
@@ -292,99 +311,8 @@ async function scrapeCapitalGains(url) {
   }
 }
 
-// IMPORTANT: This function is ONLY used to update state_tax_data.yaml
-// It scrapes state tax data from government websites and saves it to the YAML file
-// The actual tax calculations use the data from state_tax_data.yaml, not this scraping function
-// State Tax Data Scraper
-async function scrapeStateTaxData(stateCode, url) {
-  try {
-    const browser = await puppeteer.launch({
-      headless: 'new'
-    });
-    const page = await browser.newPage();
-    
-    await page.goto(url, {
-      waitUntil: 'networkidle0'
-    });
-
-    // Wait for tax tables to be present
-    await page.waitForSelector('table');
-
-    const result = {
-      [stateCode]: {
-        [new Date().getFullYear()]: {
-          married_jointly_or_surviving_spouse: [],
-          single_or_married_separately: [],
-          head_of_household: []
-        }
-      }
-    };
-
-    // Function to parse table data
-    const parseTable = async (selector, filingStatus) => {
-      const data = await page.evaluate((sel) => {
-        const rows = document.querySelectorAll(`${sel} tbody tr`);
-        const tableData = [];
-        
-        for (let i = 0; i < rows.length; i++) {
-          const cols = rows[i].querySelectorAll('td');
-          if (cols.length >= 6) {
-            const over = cols[0].textContent.trim().replace(/[$,]/g, '');
-            const butNotOver = cols[1].textContent.trim().replace(/[$,]/g, '');
-            const baseTax = cols[2].textContent.trim().replace(/[$,]/g, '') || '0';
-            const plus = cols[3].textContent.trim() || null;
-            const rate = cols[4].textContent.trim().replace('%', '');
-            const excessOver = cols[5].textContent.trim().replace(/[$,]/g, '') || '0';
-
-            if (over && rate) {
-              tableData.push({
-                over: Number(over),
-                but_not_over: butNotOver === '----' ? null : Number(butNotOver),
-                base_tax: Number(baseTax),
-                plus: plus,
-                rate: Number(rate),
-                of_excess_over: Number(excessOver)
-              });
-            }
-          }
-        }
-        return tableData;
-      }, selector);
-
-      return data;
-    };
-
-    // Try different table selectors
-    const selectors = [
-      'table.table',
-      'table.table-bordered',
-      'table.table-striped',
-      'table'
-    ];
-
-    for (const selector of selectors) {
-      const marriedBrackets = await parseTable(selector, 'married_jointly_or_surviving_spouse');
-      const singleBrackets = await parseTable(selector, 'single_or_married_separately');
-      const headBrackets = await parseTable(selector, 'head_of_household');
-
-      if (marriedBrackets.length > 0 || singleBrackets.length > 0 || headBrackets.length > 0) {
-        result[stateCode][new Date().getFullYear()].married_jointly_or_surviving_spouse = marriedBrackets;
-        result[stateCode][new Date().getFullYear()].single_or_married_separately = singleBrackets;
-        result[stateCode][new Date().getFullYear()].head_of_household = headBrackets;
-        break;
-      }
-    }
-
-    await browser.close();
-    return result;
-
-  } catch (error) {
-    console.error(`Error scraping state tax data for ${stateCode}:`, error);
-    throw error;
-  }
-}
-
-async function saveToYaml(data, filename) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveToYaml(data: any, filename: string): Promise<void> {
   try {
     const yamlData = yaml.dump(data, {
       indent: 2,
@@ -398,4 +326,4 @@ async function saveToYaml(data, filename) {
   } catch (error) {
     console.error(`Error saving ${filename}:`, error);
   }
-}
+} 

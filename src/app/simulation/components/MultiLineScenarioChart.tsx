@@ -3,19 +3,18 @@ import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-interface ScenarioLineData {
+export interface ScenarioLineData {
   parameterValue: string | number;
   points: { year: number; value: number }[];
 }
 
 export default function MultiLineScenarioChart({
-    data,
-    parameterName,
-  }: {
-    data: ScenarioLineData[];
-    parameterName: string; // Example: "Retirement Age", "Start Year"
-  }) {
-  
+  data,
+  parameterName,
+}: {
+  data: ScenarioLineData[];
+  parameterName: string;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<{
     x: number;
@@ -24,11 +23,6 @@ export default function MultiLineScenarioChart({
     value: number;
   } | null>(null);
 
-  // AI tool (ChatGPT) was used to assist with generating 
-  // chart code, sample data, and visualization design. 
-  // All content was reviewed and revised by the author.
-  // It was used to first generate chart in observablehq.com
-  // and then converted to React code.
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     const width = window.innerWidth - 100;
@@ -37,15 +31,20 @@ export default function MultiLineScenarioChart({
 
     svg.selectAll("*").remove();
 
-    // Flatten all years from points
-    const allYears = Array.from(new Set(data.flatMap(d => d.points.map(p => p.year))));
-    const x = d3.scaleLinear().domain(d3.extent(allYears) as [number, number]).range([margin.left, width - margin.right]);
+    // Guard: use fallback in case points is undefined
+    const allYears = Array.from(new Set(
+      data.flatMap(d => (d.points || []).map(p => p.year))
+    ));
+    if (allYears.length === 0) return;
 
+    const x = d3.scaleLinear()
+      .domain(d3.extent(allYears) as [number, number])
+      .range([margin.left, width - margin.right]);
     const y = d3.scaleLinear().domain([0, 100]).range([height - margin.bottom, margin.top]);
+    const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+      .domain(data.map(d => d.parameterValue.toString()));
 
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10).domain(data.map(d => d.parameterValue.toString()));
-
-    // Horizontal Grid
+    // Horizontal grid lines
     svg.append("g")
       .attr("stroke", "#333")
       .attr("stroke-opacity", 0.6)
@@ -62,18 +61,17 @@ export default function MultiLineScenarioChart({
       .x(d => x(d.year))
       .y(d => y(d.value));
 
-    // Plot all lines
+    // Plot each scenario's line and dots
     data.forEach(scenario => {
       svg.append("path")
-        .datum(scenario.points)
+        .datum(scenario.points || [])
         .attr("fill", "none")
         .attr("stroke", colorScale(scenario.parameterValue.toString()))
         .attr("stroke-width", 2.5)
         .attr("d", lineGen);
 
-      // Optional: Add dots
       svg.selectAll(`.dot-${scenario.parameterValue}`)
-        .data(scenario.points)
+        .data(scenario.points || [])
         .enter()
         .append("circle")
         .attr("cx", d => x(d.year))
@@ -100,18 +98,16 @@ export default function MultiLineScenarioChart({
       .attr("fill", "transparent")
       .on("mousemove", (event) => {
         const [mx] = d3.pointer(event);
-        const year = Math.round(x.invert(mx));
         let closest: { dist: number; scenario?: ScenarioLineData; point?: { year: number; value: number } } = { dist: Infinity };
 
         data.forEach(scenario => {
-          const point = scenario.points.find(p => p.year === year);
-          if (point) {
+          (scenario.points || []).forEach(point => {
             const screenX = x(point.year);
             const dist = Math.abs(mx - screenX);
             if (dist < closest.dist) {
               closest = { dist, scenario, point };
             }
-          }
+          });
         });
 
         if (closest.scenario && closest.point) {
@@ -130,18 +126,13 @@ export default function MultiLineScenarioChart({
   }, [data]);
 
   return (
-    <Card
-      className="text-white rounded-xl border border-[#7F56D9] shadow-lg w-full"
-      style={{
-        background: 'linear-gradient(to bottom right, #4E4E4E -40%, #333333 10%, #141313 30%, #000000 50%, #4E4E4E 150%)'
-      }}
-    >
+    <Card className="text-white rounded-xl border border-[#7F56D9] shadow-lg w-full"
+      style={{ backgroundColor: "#000000" }}>
       <CardHeader>
         <CardTitle className="text-lg">Probability of Success by Scenario Parameter</CardTitle>
       </CardHeader>
       <CardContent className="p-0 relative">
         <svg ref={svgRef} height={500} className="w-full"></svg>
-
         {hover && (
           <>
             <div

@@ -1,9 +1,11 @@
+import { NextResponse } from 'next/server';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { NextResponse } from 'next/server';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
+import RMDTable from '@/models/RMDTable';
+import client from '@/lib/db';
 
 interface RmdTable {
   [age: number]: number;
@@ -17,22 +19,66 @@ interface RmdTableData {
 
 export async function GET() {
   try {
+    // Test MongoDB connection
+    await client.connect();
+    console.log('MongoDB connected');
+
     // Scrape RMD Table III (Uniform Life Table) from IRS Publication 590-B
     const rmdTableData = await scrapeRmdTable();
     
     // Save to YAML file
     await saveToYaml(rmdTableData, 'rmd_table.yaml');
+
+    // Convert table data for MongoDB storage
+    const tableEntries = Object.entries(rmdTableData.table).map(([age, period]) => ({
+      age: parseInt(age),
+      distributionPeriod: period
+    }));
+
+    // Save to MongoDB
+    const result = await RMDTable.findOneAndUpdate(
+      { year: rmdTableData.year },
+      {
+        year: rmdTableData.year,
+        table: tableEntries,
+        updatedAt: new Date()
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    console.log('MongoDB save result:', {
+      id: result?.value?._id ?? 'No document found',
+      year: rmdTableData.year,
+      entriesCount: tableEntries.length
+    });
     
-    return NextResponse.json({ rmdTable: rmdTableData });
+    return NextResponse.json({ 
+      rmdTable: rmdTableData,
+      dbSave: {
+        success: !!result?.value,
+        id: result?.value?._id?.toString() ?? 'No document found',
+        entriesCount: tableEntries.length
+      }
+    });
   } catch (error) {
     console.error('Error in RMD scraper:', error);
-    return NextResponse.json({ error: 'Failed to scrape RMD data' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to scrape or save RMD data',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
+  } finally {
+    // Close MongoDB connection
+    await client.close();
   }
 }
 
 async function scrapeRmdTable(): Promise<RmdTableData> {
   try {
-    const url = 'https://www.irs.gov/publications/p590b#en_US_2024_publink100090310';
+    if (!process.env.RMD_TABLE_URL) {
+      throw new Error('RMD_TABLE_URL environment variable is not set');
+    }
+    
+    const url = process.env.RMD_TABLE_URL;
     console.log('Fetching RMD data from:', url);
     
     const { data: html } = await axios.get(url);
@@ -41,32 +87,23 @@ async function scrapeRmdTable(): Promise<RmdTableData> {
     const rmdTable: RmdTable = {};
     let foundTable = false;
     
-    // Direct targeting by anchor ID
     const tableSection = $('a[name="en_US_2024_publink100090310"]').closest('.table');
     
     if (tableSection.length > 0) {
       console.log('Found table section by anchor');
       foundTable = true;
       
-      // Process all rows in the table
       tableSection.find('table tr').each((index, row) => {
         const cells = $(row).find('td');
-        
-        // Handle the 2-column pairs (age and distribution period)
         if (cells.length >= 4) {
-          // First pair (left side of table)
           const age1 = parseInt($(cells[0]).text().trim());
           const period1 = parseFloat($(cells[1]).text().trim());
-          
-          // Second pair (right side of table)
           const age2 = parseInt($(cells[2]).text().trim());
           const period2 = parseFloat($(cells[3]).text().trim());
           
-          // Add valid entries to the table
           if (!isNaN(age1) && !isNaN(period1)) {
             rmdTable[age1] = period1;
           }
-          
           if (!isNaN(age2) && !isNaN(period2)) {
             rmdTable[age2] = period2;
           }
@@ -74,7 +111,6 @@ async function scrapeRmdTable(): Promise<RmdTableData> {
       });
     }
     
-    // If we couldn't find or parse the table, fallback to default values
     if (!foundTable || Object.keys(rmdTable).length === 0) {
       console.warn('RMD Table not found or empty, using default values');
       return getDefaultRmdTable();
@@ -82,16 +118,16 @@ async function scrapeRmdTable(): Promise<RmdTableData> {
     
     console.log(`Successfully scraped RMD table with ${Object.keys(rmdTable).length} entries`);
     
-    return { 
+    return {
       year: new Date().getFullYear(),
-      table: rmdTable 
+      table: rmdTable
     };
   } catch (error) {
     console.error('Error scraping RMD table:', error);
     return getDefaultRmdTable();
   }
 }
-
+// will only run if RMD_TABLE_URL is not set
 function getDefaultRmdTable(): RmdTableData {
   // Actual 2022 Uniform Lifetime Table values
   const defaultTable: RmdTable = {

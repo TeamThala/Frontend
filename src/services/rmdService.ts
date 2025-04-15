@@ -1,7 +1,14 @@
 import { RmdTable, RmdTableData, Investment, RmdStrategy, RmdDistribution } from '@/types/rmd';
 import RMDTable from '@/models/RMDTable';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
+import { Document } from 'mongodb';
+
+// Interface for MongoDB RMD table document
+interface RmdTableDocument extends Document {
+  year: number;
+  table: Array<{ age: number; distributionPeriod: number }>;
+  updatedAt: Date;
+  isDefault: boolean;
+}
 
 export class RMDService {
   private static instance: RMDService;
@@ -17,21 +24,21 @@ export class RMDService {
   }
 
   /**
-   * Get the RMD factor for a given age from the RMD table
+   * Get the RMD factor for a given age
    */
   public getRmdFactor(age: number): number {
     if (!this.currentRmdTable) {
       throw new Error('RMD table not loaded');
     }
     const factor = this.currentRmdTable[age];
-    if (!factor) {
+    if (factor === undefined) {
       throw new Error(`No RMD factor found for age ${age}`);
     }
     return factor;
   }
 
   /**
-   * Calculate the RMD amount for a given age and account balance
+   * Calculate the RMD amount for a given account balance and age
    */
   public calculateRmd(accountBalance: number, age: number): number {
     const factor = this.getRmdFactor(age);
@@ -39,96 +46,78 @@ export class RMDService {
   }
 
   /**
-   * Get the RMD table for a given year, fetching from database or scraping if needed
+   * Retrieve the RMD table from DB or scrape if missing
    */
   public async getRmdTable(year: number): Promise<RmdTable> {
-    // Try to get from database first
-    const dbTable = await RMDTable.findOne({ year });
-    if (dbTable) {
-      // Convert from database format to our internal format
+    // Get data from MongoDB directly
+    const dbTable = await RMDTable.findOne({ year }) as unknown as RmdTableDocument | null;
+
+    if (dbTable && Array.isArray(dbTable.table)) {
       const table: RmdTable = {};
-      dbTable.table.forEach(entry => {
+      dbTable.table.forEach((entry: { age: number; distributionPeriod: number }) => {
         table[entry.age] = entry.distributionPeriod;
       });
       this.currentRmdTable = table;
       return table;
     }
 
-    // If not in database, scrape and store
-    const scrapedTable = await this.scrapeRmdTable();
-    await this.storeRmdTable(scrapedTable, year);
-    this.currentRmdTable = scrapedTable.table;
-    return scrapedTable.table;
-  }
-
-  /**
-   * Scrape the RMD table from IRS website
-   */
-  private async scrapeRmdTable(): Promise<RmdTableData> {
+    // Fallback: use scraper API
     try {
-      const url = 'https://www.irs.gov/publications/p590b#en_US_2024_publink100090310';
-      const { data: html } = await axios.get(url);
-      const $ = cheerio.load(html);
-      
-      const rmdTable: RmdTable = {};
-      const tableSection = $('a[name="en_US_2024_publink100090310"]').closest('.table');
-      
-      if (tableSection.length > 0) {
-        tableSection.find('table tr').each((index, row) => {
-          const cells = $(row).find('td');
-          if (cells.length >= 4) {
-            // First pair (left side of table)
-            const age1 = parseInt($(cells[0]).text().trim());
-            const period1 = parseFloat($(cells[1]).text().trim());
-            
-            // Second pair (right side of table)
-            const age2 = parseInt($(cells[2]).text().trim());
-            const period2 = parseFloat($(cells[3]).text().trim());
-            
-            if (!isNaN(age1) && !isNaN(period1)) {
-              rmdTable[age1] = period1;
-            }
-            
-            if (!isNaN(age2) && !isNaN(period2)) {
-              rmdTable[age2] = period2;
-            }
-          }
-        });
-      }
+      const response = await fetch('/api/rmdscraper');
+      if (!response.ok) throw new Error('Failed to fetch RMD table from scraper');
+      const data = (await response.json()) as { rmdTable: RmdTableData };
 
-      if (Object.keys(rmdTable).length === 0) {
-        throw new Error('Failed to scrape RMD table');
-      }
+      await this.storeRmdTable(data.rmdTable, year);
 
-      return {
-        year: new Date().getFullYear(),
-        table: rmdTable
-      };
+      this.currentRmdTable = data.rmdTable.table;
+      return data.rmdTable.table;
     } catch (error) {
-      console.error('Error scraping RMD table:', error);
-      throw error;
+      console.error('Error fetching RMD table:', error);
+      throw new Error('Failed to get RMD table');
     }
   }
 
   /**
-   * Store the RMD table in the database
+   * Store the fetched RMD table into the database
    */
   private async storeRmdTable(tableData: RmdTableData, year: number): Promise<void> {
-    // Convert from our internal format to database format
-    const tableEntries = Object.entries(tableData.table).map(([age, period]) => ({
-      age: parseInt(age),
-      distributionPeriod: period
-    }));
+    try {
+      const tableEntries = Object.entries(tableData.table).map(([age, distributionPeriod]) => ({
+        age: parseInt(age, 10),
+        distributionPeriod,
+      }));
 
-    await RMDTable.create({
-      year,
-      table: tableEntries,
-      updatedAt: new Date()
-    });
+      const result = await RMDTable.findOneAndUpdate(
+        { year },
+        {
+          year,
+          table: tableEntries,
+          updatedAt: new Date(),
+          isDefault: tableData.isDefault ?? false,
+        },
+        {
+          upsert: true,
+          returnDocument: 'after',
+        }
+      );
+
+      console.log('Stored RMD table:', {
+        year: result?.year,
+        count: result?.table?.length,
+        id: result?._id,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error('Error storing RMD table:', err.message);
+        throw new Error(`Failed to store RMD table: ${err.message}`);
+      } else {
+        throw new Error('Unknown error storing RMD table');
+      }
+    }
   }
 
   /**
-   * Execute RMD distributions according to the specified strategy
+   * Execute RMD distributions according to strategy
    */
   public async executeRmdDistribution(
     year: number,
@@ -136,35 +125,29 @@ export class RMDService {
     pretaxAccounts: Investment[],
     rmdStrategy: RmdStrategy
   ): Promise<RmdDistribution> {
-    // Calculate total RMD amount
-    const totalPretaxBalance = pretaxAccounts.reduce((sum, acc) => sum + acc.balance, 0);
-    const rmdAmount = this.calculateRmd(totalPretaxBalance, age);
+    const totalBalance = pretaxAccounts.reduce((sum, inv) => sum + inv.balance, 0);
+    const rmdAmount = this.calculateRmd(totalBalance, age);
 
-    // Execute distributions according to strategy
-    const distributedInvestments: { investmentId: string; amount: number }[] = [];
-    let remainingAmount = rmdAmount;
+    const distributedInvestments: RmdDistribution['distributedInvestments'] = [];
+    let remaining = rmdAmount;
 
     for (const investmentId of rmdStrategy.investmentOrder) {
-      if (remainingAmount <= 0) break;
+      if (remaining <= 0) break;
 
       const investment = pretaxAccounts.find(acc => acc.id === investmentId);
       if (!investment) continue;
 
-      const distributionAmount = Math.min(investment.balance, remainingAmount);
-      distributedInvestments.push({
-        investmentId,
-        amount: distributionAmount
-      });
-
-      remainingAmount -= distributionAmount;
+      const distribution = Math.min(investment.balance, remaining);
+      distributedInvestments.push({ investmentId, amount: distribution });
+      remaining -= distribution;
     }
 
     return {
       year,
       age,
-      pretaxAccountBalance: totalPretaxBalance,
+      pretaxAccountBalance: totalBalance,
       distributionAmount: rmdAmount,
-      distributedInvestments
+      distributedInvestments,
     };
   }
-} 
+}

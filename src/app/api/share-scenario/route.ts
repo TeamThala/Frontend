@@ -17,6 +17,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { scenarioId, targetEmail, permission } = await req.json();
+    if (targetEmail === session.user.email) {
+      return NextResponse.json({ success: false, error: "You cannot share a scenario with yourself" }, { status: 400 });
+    }
 
     if (!scenarioId || !targetEmail || !["view", "edit"].includes(permission)) {
       return NextResponse.json({ success: false, error: "Invalid input" }, { status: 400 });
@@ -28,7 +31,8 @@ export async function POST(req: NextRequest) {
     }
 
     const targetUser = await User.findOne({ email: targetEmail });
-    if (!targetUser) {
+    if (!targetUser)
+   {
       return NextResponse.json({ success: false, error: "User not found with provided email" }, { status: 404 });
     }
 
