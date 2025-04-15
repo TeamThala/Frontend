@@ -10,9 +10,11 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 // import Investment from "@/models/Investment";
 // import InvestmentType from "@/models/InvestmentType";
-// import Event from "@/models/Event";
+import Event from "@/models/Event";
 import User from "@/models/User";
 import { CoupleScenario } from "@/types/scenario";
+import InvestmentType from '@/models/InvestmentType';
+import Investment from '@/models/Investment';
 
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -121,6 +123,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // Parse the request body
     const body: CoupleScenario = await req.json();
+    
     // 1. Update General Information
     scenario.name = body.name;
     scenario.description = body.description;
@@ -134,16 +137,192 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       scenario.spouseBirthYear = body.spouseBirthYear;
       scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
     }
+    
     // 2. Update Investments
-
+    for (const investment of body.investments) {
+      // Check if this is an existing investment from MongoDB (has valid ObjectId in _id)
+      if(investment._id && mongoose.Types.ObjectId.isValid(investment._id)) {
+        // Update existing investment with valid MongoDB ObjectId
+        const existingInvestment = await Investment.findById(investment._id);
+        
+        if(!existingInvestment) continue;
+        
+        let investmentTypeId;
+        
+        // Check if investment type has a valid MongoDB _id
+        if(investment.investmentType._id && mongoose.Types.ObjectId.isValid(investment.investmentType._id)) {
+          const existingInvestmentType = await InvestmentType.findById(investment.investmentType._id);
+          
+          if(existingInvestmentType) {
+            // Update existing investment type
+            existingInvestmentType.name = investment.investmentType.name;
+            existingInvestmentType.description = investment.investmentType.description;
+            existingInvestmentType.expectedAnnualReturn = investment.investmentType.expectedAnnualReturn;
+            existingInvestmentType.expectedAnnualIncome = investment.investmentType.expectedAnnualIncome;
+            existingInvestmentType.taxability = investment.investmentType.taxability;
+            existingInvestmentType.expenseRatio = investment.investmentType.expenseRatio;
+            
+            await existingInvestmentType.save();
+            investmentTypeId = existingInvestmentType._id;
+          }
+        } else {
+          // Create new investment type since the existing one doesn't have a valid MongoDB _id
+          const investmentTypeData = { 
+            name: investment.investmentType.name,
+            description: investment.investmentType.description,
+            expectedAnnualReturn: investment.investmentType.expectedAnnualReturn,
+            expectedAnnualIncome: investment.investmentType.expectedAnnualIncome,
+            taxability: investment.investmentType.taxability,
+            expenseRatio: investment.investmentType.expenseRatio
+          };
+          
+          const newInvestmentType = new InvestmentType(investmentTypeData);
+          await newInvestmentType.save();
+          investmentTypeId = newInvestmentType._id;
+        }
+        
+        // Update the investment
+        existingInvestment.investmentType = investmentTypeId;
+        existingInvestment.purchasePrice = investment.purchasePrice;
+        existingInvestment.value = investment.value;
+        existingInvestment.taxStatus = investment.taxStatus;
+        await existingInvestment.save();
+      } else {
+        // Create new investment type
+        const investmentTypeData = { 
+          name: investment.investmentType.name,
+          description: investment.investmentType.description,
+          expectedAnnualReturn: investment.investmentType.expectedAnnualReturn,
+          expectedAnnualIncome: investment.investmentType.expectedAnnualIncome,
+          taxability: investment.investmentType.taxability,
+          expenseRatio: investment.investmentType.expenseRatio
+        };
+        
+        const newInvestmentType = new InvestmentType(investmentTypeData);
+        await newInvestmentType.save();
+        
+        // Create new investment
+        const newInvestment = new Investment({
+          value: investment.value,
+          purchasePrice: investment.purchasePrice,
+          taxStatus: investment.taxStatus,
+          investmentType: newInvestmentType._id
+        });
+        
+        await newInvestment.save();
+        scenario.investments.push(newInvestment._id);
+      }
+    }
+    
     // 3. Update Events
+    for (const event of body.eventSeries) {
+      // Check if this is an existing event with a valid MongoDB ObjectId
+      if (event._id && mongoose.Types.ObjectId.isValid(event._id)) {
+        // This is an existing event with a valid MongoDB _id
+        const existingEvent = await Event.findById(event._id);
+        if (!existingEvent) continue;
 
+        // Process event data before saving
+        const eventToSave = { ...event };
+        
+        // Handle special event types with investment references
+        if (eventToSave.eventType.type === "investment" && eventToSave.eventType.assetAllocation) {
+          // Fix investment event's assetAllocation
+          const assetAllocation = { ...eventToSave.eventType.assetAllocation };
+          
+          // Update asset allocation investments
+          if (assetAllocation.investments && Array.isArray(assetAllocation.investments)) {
+            // Convert the client-side investments array to proper MongoDB references
+            if (assetAllocation.type === "fixed") {
+              assetAllocation.percentages = assetAllocation.percentages || [];
+            } else if (assetAllocation.type === "glidePath") {
+              assetAllocation.initialPercentages = assetAllocation.initialPercentages || [];
+              assetAllocation.finalPercentages = assetAllocation.finalPercentages || [];
+            }
+          }
+          
+          eventToSave.eventType.assetAllocation = assetAllocation;
+        } 
+        else if (eventToSave.eventType.type === "rebalance" && eventToSave.eventType.portfolioDistribution) {
+          // Fix rebalance event's portfolioDistribution
+          const portfolioDistribution = { ...eventToSave.eventType.portfolioDistribution };
+          
+          // Update portfolio distribution investments
+          if (portfolioDistribution.investments && Array.isArray(portfolioDistribution.investments)) {
+            // Convert the client-side investments array to proper MongoDB references
+            if (portfolioDistribution.type === "fixed") {
+              portfolioDistribution.percentages = portfolioDistribution.percentages || [];
+            } else if (portfolioDistribution.type === "glidePath") {
+              portfolioDistribution.initialPercentages = portfolioDistribution.initialPercentages || [];
+              portfolioDistribution.finalPercentages = portfolioDistribution.finalPercentages || [];
+            }
+          }
+          
+          eventToSave.eventType.portfolioDistribution = portfolioDistribution;
+        }
+
+        // Update the existing event with the processed data
+        existingEvent.name = eventToSave.name;
+        existingEvent.description = eventToSave.description;
+        existingEvent.startYear = eventToSave.startYear;
+        existingEvent.duration = eventToSave.duration;
+        existingEvent.eventType = eventToSave.eventType;
+        await existingEvent.save();
+      } else {
+        // Create new event - strip any existing id or _id values
+        const eventData = { ...event } as Record<string, unknown>;
+        
+        // Process event data before creating a new document
+        if (event.eventType.type === "investment" && event.eventType.assetAllocation) {
+          // Fix investment event's assetAllocation
+          const assetAllocation = { ...event.eventType.assetAllocation };
+          
+          // Ensure percentages are initialized
+          if (assetAllocation.type === "fixed") {
+            assetAllocation.percentages = assetAllocation.percentages || [];
+          } else if (assetAllocation.type === "glidePath") {
+            assetAllocation.initialPercentages = assetAllocation.initialPercentages || [];
+            assetAllocation.finalPercentages = assetAllocation.finalPercentages || [];
+          }
+          
+          eventData.eventType = {
+            ...event.eventType,
+            assetAllocation
+          };
+        } 
+        else if (event.eventType.type === "rebalance" && event.eventType.portfolioDistribution) {
+          // Fix rebalance event's portfolioDistribution
+          const portfolioDistribution = { ...event.eventType.portfolioDistribution };
+          
+          // Ensure percentages are initialized
+          if (portfolioDistribution.type === "fixed") {
+            portfolioDistribution.percentages = portfolioDistribution.percentages || [];
+          } else if (portfolioDistribution.type === "glidePath") {
+            portfolioDistribution.initialPercentages = portfolioDistribution.initialPercentages || [];
+            portfolioDistribution.finalPercentages = portfolioDistribution.finalPercentages || [];
+          }
+          
+          eventData.eventType = {
+            ...event.eventType,
+            portfolioDistribution
+          };
+        }
+        
+        // Remove client-side ids that could cause MongoDB validation errors
+        delete eventData._id;
+        delete eventData.id;  // Remove the UUID from the client side
+        
+        // Create and save the event
+        const newEvent = new Event(eventData);
+        console.log("newEvent", newEvent);
+        console.log("newEventType", JSON.stringify(newEvent.eventType, null, 2));
+        await newEvent.save();
+        scenario.eventSeries.push(newEvent._id);
+      }
+    }
     // 4. Update Spending Strategy
-
     // 5. Update Expense Withdrawal Strategy
-
     // 6. Update Inflation Rate
-
     // 7. Update Roth and RMD
 
     // Save the updated scenario
@@ -156,6 +335,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
   } catch (error) {
     console.error('Error updating scenario:', error);
-    return NextResponse.json({ success: false, error: 'Failed to update scenario' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to update scenario', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
   }
 }

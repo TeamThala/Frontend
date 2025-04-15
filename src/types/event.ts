@@ -3,6 +3,7 @@ import { FixedValues, NormalDistributionValues, UniformDistributionValues } from
 
 export interface Event {
     id: string;
+    _id?: string;
     name: string;
     description?: string;
     startYear: FixedYear | UniformYear | NormalYear | EventYear;
