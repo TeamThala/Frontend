@@ -74,7 +74,7 @@ export default function ScenarioCard({ scenario, accessType }: { scenario: Scena
                 {accessType === "readWrite" || accessType === "create" ? "View/Edit" : "View"}
               </Button>
             </Link>
-            {(accessType === "readWrite" || accessType === "create") && (
+            {accessType === "create" && (
               <Button
                 variant="outline"
                 className="text-white border-zinc-800 hover:bg-zinc-900 hover:text-[#FF4690] bg-zinc-900"
