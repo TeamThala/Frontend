@@ -321,9 +321,43 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
     // 4. Update Spending Strategy
+    // Clear existing spending strategy
+    scenario.spendingStrategy = [];
+    
+    // Update spending strategy if it exists in request body
+    if (body.spendingStrategy && Array.isArray(body.spendingStrategy)) {
+      for (const expenseEvent of body.spendingStrategy) {
+        // Only include events that have valid MongoDB IDs
+        if (expenseEvent._id && mongoose.Types.ObjectId.isValid(expenseEvent._id)) {
+          // Verify the event exists
+          const eventExists = await Event.findById(expenseEvent._id);
+          if (eventExists) {
+            scenario.spendingStrategy.push(expenseEvent._id);
+          }
+        }
+      }
+    }
+    
     // 5. Update Expense Withdrawal Strategy
+    // Clear existing expense withdrawal strategy
+    scenario.expenseWithdrawalStrategy = [];
+    
+    // Update expense withdrawal strategy if it exists in request body
+    if (body.expenseWithdrawalStrategy && Array.isArray(body.expenseWithdrawalStrategy)) {
+      for (const investmentItem of body.expenseWithdrawalStrategy) {
+        // Only include investments that have valid MongoDB IDs
+        if (investmentItem._id && mongoose.Types.ObjectId.isValid(investmentItem._id)) {
+          // Verify the investment exists
+          const investmentExists = await Investment.findById(investmentItem._id);
+          if (investmentExists) {
+            scenario.expenseWithdrawalStrategy.push(investmentItem._id);
+          }
+        }
+      }
+    }
+    
     // 6. Update Inflation Rate
-    // 7. Update Roth and RMD
+    scenario.inflationRate = body.inflationRate;
 
     // Save the updated scenario
     await scenario.save();

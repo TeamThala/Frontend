@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -8,7 +9,6 @@ import { renderBasicEventDetails } from "./renderBasicEventDetails";
 import { renderIncomeEventDetails } from "./renderIncomeEventDetails";
 import { renderExpenseEventDetails } from "./renderExpenseEventDetails";
 import { renderInvestmentEventDetails } from "./renderInvestmentEventDetails";
-import { renderRebalanceEventDetails } from "./renderRebalanceEventDetails";
 
 // Type for distribution types used in UI controls
 type DistributionType = "fixed" | "normal" | "uniform";
@@ -41,6 +41,7 @@ export const renderEventForm = (
   canEdit: boolean, 
   handlers: EventHandlers,
   allEvents?: Event[],
+  scenarioInvestments?: unknown[] // Using unknown instead of any
 ) => {
   return (
     <div className="p-4 border rounded-md mb-6 relative">
@@ -60,8 +61,8 @@ export const renderEventForm = (
       
       {event.eventType.type === "income" && renderIncomeEventDetails(event, index, canEdit, handlers)}
       {event.eventType.type === "expense" && renderExpenseEventDetails(event, index, canEdit, handlers)}
-      {event.eventType.type === "investment" && renderInvestmentEventDetails(event, index, canEdit, handlers)}
-      {event.eventType.type === "rebalance" && renderRebalanceEventDetails(event, index, canEdit, handlers)}
+      {event.eventType.type === "investment" && renderInvestmentEventDetails(event, index, canEdit, handlers, scenarioInvestments as any)}
+      {/* {event.eventType.type === "rebalance" && renderRebalanceEventDetails(event, index, canEdit, handlers)} */}
     </div>
   );
 }; 
