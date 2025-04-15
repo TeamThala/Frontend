@@ -1,5 +1,4 @@
 import { Schema, model, models } from "mongoose";
-import mongoose from "mongoose";
 import "@/models/Investment";
 import "@/models/Event";
 import "@/models/User";

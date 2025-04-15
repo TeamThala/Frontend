@@ -9,6 +9,7 @@ import GeneralInformation from "./components/general-information";
 import React from "react";
 import Stepper from "./components/stepper";
 import Investments from "./components/investments";
+import EventSeries from "./components/event-series";
 // import EventSeries from "./components/event-series";
 // import SpendingStrategy from "./components/spending-strategy";
 // import ExpenseWithdrawalStrategy from "./components/expense-withdrawal-strategy";
@@ -92,14 +93,15 @@ export default function ScenarioPage() {
     if (currentStep < steps.length - 1) {
       // Move to next step
       setCurrentStep(currentStep + 1);
+      console.log("updatedScenario", scenario);
     }
   };
 
-  // const handlePrevious = () => {
-  //   if (currentStep > 0) {
-  //     setCurrentStep(currentStep - 1);
-  //   }
-  // };
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   const saveCurrentStepData = async (updatedScenario: Scenario) => {
     // Will implement saving logic for each step
@@ -174,17 +176,27 @@ export default function ScenarioPage() {
           <Investments 
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={(updatedScenario) => setScenario(updatedScenario)}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              saveCurrentStepData(updatedScenario);
+            }}
+            handleNext={handleNext}
+            handlePrevious={handlePrevious}
           />
         )}
-        {/* {currentStep === 2 && (
-          <EventSeries 
+        {currentStep === 2 && (
+          <EventSeries   
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={(updatedScenario) => setScenario(updatedScenario)}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              saveCurrentStepData(updatedScenario);
+            }}
+            handleNext={handleNext}
+            handlePrevious={handlePrevious}
           />
         )}
-        {currentStep === 3 && (
+        {/* {currentStep === 3 && (
           <SpendingStrategy 
             scenario={scenario} 
             canEdit={canEdit}
