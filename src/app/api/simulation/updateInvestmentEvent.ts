@@ -1,7 +1,10 @@
 import { Event, InvestmentEvent } from "@/types/event";
 import { randomNormal } from "d3-random";
 
-export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: number){
+export function updateInvestmentEvent(investmentEvent: Event){
+    let dCurYearIncome: number = 0;
+
+    console.log(`=== UPDATING INVESTMENT EVENT ${investmentEvent.name} ===`);
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const assetAllocation = investmentEventType.assetAllocation;
     if (assetAllocation.investments === null){
@@ -18,19 +21,20 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
             if (investment.investmentType.expectedAnnualIncome.type === "fixed"){
                 investment.value += investment.investmentType.expectedAnnualIncome.value;
                 if (investment.taxStatus === "pre-tax"){
-                    curYearIncome += investment.investmentType.expectedAnnualIncome.value;
-                    console.log(`Current year income has been updated: ${curYearIncome}`);
+                    dCurYearIncome += investment.investmentType.expectedAnnualIncome.value;
+                    console.log(`Investment ${investment.id} has a fixed expected income of ${investment.investmentType.expectedAnnualIncome.value}`);
+                    console.log(`Current year income has been incremented by ${dCurYearIncome}`);
                 }
                 
             }
             else { // normal distribution
                 const normal = randomNormal(investment.investmentType.expectedAnnualIncome.mean, investment.investmentType.expectedAnnualIncome.stdDev);
                 const iterValue = normal();
-                console.log(`Investment ${investment.id} has rolled a value of ${iterValue}`);
+                console.log(`Investment ${investment.id} annual income has rolled a value of ${iterValue}`);
                 investment.value += iterValue;
                 if (investment.taxStatus === "pre-tax"){
-                    curYearIncome += iterValue;
-                    console.log(`Current year income has been updated: ${curYearIncome}`);
+                    dCurYearIncome += iterValue;
+                    console.log(`Current year income has been updated: ${dCurYearIncome}`);
                 }
             }
         }
@@ -48,7 +52,7 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
                 else{
                     investment.value += investment.investmentType.expectedAnnualReturn.value;
                 }
-                console.log(`Investment ${investment.id} has a fixed expected return of ${investment.investmentType.expectedAnnualReturn.value}`);
+                console.log(`Investment ${investment.id} has a fixed expected return of ${investment.investmentType.expectedAnnualReturn.value} of type ${investment.investmentType.expectedAnnualReturn.valueType}`);
             }
             else { // normal distribution
                 const normal = randomNormal(investment.investmentType.expectedAnnualReturn.mean, investment.investmentType.expectedAnnualReturn.stdDev);
@@ -59,7 +63,7 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
                 else{
                     investment.value += iterValue;
                 }
-                console.log(`Investment ${investment.id} has rolled a value of ${iterValue}`);
+                console.log(`Investment ${investment.id} annual return has rolled a value of ${iterValue}`);
             }
         }
         else {
@@ -85,4 +89,6 @@ export function updateInvestmentEvent(investmentEvent: Event, curYearIncome: num
 
         // }
     }
+
+    return dCurYearIncome;
 }

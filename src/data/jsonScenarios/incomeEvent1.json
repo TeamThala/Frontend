@@ -6,7 +6,10 @@
         "type": "fixed",
         "year": 2025
     },
-    "duration": 20,
+    "duration": {
+        "type": "fixed",
+        "year": 10
+    },
     "eventType": {
         "type": "income",
         "amount": 70000,
@@ -15,6 +18,8 @@
             "type": "fixed",
             "valueType": "percentage",
             "value": 100
-        }
-    }
+        },
+        "socialSecurity": false,
+        "wage": true
+    }    
 }

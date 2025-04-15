@@ -1,7 +1,7 @@
 {
-    "id": "cashOnly",
-    "name": "Cash Only Event",
-    "description": "Default cash event and no other investments.",
+    "id": "cashAndInvest1",
+    "name": "Cash Only Event + Investment Event 1",
+    "description": "Default cash event and investment event 1. Fixed allocation ratio.",
     "startYear": {
         "type": "fixed",
         "year": 2025
@@ -38,9 +38,34 @@
                     },
                     "taxStatus": "non-retirement",
                     "purchasePrice": 0
+                },
+                {
+                    "id": "investment1",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 100,
+                            "stdDev": 1
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": 50
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 5000
                 }
             ],
-            "percentages": [100]
+            "percentages": [50,50]
         },
         "maxCash": 999999999
     }

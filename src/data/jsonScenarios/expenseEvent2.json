@@ -1,0 +1,25 @@
+{
+    "id": "groceriesExpense",
+    "name": "Groceries Event",
+    "description": "Uniform groceries expense with inflation adjustment",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "years": 99
+    },
+    "eventType": {
+        "discretionary": false,
+        "type": "expense",
+        "amount": 3000,
+        "inflationAdjustment": true,
+        "expectedAnnualChange": {
+            "type": "uniform",
+            "valueType": "percentage",
+            "min": 100,
+            "max": 150
+        }
+    }
+}
