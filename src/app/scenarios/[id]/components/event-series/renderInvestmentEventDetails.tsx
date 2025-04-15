@@ -7,11 +7,22 @@ import { Event } from "@/types/event";
 import { EventHandlers } from "./renderEventForm";
 import { Progress } from "@/components/ui/progress";
 
+// Basic investment type for type safety
+interface Investment {
+  _id: string;
+  id?: string;
+  investmentType?: {
+    name: string;
+    description?: string;
+  };
+}
+
 export const renderInvestmentEventDetails = (
   event: Event, 
   index: number, 
   canEdit: boolean, 
-  handlers: EventHandlers
+  handlers: EventHandlers,
+  scenarioInvestments: Investment[] = [] // Add scenario investments parameter with type
 ) => {
   if (event.eventType.type !== "investment") return null;
   
@@ -79,6 +90,20 @@ export const renderInvestmentEventDetails = (
     return Math.abs(total - 100) <= 0.1;
   };
 
+  // Function to get full investment details from scenario investments
+  const getInvestmentDetails = (investmentRef: string | Investment): Investment | undefined => {
+    // If it's already an object with investmentType, return it
+    if (typeof investmentRef !== 'string' && investmentRef?.investmentType) {
+      return investmentRef;
+    }
+    
+    // Convert to string if it's an object without investmentType
+    const id = typeof investmentRef === 'string' ? investmentRef : investmentRef?._id;
+    
+    // Find the matching investment in scenario investments
+    return scenarioInvestments.find(inv => inv._id === id);
+  };
+
   // Render each investment with percentage input
   const renderInvestmentInputs = (isInitial = true) => {
     if (!investments || investments.length === 0) {
@@ -97,17 +122,20 @@ export const renderInvestmentEventDetails = (
             return null;
           }
           
+          // Get full investment details
+          const fullInvestment = getInvestmentDetails(investment);
+          
           // Get the investment ID - prefer _id (MongoDB) over id (client-side)
-          const investmentId = investment._id || investment.id || `investment-${investmentIndex}`;
+          const investmentId = typeof investment === 'string' ? investment : (investment._id || investment.id || `investment-${investmentIndex}`);
           
           return (
             <div key={`${investmentId}-${isInitial ? 'initial' : 'final'}-${index}`} className="grid grid-cols-3 gap-2 items-center">
               <div className="col-span-2">
                 <Label className="text-sm">
-                  {investment.investmentType?.name || 'Unnamed Investment'}
-                  {investment.investmentType?.description && (
+                  {fullInvestment?.investmentType?.name || `Investment ID: ${typeof investmentId === 'string' ? investmentId.substring(0, 8) : investmentId}...`}
+                  {fullInvestment?.investmentType?.description && (
                     <span className="text-xs text-zinc-400 block">
-                      {investment.investmentType.description}
+                      {fullInvestment.investmentType.description}
                     </span>
                   )}
                 </Label>

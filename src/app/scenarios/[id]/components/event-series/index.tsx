@@ -232,8 +232,8 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
             <p className="text-center text-zinc-400 py-8">No events added yet. Click the Add Event button below to get started.</p>
           ) : (
             scenarioData.eventSeries.map((event, index) => (
-              <div key={event.id}>
-                {renderEventForm(event, index, canEdit, eventHandlers, scenarioData.eventSeries)}
+              <div key={event.id || event._id || index}>
+                {renderEventForm(event, index, canEdit, eventHandlers, scenarioData.eventSeries, scenarioData.investments)}
               </div>
             ))
           )}
@@ -245,8 +245,8 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
           ) : (
             scenarioData.eventSeries
               .map((event, idx) => event.eventType.type === "income" ? (
-                <div key={event.id}>
-                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries)}
+                <div key={event.id || event._id || idx  }>
+                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries, scenarioData.investments)}
                 </div>
               ) : null)
               .filter(Boolean)
@@ -259,8 +259,8 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
           ) : (
             scenarioData.eventSeries
               .map((event, idx) => event.eventType.type === "expense" ? (
-                <div key={event.id}>
-                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries)}
+                <div key={event.id || event._id || idx}>
+                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries, scenarioData.investments)}
                 </div>
               ) : null)
               .filter(Boolean)
@@ -273,8 +273,8 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
           ) : (
             scenarioData.eventSeries
               .map((event, idx) => event.eventType.type === "investment" ? (
-                <div key={event.id}>
-                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries)}
+                <div key={event.id || event._id || idx}>
+                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries, scenarioData.investments)}
                 </div>
               ) : null)
               .filter(Boolean)
@@ -287,8 +287,8 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
           ) : (
             scenarioData.eventSeries
               .map((event, idx) => event.eventType.type === "rebalance" ? (
-                <div key={event.id}>
-                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries)}
+                <div key={event.id || event._id || idx}>
+                  {renderEventForm(event, idx, canEdit, eventHandlers, scenarioData.eventSeries, scenarioData.investments)}
                 </div>
               ) : null)
               .filter(Boolean)

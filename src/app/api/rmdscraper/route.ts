@@ -47,7 +47,7 @@ export async function GET() {
     );
 
     console.log('MongoDB save result:', {
-      id: result.value?._id,
+      id: result?.value?._id ?? 'No document found',
       year: rmdTableData.year,
       entriesCount: tableEntries.length
     });
@@ -55,8 +55,8 @@ export async function GET() {
     return NextResponse.json({ 
       rmdTable: rmdTableData,
       dbSave: {
-        success: true,
-        id: result.value?._id.toString(),
+        success: !!result?.value,
+        id: result?.value?._id?.toString() ?? 'No document found',
         entriesCount: tableEntries.length
       }
     });
