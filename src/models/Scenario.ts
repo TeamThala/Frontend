@@ -30,6 +30,11 @@ const scenarioSchema = new Schema({
     },
   RothConversionStrategy: [{ type: Schema.Types.ObjectId, ref: "RothConversionStrategy" }],
   RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
+  rothConversion: {
+    rothConversion: { type: Boolean, default: false },
+    RothConversionStartYear: { type: Number, default: null },
+    RothConversionEndYear: { type: Number, default: null },
+  },  
   residenceState: { type: String, default: "NY" },
   owner: { type: Schema.Types.ObjectId, ref: "User", required: false },
   ownerBirthYear: { type: Number, default: 2000 },

@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
     // Read the file content and parse it as YAML
     const fileContent = await file.text();
     const scenarioData = yaml.load(fileContent) as YamlScenario;
-
+    console.log(scenarioData);
     // Map to keep track of investment types
     const investmentTypeMap = new Map<string, Types.ObjectId>();
     const investmentMap = new Map<string, Types.ObjectId>();
@@ -630,7 +630,7 @@ export async function POST(request: NextRequest) {
     // Process Roth conversion strategy
     const rothConversionStrategyIds: Types.ObjectId[] = [];
     
-    if (scenarioData.RothConversionOpt) {
+    if (scenarioData.RothConversionOpt === true) {
       const rothInvestments: Types.ObjectId[] = [];
       // Use proper type instead of any
       const rothStrategyData = scenarioData.RothConversionStrategy || [];
@@ -690,9 +690,11 @@ export async function POST(request: NextRequest) {
       RothConversionStartYear: number | null;
       RothConversionEndYear: number | null;
     } = {
-      rothConversion: scenarioData.RothConversionOpt || false,
-      RothConversionStartYear: scenarioData.RothConversionStart || null,
-      RothConversionEndYear: scenarioData.RothConversionEnd || null,
+      rothConversion: scenarioData.RothConversionOpt === true,
+      RothConversionStartYear: scenarioData.RothConversionOpt === true && scenarioData.RothConversionStart ? 
+          scenarioData.RothConversionStart : null,
+      RothConversionEndYear: scenarioData.RothConversionOpt === true && scenarioData.RothConversionEnd ? 
+          scenarioData.RothConversionEnd : null,
     };
 
     // Create life expectancy object for owner

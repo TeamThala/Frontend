@@ -26,11 +26,13 @@ export async function GET(request: NextRequest) {
       .populate({
         path: "eventSeries",
         populate: { path: "startYear.event", model: "Event" }
-      });
+      })
+      .populate("RothConversionStrategy");
 
     if (!scenario) {
       return NextResponse.json({ success: false, error: "Scenario not found" }, { status: 404 });
     }
+
 
     const investmentTypesMap = new Map();
     const investmentIdMap = new Map();
@@ -104,12 +106,11 @@ export async function GET(request: NextRequest) {
 
       if (evt.eventType && ["income", "expense"].includes(evt.eventType.type)) {
         out.initialAmount = evt.eventType.amount;
-        
+
         if (evt.eventType.expectedAnnualChange) {
           out.changeAmtOrPct = evt.eventType.expectedAnnualChange.valueType === "percentage" ? "percent" : "amount";
           out.changeDistribution = serializeDistribution(evt.eventType.expectedAnnualChange);
         }
-        
         out.inflationAdjusted = evt.eventType.inflationAdjustment;
         out.userFraction = evt.eventType.percentageOfIncome;
 
@@ -184,7 +185,11 @@ export async function GET(request: NextRequest) {
       return out;
     }).filter(Boolean); // Filter out any null values
 
-    const yamlData = {
+    // changes
+
+    // changes
+
+    const yamlData: Record<string, string | number | boolean | null | unknown[] | Record<string, unknown>> = {
       name: scenario.name,
       description: scenario.description,
       maritalStatus: scenario.type === 'couple' ? 'couple' : 'single', 
@@ -211,45 +216,54 @@ export async function GET(request: NextRequest) {
         if (typeof id === 'string') return investmentIdMap.get(id);
         return investmentIdMap.get(id.toString());
       }).filter(Boolean),
-      // Use actual Roth conversion values directly
-      RothConversionOpt: scenario.rothConversion?.rothConversion === true,
-      RothConversionStart: scenario.rothConversion?.rothConversion === true ? 
-          (scenario.rothConversion?.RothConversionStartYear || 2050) : 
-          null,
-      RothConversionEnd: scenario.rothConversion?.rothConversion === true ? 
-          (scenario.rothConversion?.RothConversionEndYear || 2060) : 
-          null,
-      RothConversionStrategy: (scenario.RothConversionStrategy || []).flatMap((r) => {
+    };
+
+    // Explicitly add Roth conversion properties as direct fields
+    yamlData.RothConversionOpt = scenario.rothConversion?.rothConversion || false;
+    yamlData.RothConversionStart = scenario.rothConversion?.rothConversion ? 
+        scenario.rothConversion.RothConversionStartYear : null;
+    yamlData.RothConversionEnd = scenario.rothConversion?.rothConversion ? 
+        scenario.rothConversion.RothConversionEndYear : null;
+    
+    // Add Roth conversion strategy
+    yamlData.RothConversionStrategy = [];
+    if (scenario.rothConversion?.rothConversion && scenario.RothConversionStrategy) {
+      yamlData.RothConversionStrategy = scenario.RothConversionStrategy.flatMap((r) => {
         if (!r || !r.investmentOrder) return [];
         return r.investmentOrder.map((id) => {
           if (typeof id === 'string') return investmentIdMap.get(id);
           return investmentIdMap.get(id.toString());
         }).filter(Boolean);
-      }),
-      financialGoal: scenario.financialGoal,
-      residenceState: scenario.residenceState,
-    };
-
-    // Ensure RothConversionStrategy is always present as an empty array if not defined
-    if (!yamlData.RothConversionStrategy) {
-      yamlData.RothConversionStrategy = [];
+      });
     }
+    
+    // Add remaining fields
+    yamlData.financialGoal = scenario.financialGoal;
+    yamlData.residenceState = scenario.residenceState;
 
     // Log Roth conversion details for debugging
     console.log('Roth Conversion details:');
-    console.log('  rothConversion:', scenario.rothConversion);
+    console.log('  rothConversion from DB:', JSON.stringify(scenario.rothConversion));
+    console.log('  Values going into YAML:');
     console.log('  RothConversionOpt:', yamlData.RothConversionOpt);
     console.log('  RothConversionStart:', yamlData.RothConversionStart);
     console.log('  RothConversionEnd:', yamlData.RothConversionEnd);
-    console.log('  RothConversionStrategy:', yamlData.RothConversionStrategy);
+    console.log('  RothConversionStrategy:', JSON.stringify(yamlData.RothConversionStrategy));
 
-    // Use js-yaml to serialize to YAML format 
+    // Generate the YAML string
     const yamlStr = yaml.dump(yamlData, { 
       lineWidth: 0,
       skipInvalid: false,
       noRefs: true
     });
-    
+
+    // Double-check if Roth conversion fields are in the YAML
+    console.log('Checking final YAML for Roth fields:');
+    console.log('  RothConversionOpt in YAML:', yamlStr.includes('RothConversionOpt:'));
+    console.log('  RothConversionStart in YAML:', yamlStr.includes('RothConversionStart:'));
+    console.log('  RothConversionEnd in YAML:', yamlStr.includes('RothConversionEnd:'));
+    console.log('  RothConversionStrategy in YAML:', yamlStr.includes('RothConversionStrategy:'));
+
     // Add header comments to match the example format
     const headerComment = `# file format for scenario import/export.  version: ${new Date().toISOString().split('T')[0]}
 # CSE416, Software Engineering, Scott D. Stoller.
@@ -262,27 +276,34 @@ export async function GET(request: NextRequest) {
 
 `;
 
-    // Ensure all required fields are present by force-adding missing ones
-    let processedYaml = yamlStr;
+    // If for some reason the fields don't appear in the YAML, manually add them
+    let finalYamlStr = headerComment + yamlStr;
     
-    // Check if fields are missing and add them if needed
-    if (!processedYaml.includes('RothConversionOpt:')) {
-      processedYaml += `RothConversionOpt: ${yamlData.RothConversionOpt}\n`;
-    }
+    // Ensure critical fields are always present
+    const requiredFields = [
+      { key: 'RothConversionOpt', value: yamlData.RothConversionOpt },
+      { key: 'RothConversionStart', value: yamlData.RothConversionStart },
+      { key: 'RothConversionEnd', value: yamlData.RothConversionEnd },
+      { key: 'RothConversionStrategy', value: JSON.stringify(yamlData.RothConversionStrategy) === '[]' ? '[]' : yamlData.RothConversionStrategy }
+    ];
     
-    if (!processedYaml.includes('RothConversionStart:')) {
-      processedYaml += `RothConversionStart: ${yamlData.RothConversionStart === null ? 'null' : yamlData.RothConversionStart}\n`;
-    }
-    
-    if (!processedYaml.includes('RothConversionEnd:')) {
-      processedYaml += `RothConversionEnd: ${yamlData.RothConversionEnd === null ? 'null' : yamlData.RothConversionEnd}\n`;
-    }
-    
-    if (!processedYaml.includes('RothConversionStrategy:')) {
-      processedYaml += `RothConversionStrategy: []\n`;
+    // Check each field and add it if missing
+    for (const field of requiredFields) {
+      if (!finalYamlStr.includes(`${field.key}:`)) {
+        console.log(`  Adding missing field: ${field.key}`);
+        if (field.key === 'RothConversionStrategy' && field.value === '[]') {
+          finalYamlStr += `${field.key}: []\n`;
+        } else {
+          finalYamlStr += `${field.key}: ${field.value}\n`;
+        }
+      }
     }
 
-    const finalYamlStr = headerComment + processedYaml;
+    console.log('Final YAML check after potential additions:');
+    console.log('  RothConversionOpt in final YAML:', finalYamlStr.includes('RothConversionOpt:'));
+    console.log('  RothConversionStart in final YAML:', finalYamlStr.includes('RothConversionStart:'));
+    console.log('  RothConversionEnd in final YAML:', finalYamlStr.includes('RothConversionEnd:'));
+    console.log('  RothConversionStrategy in final YAML:', finalYamlStr.includes('RothConversionStrategy:'));
 
     return new NextResponse(finalYamlStr, {
       status: 200,

@@ -7,7 +7,7 @@ import ScenarioSkeleton from "./components/ScenarioSkeleton";
 import { Scenario } from "@/types/scenario"; 
 import ImportScenarioDialog from "@/components/import-scenario-dialog";
 import CreateScenarioDialog from "@/components/create-scenario-dialog";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function ScenariosPage() {
   const [isGuest, setIsGuest] = useState(false);
@@ -18,7 +18,6 @@ export default function ScenariosPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isFirstScenarioDialogOpen, setIsFirstScenarioDialogOpen] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   
   useEffect(() => {
