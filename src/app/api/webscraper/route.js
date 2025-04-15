@@ -321,7 +321,7 @@ async function scrapeStateTaxData(stateCode, url) {
     };
 
     // Function to parse table data
-    const parseTable = async (selector, filingStatus) => {
+    const parseTable = async (selector) => {
       const data = await page.evaluate((sel) => {
         const rows = document.querySelectorAll(`${sel} tbody tr`);
         const tableData = [];
