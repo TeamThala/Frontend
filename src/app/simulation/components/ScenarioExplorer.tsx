@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -54,7 +55,7 @@ export default function ScenarioExplorer({
   onRunSimulation?: (paramValues: Record<string, number>) => Promise<any>;
   chartTypes?: ("multiLine" | "paramVsResult" | "shaded" | "stacked")[];
 }) {
-  const [parameters, setParameters] = useState<ScenarioParameter[]>(initialParameters);
+  const [parameters, ] = useState<ScenarioParameter[]>(initialParameters);
   const [selectedParameter, setSelectedParameter] = useState<string>(initialParameters[0]?.id || "");
   const [parameterValues, setParameterValues] = useState<Record<string, number>>({});
   const [results, setResults] = useState<ExplorationResult[]>([]);

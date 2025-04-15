@@ -56,7 +56,7 @@ interface StateTaxData {
  * - If no state tax data is available, the system will show a warning and ignore state income tax
  * - Tax brackets and standard deductions are automatically adjusted for inflation
  */
-interface TaxData {
+export interface TaxData {
   taxBrackets: {
     single: Array<{ rate: string; from: string; upto: string }>;
     'married-joint': Array<{ rate: string; from: string; upto: string }>;

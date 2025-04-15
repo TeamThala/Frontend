@@ -1,11 +1,4 @@
 import { FixedValues } from "@/types/utils";
-import { Investment } from "@/types/investment";
-
-interface YearlyInvestmentData {
-    year: number;
-    median: Investment[];
-    average: Investment[];
-  }
 
 const rothIRAType = {
   id: "inv-type-1",

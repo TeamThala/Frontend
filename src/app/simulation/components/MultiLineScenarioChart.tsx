@@ -98,7 +98,6 @@ export default function MultiLineScenarioChart({
       .attr("fill", "transparent")
       .on("mousemove", (event) => {
         const [mx] = d3.pointer(event);
-        const year = Math.round(x.invert(mx));
         let closest: { dist: number; scenario?: ScenarioLineData; point?: { year: number; value: number } } = { dist: Infinity };
 
         data.forEach(scenario => {

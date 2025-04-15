@@ -311,6 +311,7 @@ async function scrapeCapitalGains(url: string): Promise<CapitalGains> {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function saveToYaml(data: any, filename: string): Promise<void> {
   try {
     const yamlData = yaml.dump(data, {
