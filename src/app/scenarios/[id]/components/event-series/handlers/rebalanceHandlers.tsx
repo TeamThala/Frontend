@@ -1,6 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
 import { Scenario } from "@/types/scenario";
-import { RebalanceEvent } from "@/types/event";
 
 // Handle allocation type change (fixed vs glidePath)
 export const handleAllocationTypeChange = (

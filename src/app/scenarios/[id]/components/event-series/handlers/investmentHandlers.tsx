@@ -1,6 +1,5 @@
 import { Dispatch, SetStateAction } from "react";
 import { Scenario } from "@/types/scenario";
-import { InvestmentEvent } from "@/types/event";
 
 // Handle allocation type change (fixed vs glidePath) for investments
 export const handleInvestmentAllocationTypeChange = (
