@@ -77,7 +77,9 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
             if (incomeEventType.inflationAdjustment){
                 console.log(`Adjusting income event ${incomeEvent.name} for inflation with amount ${inflation} of type ${inflationType}`);
                 if (inflationType === "percentage"){
-                    incomeEventType.amount *= inflation;
+                    // Assuming inflation is provided as a percentage (e.g., 100 means 100%)
+                    // We need to add 1 to properly calculate
+                    incomeEventType.amount *= (1 + inflation/100);
                 }
                 else{
                     incomeEventType.amount += inflation;
