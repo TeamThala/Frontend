@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import ScenarioCard from "./components/ScenarioCard";
 import ScenarioSkeleton from "./components/ScenarioSkeleton";
@@ -9,7 +9,7 @@ import ImportScenarioDialog from "@/components/import-scenario-dialog";
 import CreateScenarioDialog from "@/components/create-scenario-dialog";
 import { useSearchParams } from "next/navigation";
 
-export default function ScenariosPage() {
+function ScenariosContent() {
   const [isGuest, setIsGuest] = useState(false);
   const [createdScenarios, setCreatedScenarios] = useState<Scenario[]>([]);
   const [readScenarios, setReadScenarios] = useState<Scenario[]>([]);
@@ -126,5 +126,22 @@ export default function ScenariosPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ScenariosPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto py-8 px-4">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold text-white">Scenarios</h1>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[...Array(4)].map((_, index) => (
+          <ScenarioSkeleton key={index} />
+        ))}
+      </div>
+    </div>}>
+      <ScenariosContent />
+    </Suspense>
   );
 } 

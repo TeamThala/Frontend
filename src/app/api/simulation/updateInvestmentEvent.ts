@@ -28,13 +28,15 @@ export function updateInvestmentEvent(investmentEvent: Event){
                 
             }
             else { // normal distribution
-                const normal = randomNormal(investment.investmentType.expectedAnnualIncome.mean, investment.investmentType.expectedAnnualIncome.stdDev);
-                const iterValue = normal();
-                console.log(`Investment ${investment.id} annual income has rolled a value of ${iterValue}`);
-                investment.value += iterValue;
-                if (investment.taxStatus === "pre-tax"){
-                    dCurYearIncome += iterValue;
-                    console.log(`Current year income has been updated: ${dCurYearIncome}`);
+                if (investment.investmentType.expectedAnnualIncome.type === "normal") {
+                    const normal = randomNormal(investment.investmentType.expectedAnnualIncome.mean, investment.investmentType.expectedAnnualIncome.stdDev);
+                    const iterValue = normal();
+                    console.log(`Investment ${investment.id} annual income has rolled a value of ${iterValue}`);
+                    investment.value += iterValue;
+                    if (investment.taxStatus === "pre-tax"){
+                        dCurYearIncome += iterValue;
+                        console.log(`Current year income has been updated: ${dCurYearIncome}`);
+                    }
                 }
             }
         }
@@ -55,15 +57,17 @@ export function updateInvestmentEvent(investmentEvent: Event){
                 console.log(`Investment ${investment.id} has a fixed expected return of ${investment.investmentType.expectedAnnualReturn.value} of type ${investment.investmentType.expectedAnnualReturn.valueType}`);
             }
             else { // normal distribution
-                const normal = randomNormal(investment.investmentType.expectedAnnualReturn.mean, investment.investmentType.expectedAnnualReturn.stdDev);
-                const iterValue = normal();
-                if (investment.investmentType.expectedAnnualReturn.valueType === "percentage"){
-                    investment.value *= iterValue/100;
+                if (investment.investmentType.expectedAnnualReturn.type === "normal") {
+                    const normal = randomNormal(investment.investmentType.expectedAnnualReturn.mean, investment.investmentType.expectedAnnualReturn.stdDev);
+                    const iterValue = normal();
+                    if (investment.investmentType.expectedAnnualReturn.valueType === "percentage"){
+                        investment.value *= iterValue/100;
+                    }
+                    else{
+                        investment.value += iterValue;
+                    }
+                    console.log(`Investment ${investment.id} annual return has rolled a value of ${iterValue}`);
                 }
-                else{
-                    investment.value += iterValue;
-                }
-                console.log(`Investment ${investment.id} annual return has rolled a value of ${iterValue}`);
             }
         }
         else {
