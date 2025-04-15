@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
-import puppeteer from 'puppeteer';
 
 export async function GET() {
   try {
