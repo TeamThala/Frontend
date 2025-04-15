@@ -19,6 +19,11 @@ const config: Config = {
     '/node_modules/(?!(d3-random|d3-array|d3-format)/)', // Transform `d3-random` and related dependencies
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // Recognize these file extensions
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json'
+    }
+  }
 };
 
 export default config;
