@@ -7,6 +7,7 @@ import ScenarioSkeleton from "./components/ScenarioSkeleton";
 import { Scenario } from "@/types/scenario"; 
 import ImportScenarioDialog from "@/components/import-scenario-dialog";
 import CreateScenarioDialog from "@/components/create-scenario-dialog";
+import { useSearchParams } from "next/navigation";
 
 export default function ScenariosPage() {
   const [isGuest, setIsGuest] = useState(false);
@@ -15,7 +16,9 @@ export default function ScenariosPage() {
   const [readWriteScenarios, setReadWriteScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isFirstScenarioDialogOpen, setIsFirstScenarioDialogOpen] = useState(false);
+  const searchParams = useSearchParams();
   
   useEffect(() => {
     // Ensure the page has a black background
@@ -66,7 +69,7 @@ export default function ScenariosPage() {
         document.body.classList.remove('bg-black');
       }
     };
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -78,7 +81,7 @@ export default function ScenariosPage() {
               Create a Scenario
             </Button>
           </CreateScenarioDialog>
-          <ImportScenarioDialog>
+          <ImportScenarioDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
             <Button className="bg-purple-600 hover:bg-purple-700">
               Import a Scenario
             </Button>

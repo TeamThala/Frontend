@@ -1,31 +1,43 @@
 capitalGainsRates:
   zeroPercent:
     - status: Single
-      threshold: $47,025
+      range:
+        from: '0'
+        to: '47025'
     - status: Married Filing Jointly
-      threshold: $94,050
+      range:
+        from: '0'
+        to: '94050'
     - status: Head of Household
-      threshold: $63,000
+      range:
+        from: '0'
+        to: '63000'
   fifteenPercent:
     - status: Single
       range:
-        from: $47,025
-        to: $94,050
+        from: '47025'
+        to: '94050'
     - status: Married Filing Jointly
       range:
-        from: $47,025
-        to: $291,850
+        from: '47025'
+        to: '291850'
     - status: Married Filing Separately
       range:
-        from: $94,050
-        to: $583,750
+        from: '94050'
+        to: '583750'
   twentyPercent:
     - status: Single
-      threshold: Above 15% threshold
+      range:
+        from: '94050'
+        to: Infinity
     - status: Married Filing Jointly
-      threshold: Above 15% threshold
-    - status: Head of Household
-      threshold: Above 15% threshold
+      range:
+        from: '291850'
+        to: Infinity
+    - status: Married Filing Separately
+      range:
+        from: '583750'
+        to: Infinity
   specialRates:
     qualifiedSmallBusinessStock: 28%
     collectibles: 28%

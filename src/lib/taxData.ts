@@ -18,9 +18,9 @@ interface StandardDeductions {
 
 // Capital gains structure
 interface CapitalGainsData {
-  zeroPercent: Array<{ status: string; threshold: string }>;
+  zeroPercent: Array<{ status: string; range: { from: string; to: string } }>;
   fifteenPercent: Array<{ status: string; range: { from: string; to: string } }>;
-  twentyPercent: Array<{ status: string; threshold: string }>;
+  twentyPercent: Array<{ status: string; range: { from: string; to: string } }>;
   specialRates: {
     qualifiedSmallBusinessStock: string;
     collectibles: string;
@@ -48,6 +48,14 @@ interface StateTaxData {
   }
 }
 
+/**
+ * State Tax Data Handling:
+ * - State tax rates and brackets are read from the static state_tax_data.yaml file
+ * - The file contains 2024 tax rates for NY, NJ, and CT
+ * - For other states, users can upload their own YAML file in the same format
+ * - If no state tax data is available, the system will show a warning and ignore state income tax
+ * - Tax brackets and standard deductions are automatically adjusted for inflation
+ */
 interface TaxData {
   taxBrackets: {
     single: Array<{ rate: string; from: string; upto: string }>;
