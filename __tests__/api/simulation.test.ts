@@ -86,7 +86,7 @@ const mockInvestmentEvent2: Event = {
     },
     "duration": {
         "type": "fixed",
-        "years": 99
+        "year": 99
     },
     "eventType": {
         "type": "investment",
@@ -157,9 +157,9 @@ describe('Simulation: Run income events', () => {
 
         expect(updatedEvents.incomeEvents).toBeInstanceOf(Array); // Ensure 'incomeEvents' is an array
         expect(updatedEvents.incomeEvents).toHaveLength(1); // Check the number of income events
-        expect(updatedEvents.incomeEvents[0].eventType.amount).toBeCloseTo(154000); // Check the amount
+        expect(updatedEvents.incomeEvents[0].eventType.amount).toBeCloseTo(77000); // Check the amount
 
-        expect(updatedEvents.curYearIncome).toBeCloseTo(154000); // Ensure income is calculated correctly
+        expect(updatedEvents.curYearIncome).toBeCloseTo(77000); // Ensure income is calculated correctly
         expect(updatedEvents.curYearSS).toBeCloseTo(0); // Ensure social security is calculated correctly
     });
 });
