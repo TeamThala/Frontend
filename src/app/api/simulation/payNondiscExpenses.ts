@@ -104,10 +104,10 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
             const withdrawalAmount = Math.min(investment.value, -1 * cashInvestment.value);
             const f = withdrawalAmount / investment.value; // fraction of investment value withdrawn
             if (investment.taxStatus === "pre-tax"){
-                dCurYearIncome += f * (investment.value - investment.purchasePrice); // capital gains on pre-tax investments
+                dCurYearIncome += f * (investment.value - (investment.purchasePrice || 0)); // capital gains on pre-tax investments
             }
             else if (investment.taxStatus === "non-retirement"){
-                dCurYearGains += f * (investment.value - investment.purchasePrice);
+                dCurYearGains += f * (investment.value - (investment.purchasePrice || 0));
             }
             // after-tax does not have taxes on capital gains
             investment.value -= withdrawalAmount;
