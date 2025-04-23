@@ -1,6 +1,9 @@
 import { updateIncomeEvents } from '@/app/api/simulation/updateIncomeEvents';
 import { updateInvestmentEvent } from '@/app/api/simulation/updateInvestmentEvent';
 import { Event } from '@/types/event';
+import { Investment } from '@/types/investment';
+import { rothConversion } from '@/app/api/simulation/rothConversion';
+import { getTaxData } from '@/lib/taxData';
 
 const mockIncomeEvent: Event = {
     "id": "incomeEvent1",
@@ -147,6 +150,105 @@ const mockInvestmentEvent2: Event = {
     }
 };
 
+const mockCashInvestment: Investment = {
+    "id": "cashInvestment",
+    "value": 10000,
+    "investmentType": {
+        "id": "cash",
+        "name": "Cash Account",
+        "description": "Default cash investment",
+        "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+        },
+        "taxability": true
+    },
+    "taxStatus": "non-retirement",
+    "purchasePrice": 0
+};
+const mockInvestment1: Investment = {
+    "id": "investment1",
+    "value": 10000,
+    "investmentType": {
+        "id": "investmenttype1",
+        "name": "Variable amounts investment",
+        "description": "Normal annual % return, normal annual amount income",
+        "expectedAnnualReturn": {
+            "type": "normal",
+            "valueType": "percentage",
+            "mean": 100,
+            "stdDev": 1
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "normal",
+            "valueType": "amount",
+            "mean": 1000,
+            "stdDev": 50
+        },
+        "taxability": true
+    },
+    "taxStatus": "non-retirement",
+    "purchasePrice": 5000
+};
+const mockInvestment2: Investment = {
+    "id": "investment2",
+    "value": 100000,
+    "investmentType": {
+        "id": "investmenttype1",
+        "name": "Variable amounts investment",
+        "description": "Normal annual % return, normal annual amount income",
+        "expectedAnnualReturn": {
+            "type": "normal",
+            "valueType": "percentage",
+            "mean": 100,
+            "stdDev": 1
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "normal",
+            "valueType": "amount",
+            "mean": 1000,
+            "stdDev": 50
+        },
+        "taxability": true
+    },
+    "taxStatus": "pre-tax",
+    "purchasePrice": 5000
+};
+const mockInvestment3: Investment = {
+    "id": "investment3",
+    "value": 10000,
+    "investmentType": {
+        "id": "investmenttype1",
+        "name": "Variable amounts investment",
+        "description": "Normal annual % return, normal annual amount income",
+        "expectedAnnualReturn": {
+            "type": "normal",
+            "valueType": "percentage",
+            "mean": 100,
+            "stdDev": 1
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "normal",
+            "valueType": "amount",
+            "mean": 1000,
+            "stdDev": 50
+        },
+        "taxability": true
+    },
+    "taxStatus": "after-tax",
+    "purchasePrice": 5000
+};
+
 describe('Simulation: Run income events', () => {
     it('should update income events correctly', async () => {
         const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage");
@@ -174,3 +276,12 @@ describe('Simulation: Update values of investments', () => {
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[1].value).toBeCloseTo(12100); // (value + income) * annual return
     });
 });
+
+describe('Simulation: Roth Conversion optimizer', () => {
+    it('should transfer investments correctly', () => {
+        const taxData = getTaxData(); // has 2025 tax data
+        const rc = rothConversion(70000, 0, taxData, false, 2025, [mockInvestment2], [mockCashInvestment, mockInvestment1, mockInvestment2, mockInvestment3]);
+        expect(rc).toBeDefined(); // Ensure the result is not undefined or null
+        expect(rc).toBeCloseTo(45125);
+    });
+})
