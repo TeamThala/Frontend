@@ -187,7 +187,7 @@ export async function simulation(scenario: Scenario){
                                 console.log(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
 
                                 // Find or create corresponding non-retirement investment
-                                let targetInv = investmentEventType.assetAllocation.investments
+                                const targetInv = investmentEventType.assetAllocation.investments
                                     .find(inv => 
                                         inv.investmentType.name === sourceInv.investmentType.name && 
                                         inv.taxStatus === "non-retirement"
@@ -285,7 +285,8 @@ export async function simulation(scenario: Scenario){
                 viewPermissions: scenario.viewPermissions,
                 editPermissions: scenario.editPermissions,
                 type: "individual",
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                contributionsLimit: scenario.contributionsLimit
             }
             scenario = newScenario; // convert current scenario into a single scenario
         }
