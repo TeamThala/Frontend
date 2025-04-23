@@ -129,8 +129,15 @@ export async function simulation(scenario: Scenario){
         }
 
         curYearIncome += investmentResults;
-        // TODO: Run Roth conversion optimizer if enabled
-        rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments);
+        if (scenario.rothConversion !== null){
+            console.log(`Roth conversion for ${year} is ${scenario.rothConversion}`);
+            const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments);
+            if (rc === null || rc === undefined){
+                console.log(`Error: Could not finish Roth conversion for year ${year}`);
+                return null;
+            }
+            curYearIncome += rc;
+        }
         const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData);
         if (nondiscExpenseRet === null){
             console.log(`Ending simulation run...`);

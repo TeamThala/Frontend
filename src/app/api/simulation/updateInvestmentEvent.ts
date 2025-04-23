@@ -20,7 +20,7 @@ export function updateInvestmentEvent(investmentEvent: Event){
         if (investment.investmentType.expectedAnnualIncome !== null){ // TODO: CHECK IF THIS IS ALWAYS AMOUNT
             if (investment.investmentType.expectedAnnualIncome.type === "fixed"){
                 investment.value += investment.investmentType.expectedAnnualIncome.value;
-                if (investment.taxStatus === "pre-tax"){
+                if (investment.taxStatus === "non-retirement" && investment.investmentType.taxability === true){
                     dCurYearIncome += investment.investmentType.expectedAnnualIncome.value;
                     console.log(`Investment ${investment.id} has a fixed expected income of ${investment.investmentType.expectedAnnualIncome.value}`);
                     console.log(`Current year income has been incremented by ${dCurYearIncome}`);
@@ -33,7 +33,7 @@ export function updateInvestmentEvent(investmentEvent: Event){
                     const iterValue = normal();
                     console.log(`Investment ${investment.id} annual income has rolled a value of ${iterValue}`);
                     investment.value += iterValue;
-                    if (investment.taxStatus === "pre-tax"){
+                    if (investment.taxStatus === "non-retirement" && investment.investmentType.taxability === true){
                         dCurYearIncome += iterValue;
                         console.log(`Current year income has been updated: ${dCurYearIncome}`);
                     }

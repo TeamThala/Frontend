@@ -1,0 +1,25 @@
+{
+    "id": "investment2",
+    "value": 100000,
+    "investmentType": {
+        "id": "investmenttype1",
+        "name": "Variable amounts investment",
+        "description": "Normal annual % return, normal annual amount income",
+        "expectedAnnualReturn": {
+            "type": "normal",
+            "valueType": "percentage",
+            "mean": 100,
+            "stdDev": 1
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "normal",
+            "valueType": "amount",
+            "mean": 1000,
+            "stdDev": 50
+        },
+        "taxability": true
+    },
+    "taxStatus": "pre-tax",
+    "purchasePrice": 5000
+}

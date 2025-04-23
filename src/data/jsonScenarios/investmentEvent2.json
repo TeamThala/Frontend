@@ -1,0 +1,122 @@
+{
+    "id": "cashAndInvest2",
+    "name": "Cash Only Event + Investment Event 2",
+    "description": "Default cash event and investment event 1. Fixed allocation ratio. Has investments to support Roth conversion.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "years": 99
+    },
+    "eventType": {
+        "type": "investment",
+        "inflationAdjustment": true,
+        "assetAllocation":{
+            "type": "fixed",
+            "investments":[
+                {
+                    "id": "cashInvestment",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "cash",
+                        "name": "Cash Account",
+                        "description": "Default cash investment",
+                        "expectedAnnualReturn": {
+                            "type": "fixed",
+                            "valueType": "percentage",
+                            "value": 100
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "fixed",
+                            "valueType": "amount",
+                            "value": 0
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 0
+                },
+                {
+                    "id": "investment1",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 100,
+                            "stdDev": 1
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": 50
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 5000
+                },
+                {
+                    "id": "investment2",
+                    "value": 100000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 100,
+                            "stdDev": 1
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": 50
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "pre-tax",
+                    "purchasePrice": 5000
+                },
+                {
+                    "id": "investment3",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 100,
+                            "stdDev": 1
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": 50
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "after-tax",
+                    "purchasePrice": 5000
+                }
+            ],
+            "percentages": [50,50]
+        },
+        "maxCash": 999999999
+    }
+}

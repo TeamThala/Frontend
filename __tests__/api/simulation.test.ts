@@ -168,7 +168,7 @@ describe('Simulation: Update values of investments', () => {
     it('should update investment events correctly', () => {
         const dCurYearIncome = updateInvestmentEvent(mockInvestmentEvent2);
         expect(dCurYearIncome).toBeDefined(); // Ensure the result is not undefined or null
-        expect(dCurYearIncome).toBe(0); // No pre-tax accounts, should not have any income counted
+        expect(dCurYearIncome).toBe(1000); // non-retirement income from investment1
 
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[0].value).toBeCloseTo(10000); // cash account does not change
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[1].value).toBeCloseTo(12100); // (value + income) * annual return
