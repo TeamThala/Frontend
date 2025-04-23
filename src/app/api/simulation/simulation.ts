@@ -1,5 +1,5 @@
 import { Scenario } from '@/types/scenario';
-import { Event, FixedYear, EventYear } from '@/types/event';
+import { Event, FixedYear, EventYear, InvestmentEvent } from '@/types/event';
 import { randomNormal } from 'd3-random';
 import { getTaxData } from '@/lib/taxData';
 // import client from '@/lib/db';
@@ -9,6 +9,8 @@ import { updateIncomeEvents } from './updateIncomeEvents';
 import { updateInvestmentEvent } from './updateInvestmentEvent';
 import { payNondiscExpenses } from './payNondiscExpenses';
 import { updateTaxBrackets } from './taxInflation';
+import { rothConversion } from './rothConversion';
+import { Investment } from '@/types/investment';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -66,6 +68,12 @@ export async function simulation(scenario: Scenario){
         console.log("Error: No events found.");
         return null;
     }
+    // Initialize investment related fields to use unified objects
+    initializeInvestmentEvents(investmentEvents, scenario);
+    initializeStrategy(scenario.RMDStrategy, scenario);
+    initializeStrategy(scenario.RothConversionStrategy, scenario);
+    initializeStrategy(scenario.expenseWithdrawalStrategy, scenario);
+
 
     // Variables to be carried into the next iteration of the loop
     let curYearGains: number = 0;
@@ -103,7 +111,6 @@ export async function simulation(scenario: Scenario){
             return null;
         }
 
-        // TODO: Run income events, add to cash investment
         const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType);
         if (incomeResults === null){
             console.log("Error: Could not update income events.");
@@ -122,8 +129,15 @@ export async function simulation(scenario: Scenario){
         }
 
         curYearIncome += investmentResults;
-        // TODO: Run Roth conversion optimizer if enabled
-        // TODO: Pay non-discretionary expenses and previous year's taxes
+        if (scenario.rothConversion !== null){
+            console.log(`Roth conversion for ${year} is ${scenario.rothConversion}`);
+            const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments);
+            if (rc === null || rc === undefined){
+                console.log(`Error: Could not finish Roth conversion for year ${year}`);
+                return null;
+            }
+            curYearIncome += rc;
+        }
         const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData);
         if (nondiscExpenseRet === null){
             console.log(`Ending simulation run...`);
@@ -301,5 +315,46 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
         }
     }
     return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
+}
+
+function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenario){
+    // replaces investments in all investment events with references to investment objects in scenario.investments
+    for (let i=0; i<investmentEvents.length; i++){
+        const investmentEvent = investmentEvents[i];
+        const investmentType = investmentEvent.eventType as InvestmentEvent;
+        const investments = investmentType.assetAllocation.investments;
+        if (investments === null){
+            console.log(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+            return null;
+        }
+        for (let j=0; j<investments.length; j++){
+            const investment = investments[j];
+            const investmentId = investment.id;
+            const investmentInField = scenario.investments.find(i => i.id === investmentId);
+            if (investmentInField){
+                investments[j] = investmentInField; // replace with reference to investment object in scenario.investments
+            }
+            else{
+                console.log(`Error: Could not find investment with id ${investmentId}`);
+                return null;
+            }
+        }
+    }
+}
+
+function initializeStrategy(strategy: Investment[], scenario: Scenario){
+    // replace any Investment[] strategy with references to investment objects in scenario.investments
+    for(let i=0; i<strategy.length; i++){
+        const investment = strategy[i];
+        const investmentId = investment.id;
+        const investmentInField = scenario.investments.find(i => i.id === investmentId);
+        if (investmentInField){
+            strategy[i] = investmentInField; // replace with reference to investment object in scenario.investments
+        }
+        else{
+            console.log(`Error: Could not find investment with id ${investmentId}`);
+            return null;
+        }
+    }
 }
 

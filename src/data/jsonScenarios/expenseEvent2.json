@@ -18,8 +18,8 @@
         "expectedAnnualChange": {
             "type": "uniform",
             "valueType": "percentage",
-            "min": 100,
-            "max": 150
+            "min": 95,
+            "max": 105
         }
     }
 }
