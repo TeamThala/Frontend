@@ -19,7 +19,7 @@ export interface BaseScenario {
     expenseWithdrawalStrategy: Investment[]; // * Assume this is sorted and only contains Investment Events
     inflationRate: FixedValues | NormalDistributionValues | UniformDistributionValues;
     RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
-    RMDStrategy: Investment[]; // Todo: Add RMD Strategy
+    RMDStrategy: Investment[]; // Array of investments in order of distribution
     rothConversion: WithRothConversion | null;
     residenceState: string
     owner: User;
