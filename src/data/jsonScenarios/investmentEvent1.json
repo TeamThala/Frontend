@@ -8,7 +8,7 @@
     },
     "duration": {
         "type": "fixed",
-        "years": 99
+        "year": 99
     },
     "eventType": {
         "type": "investment",

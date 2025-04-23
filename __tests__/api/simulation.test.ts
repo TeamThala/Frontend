@@ -149,7 +149,7 @@ const mockInvestmentEvent2: Event = {
 
 describe('Simulation: Run income events', () => {
     it('should update income events correctly', async () => {
-        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 100, "percentage");
+        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage");
         expect(updatedEvents).toBeDefined(); // Ensure the result is not undefined or null
         expect(updatedEvents).toHaveProperty('incomeEvents'); // Ensure 'incomeEvents' exists
         expect(updatedEvents).toHaveProperty('curYearIncome'); // Ensure 'curYearIncome' exists

@@ -169,8 +169,8 @@
                 "expectedAnnualChange": {
                     "type": "uniform",
                     "valueType": "percentage",
-                    "min": 100,
-                    "max": 150
+                    "min": 95,
+                    "max": 105
                 }
             }
         },
@@ -184,7 +184,7 @@
             },
             "duration": {
                 "type": "fixed",
-                "year": 10
+                "year": 50
             },
             "eventType": {
                 "type": "income",

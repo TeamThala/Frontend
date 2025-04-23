@@ -1,6 +1,6 @@
 {
-    "id": "scenario2",
-    "name": "Test Scenario 2",
+    "id": "scenario3",
+    "name": "Test Scenario 3",
     "description": "Random values if possible. Inflation is included. Roth conversion is enabled.",
     "financialGoal": 100000,
     "investments": [
@@ -114,7 +114,7 @@
             },
             "duration": {
                 "type": "fixed",
-                "years": 99
+                "year": 99
             },
             "eventType": {
                 "type": "investment",
@@ -270,8 +270,8 @@
                 "expectedAnnualChange": {
                     "type": "uniform",
                     "valueType": "percentage",
-                    "min": 100,
-                    "max": 150
+                    "min": 95,
+                    "max": 105
                 }
             }
         },
@@ -285,7 +285,7 @@
             },
             "duration": {
                 "type": "fixed",
-                "year": 10
+                "year": 50
             },
             "eventType": {
                 "type": "income",
