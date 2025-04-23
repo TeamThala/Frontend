@@ -11,6 +11,7 @@ import { payNondiscExpenses } from './payNondiscExpenses';
 import { updateTaxBrackets } from './taxInflation';
 import { rothConversion } from './rothConversion';
 import { Investment } from '@/types/investment';
+import { payDiscExpenses } from './payDiscExpenses';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -151,6 +152,7 @@ export async function simulation(scenario: Scenario){
         curYearEarlyWithdrawals = 0;
         console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // TODO: Pay discretionary expenses in spending strategy
+        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
 
