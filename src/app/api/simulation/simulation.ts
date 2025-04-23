@@ -251,7 +251,7 @@ export async function simulation(scenario: Scenario){
         curYearGains = 0;
         curYearEarlyWithdrawals = 0;
         console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
-        // TODO: Pay discretionary expenses in spending strategy
+        // Pay discretionary expenses in spending strategy
         payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
@@ -261,6 +261,7 @@ export async function simulation(scenario: Scenario){
         year++;
         updateTaxBrackets(taxData, inflation); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
+        scenario.contributionsLimit *= inflation; // Update contribution limits for next year
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
         // Check if spouse is alive
