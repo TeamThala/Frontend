@@ -6,15 +6,29 @@ import fs from 'fs';
 import path from 'path';
 import RMDTable from '@/models/RMDTable';
 import client from '@/lib/db';
+import type { RmdTableDocument } from '@/models/RMDTable';
 
 interface RmdTable {
   [age: number]: number;
 }
 
 interface RmdTableData {
-  year: number;
+  year: number;  // Tax year for which these factors apply
   table: RmdTable;
   isDefault?: boolean;
+}
+
+/**
+ * Validates the RMD table data
+ * Ensures all required ages (72-120) are present and factors are within expected ranges
+ */
+function validateRmdTable(table: RmdTable): boolean {
+  const requiredAges = Array.from({ length: 49 }, (_, i) => i + 72); // 72 to 120
+  const hasAllAges = requiredAges.every(age => typeof table[age] === 'number');
+  const validFactors = Object.values(table).every(factor => 
+    typeof factor === 'number' && factor > 0 && factor <= 30
+  );
+  return hasAllAges && validFactors;
 }
 
 export async function GET() {
@@ -26,14 +40,26 @@ export async function GET() {
     // Scrape RMD Table III (Uniform Life Table) from IRS Publication 590-B
     const rmdTableData = await scrapeRmdTable();
     
-    // Save to YAML file
-    await saveToYaml(rmdTableData, 'rmd_table.yaml');
+    // Validate scraped data
+    if (!validateRmdTable(rmdTableData.table)) {
+      console.warn('Scraped RMD table validation failed, using default values');
+      return NextResponse.json({ 
+        rmdTable: getDefaultRmdTable(),
+        error: 'Scraped data validation failed'
+      }, { status: 200 });
+    }
+    
+    // Save to YAML file with documentation
+    const yamlComment = '## Note: Table includes age 72 because IRS Table III starts there. ' +
+      'LFP starts RMDs at age 73 per SECURE 2.0 simplification.\n' +
+      '## RMD for year Y uses factors from December 31 of year Y, paid in year Y+1.\n';
+    await saveToYaml(rmdTableData, 'rmd_table.yaml', yamlComment);
 
     // Convert table data for MongoDB storage
     const tableEntries = Object.entries(rmdTableData.table).map(([age, period]) => ({
       age: parseInt(age),
       distributionPeriod: period
-    }));
+    })).sort((a, b) => a.age - b.age); // Keep sorting for readability
 
     // Save to MongoDB
     const result = await RMDTable.findOneAndUpdate(
@@ -41,13 +67,14 @@ export async function GET() {
       {
         year: rmdTableData.year,
         table: tableEntries,
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        isDefault: rmdTableData.isDefault ?? false
       },
       { upsert: true, returnDocument: 'after' }
-    );
+    ) as RmdTableDocument | null;
 
     console.log('MongoDB save result:', {
-      id: result?.value?._id ?? 'No document found',
+      id: result?._id ?? 'No document found',
       year: rmdTableData.year,
       entriesCount: tableEntries.length
     });
@@ -55,8 +82,8 @@ export async function GET() {
     return NextResponse.json({ 
       rmdTable: rmdTableData,
       dbSave: {
-        success: !!result?.value,
-        id: result?.value?._id?.toString() ?? 'No document found',
+        success: !!result,
+        id: result?._id?.toString() ?? 'No document found',
         entriesCount: tableEntries.length
       }
     });
@@ -120,7 +147,8 @@ async function scrapeRmdTable(): Promise<RmdTableData> {
     
     return {
       year: new Date().getFullYear(),
-      table: rmdTable
+      table: rmdTable,
+      isDefault: false
     };
   } catch (error) {
     console.error('Error scraping RMD table:', error);
@@ -150,10 +178,10 @@ function getDefaultRmdTable(): RmdTableData {
   };
 }
 
-async function saveToYaml(data: RmdTableData, filename: string): Promise<void> {
+async function saveToYaml(data: RmdTableData, filename: string, comment: string = ''): Promise<void> {
   const yamlData = yaml.dump(data, { indent: 2, lineWidth: -1 });
   const rootDir = process.cwd();
   const filePath = path.join(rootDir, filename);
-  fs.writeFileSync(filePath, yamlData, 'utf8');
+  fs.writeFileSync(filePath, comment + yamlData, 'utf8');
   console.log(`RMD YAML file saved at: ${filePath}`);
 } 

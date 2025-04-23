@@ -38,9 +38,20 @@ export class RMDService {
   }
 
   /**
-   * Calculate the RMD amount for a given account balance and age
+   * Calculate the RMD amount for a distribution year based on previous year's balance and age
+   * @param accountBalance The total balance of pre-tax accounts as of December 31 of the previous year
+   * @param age The person's age at the end of the previous year
+   * @returns The RMD amount that must be distributed by December 31 of the current year
    */
   public calculateRmd(accountBalance: number, age: number): number {
+    if (age < 73) { // RMD calculations only start at age 73
+      throw new Error('RMD calculations start at age 73 per SECURE 2.0 Act');
+    }
+    
+    if (accountBalance < 0) {
+      throw new Error('Account balance cannot be negative');
+    }
+
     const factor = this.getRmdFactor(age);
     return accountBalance / factor;
   }
@@ -67,10 +78,17 @@ export class RMDService {
       if (!response.ok) throw new Error('Failed to fetch RMD table from scraper');
       const data = (await response.json()) as { rmdTable: RmdTableData };
 
+      // Store in database first
       await this.storeRmdTable(data.rmdTable, year);
 
-      this.currentRmdTable = data.rmdTable.table;
-      return data.rmdTable.table;
+      // Convert scraped data to RmdTable format
+      const table: RmdTable = {};
+      Object.entries(data.rmdTable.table).forEach(([age, distributionPeriod]) => {
+        table[parseInt(age)] = distributionPeriod;
+      });
+      
+      this.currentRmdTable = table;
+      return table;
     } catch (error) {
       console.error('Error fetching RMD table:', error);
       throw new Error('Failed to get RMD table');
@@ -117,16 +135,29 @@ export class RMDService {
   }
 
   /**
-   * Execute RMD distributions according to strategy
+   * Execute RMD distributions according to strategy.
+   * @param distributionYear The year in which the RMD must be distributed (Y+1)
+   * @param age The person's current age in the distribution year
+   * @param previousYearPretaxAccounts Pre-tax accounts with balances as of December 31 of previous year
+   * @param rmdStrategy Strategy determining which accounts to withdraw from
    */
   public async executeRmdDistribution(
-    year: number,
+    distributionYear: number,
     age: number,
-    pretaxAccounts: Investment[],
+    previousYearPretaxAccounts: Investment[],
     rmdStrategy: RmdStrategy
   ): Promise<RmdDistribution> {
-    const totalBalance = pretaxAccounts.reduce((sum, inv) => sum + inv.balance, 0);
-    const rmdAmount = this.calculateRmd(totalBalance, age);
+    // Validate age requirements per SECURE 2.0 Act
+    if (age < 74) {
+      throw new Error('RMDs start at age 73 and are paid in the year the person turns 74');
+    }
+
+    // Calculate RMD using previous year's values
+    const previousYearAge = age - 1;  // Age at the end of the year for which RMD is being calculated
+    const previousYearBalance = previousYearPretaxAccounts.reduce((sum, inv) => sum + inv.balance, 0);
+    
+    // Calculate RMD amount that must be distributed by December 31 of distributionYear
+    const rmdAmount = this.calculateRmd(previousYearBalance, previousYearAge);
 
     const distributedInvestments: RmdDistribution['distributedInvestments'] = [];
     let remaining = rmdAmount;
@@ -134,7 +165,7 @@ export class RMDService {
     for (const investmentId of rmdStrategy.investmentOrder) {
       if (remaining <= 0) break;
 
-      const investment = pretaxAccounts.find(acc => acc.id === investmentId);
+      const investment = previousYearPretaxAccounts.find(acc => acc.id === investmentId);
       if (!investment) continue;
 
       const distribution = Math.min(investment.balance, remaining);
@@ -143,9 +174,9 @@ export class RMDService {
     }
 
     return {
-      year,
+      year: distributionYear,
       age,
-      pretaxAccountBalance: totalBalance,
+      pretaxAccountBalance: previousYearBalance,
       distributionAmount: rmdAmount,
       distributedInvestments,
     };

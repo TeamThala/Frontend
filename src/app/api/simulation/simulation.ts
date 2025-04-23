@@ -12,6 +12,8 @@ import { updateTaxBrackets } from './taxInflation';
 import { rothConversion } from './rothConversion';
 import { Investment } from '@/types/investment';
 import { payDiscExpenses } from './payDiscExpenses';
+import { RMDService } from '@/services/rmdService';
+import { Investment, RmdStrategy } from '@/types/rmd';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -121,7 +123,105 @@ export async function simulation(scenario: Scenario){
         const curYearSS = incomeResults.curYearSS;
         console.log(`Income for current year ${year}: ${curYearIncome}`);
         console.log(`Social Security for current year ${year}: ${curYearSS}`);
-        // TODO: Perform RMD for previous year
+        
+        // RMD for previous year
+
+        // Perform RMD for previous year if applicable
+        if (age >= 74) {  // RMDs start at 73, paid at 74
+            console.log(`=== Processing RMD for age ${age} in year ${year} ===`);
+            const rmdService = RMDService.getInstance();
+            
+            // Get previous year's pre-tax accounts
+            const investmentEventType = currentInvestmentEvent.eventType as InvestmentEvent;
+            if (investmentEventType.assetAllocation?.investments) {
+                const previousYearPretaxAccounts = investmentEventType.assetAllocation.investments
+                    .filter(inv => inv.taxStatus === "pre-tax" && inv.value > 0)
+                    .map(inv => ({
+                        id: inv.id,
+                        name: inv.id,
+                        balance: inv.value,
+                        accountType: "pretax"
+                    } as Investment));
+
+                console.log(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
+                previousYearPretaxAccounts.forEach(acc => {
+                    console.log(`  - ${acc.name}: $${acc.balance}`);
+                });
+
+                // Only proceed if we have pre-tax accounts and an RMD strategy
+                if (previousYearPretaxAccounts.length > 0 && Array.isArray(scenario.RMDStrategy) && scenario.RMDStrategy.length > 0) {
+                    try {
+                        // Create RMD strategy from the ordered array of investments
+                        const rmdStrategy: RmdStrategy = {
+                            name: "Simulation RMD Strategy",
+                            investmentOrder: scenario.RMDStrategy.map(inv => inv.id)
+                        };
+                        console.log(`RMD distribution order: ${rmdStrategy.investmentOrder.join(', ')}`);
+
+                        // Execute RMD distribution
+                        const distribution = await rmdService.executeRmdDistribution(
+                            year,  // current year is the distribution year
+                            age,
+                            previousYearPretaxAccounts,
+                            rmdStrategy
+                        );
+
+                        // Add RMD to current year's income
+                        curYearIncome += distribution.distributionAmount;
+                        console.log(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
+                        console.log(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
+                        
+                        // Not sure if this is correct
+                        // Process the distributions - transfer from pre-tax to non-retirement
+                        // Note: RMD transfers work in dollars only - no share counts or portfolio percentages per requirements
+                        console.log('Processing distributions:');
+                        for (const dist of distribution.distributedInvestments) {
+                            console.log(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
+                            const sourceInv = investmentEventType.assetAllocation.investments
+                                .find(inv => inv.id === dist.investmentId);
+                            
+                            if (sourceInv) {
+                                // Reduce the pre-tax investment value
+                                const oldValue = sourceInv.value;
+                                sourceInv.value -= dist.amount;
+                                console.log(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
+
+                                // Find or create corresponding non-retirement investment
+                                let targetInv = investmentEventType.assetAllocation.investments
+                                    .find(inv => 
+                                        inv.investmentType.name === sourceInv.investmentType.name && 
+                                        inv.taxStatus === "non-retirement"
+                                    );
+
+                                if (targetInv) {
+                                    // Add to existing non-retirement investment
+                                    const oldTargetValue = targetInv.value;
+                                    targetInv.value += dist.amount;
+                                    console.log(`  Added to existing non-retirement ${targetInv.id}: $${oldTargetValue} -> $${targetInv.value}`);
+                                } else { //CREATING NEW INVESTMENT HERE!
+                                    // Create new non-retirement investment
+                                    const newInv = {
+                                        id: `${sourceInv.id}-nonret`,
+                                        value: dist.amount,
+                                        taxStatus: "non-retirement" as const, // strictly typed to accept only: taxStatus: "non-retirement" | "pre-tax" | "after-tax", else would infer as generic string.
+                                        investmentType: sourceInv.investmentType,
+                                        purchasePrice: dist.amount  // Set purchase price to distribution amount
+                                    };
+                                    investmentEventType.assetAllocation.investments.push(newInv);
+                                    console.log(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
+                                }
+                            }
+                        }
+                        console.log('=== RMD processing complete ===');
+                    } catch (error) {
+                        console.error('Error executing RMD distribution:', error);
+                        // Continue simulation even if RMD fails
+                    }
+                } else {
+                    console.log('Skipping RMD: No pre-tax accounts or RMD strategy available');
+                }
+            }
+        }
 
         const investmentResults = updateInvestmentEvent(currentInvestmentEvent);
         if (investmentResults === null){

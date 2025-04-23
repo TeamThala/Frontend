@@ -1,3 +1,5 @@
+## Note: Table includes age 72 because IRS Table III starts there. LFP starts RMDs at age 73 per SECURE 2.0 simplification.
+## RMD for year Y uses factors from December 31 of year Y, paid in year Y+1.
 year: 2025
 table:
   '72': 27.4
@@ -49,3 +51,4 @@ table:
   '118': 2.5
   '119': 2.3
   '120': 2
+isDefault: false
