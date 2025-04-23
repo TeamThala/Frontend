@@ -28,6 +28,7 @@ export interface BaseScenario {
     viewPermissions: User[];
     editPermissions: User[];
     updatedAt: Date;
+    contributionsLimit: number;
 }
 
 export interface RothConversion {

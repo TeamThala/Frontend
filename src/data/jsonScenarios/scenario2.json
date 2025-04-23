@@ -329,5 +329,6 @@
     "viewPermissions": [],
     "editPermissions": [],
     "updatedAt": "2023-10-05T14:30:00Z",
-    "type": "individual"
+    "type": "individual",
+    "contributionsLimit": 23500
 }
