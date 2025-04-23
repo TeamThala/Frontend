@@ -13,7 +13,7 @@ import { rothConversion } from './rothConversion';
 import { Investment } from '@/types/investment';
 import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
-import { Investment, RmdStrategy } from '@/types/rmd';
+import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 
 export async function simulation(scenario: Scenario){
     const currentYear = new Date().getFullYear();
@@ -140,8 +140,8 @@ export async function simulation(scenario: Scenario){
                         id: inv.id,
                         name: inv.id,
                         balance: inv.value,
-                        accountType: "pretax"
-                    } as Investment));
+                        accountType: "pretax" as const
+                    } as RMDInvestment));
 
                 console.log(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
                 previousYearPretaxAccounts.forEach(acc => {
