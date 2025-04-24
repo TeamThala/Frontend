@@ -14,8 +14,11 @@ import { Investment } from '@/types/investment';
 import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
+import { exportResultsToJson } from './exportResults';
 
 export async function simulation(scenario: Scenario){
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
+    const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
     const currentYear = new Date().getFullYear();
     let year = currentYear;
     console.log(`Owner birthyear: ${scenario.ownerBirthYear} of type ${typeof scenario.ownerBirthYear}`);
@@ -288,6 +291,9 @@ export async function simulation(scenario: Scenario){
             }
             scenario = newScenario; // convert current scenario into a single scenario
         }
+        // Save results of this year to a JSON file
+        
+        exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains);
     }
     console.log("=====================SIMULATION FINISHED=====================");
     return;
