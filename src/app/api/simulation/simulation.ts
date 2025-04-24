@@ -93,11 +93,8 @@ export async function simulation(scenario: Scenario){
         const inflation = getInflationRate(scenario.inflationRate);
         console.log(`Inflation rate for age ${age} parsed as ${inflation}`);
 
-        // Adjust this year's tax brackets for inflation
-        // const taxBrackets = updateTaxBrackets(prevTaxBrackets, inflation);
-        // console.log(`Adjusted tax brackets for age ${age}`);
-
-        // TODO: update retirement account contributions annual limits
+        // update retirement account contributions annual limits
+        scenario.contributionsLimit *= inflation; // Update contribution limits for next year
 
         // console.log(`Age: ${age}`);
         console.log(`=====================Year: ${year}=====================`);
@@ -251,7 +248,7 @@ export async function simulation(scenario: Scenario){
         curYearGains = 0;
         curYearEarlyWithdrawals = 0;
         console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
-        // TODO: Pay discretionary expenses in spending strategy
+        // Pay discretionary expenses in spending strategy
         payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
@@ -261,6 +258,7 @@ export async function simulation(scenario: Scenario){
         year++;
         updateTaxBrackets(taxData, inflation); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
+        
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
         // Check if spouse is alive
