@@ -32,8 +32,10 @@ export const handleYearInputChange = (
         const numValue = parseInt(subValue);
         if (isNaN(numValue)) return prev;
         
+        // Update both structures - nested for frontend and top-level for MongoDB
         event[field] = {
           ...yearField,
+          [subField]: numValue, // MongoDB schema field
           year: {
             ...yearField.year,
             [subField]: numValue
@@ -54,16 +56,24 @@ export const handleYearInputChange = (
           [subField]: numValue
         };
         
+        // Update MongoDB schema fields
+        let mongoField = subField === 'min' ? 'startYear' : 'endYear';
+        
         // Validate min <= max
-        if (subField === 'min' && numValue > yearField.year.max) {
+        const maxValue = yearField.year?.max ?? yearField.endYear;
+        const minValue = yearField.year?.min ?? yearField.startYear;
+        
+        if (subField === 'min' && maxValue !== undefined && numValue > maxValue) {
           return prev;
         }
-        if (subField === 'max' && numValue < yearField.year.min) {
+        if (subField === 'max' && minValue !== undefined && numValue < minValue) {
           return prev;
         }
         
+        // Update both structures - nested for frontend and top-level for MongoDB
         event[field] = {
           ...yearField,
+          [mongoField]: numValue, // MongoDB schema field
           year: updatedYear
         } as UniformYear;
       }
@@ -108,22 +118,35 @@ export const handleYearTypeChange = (
         year: new Date().getFullYear()
       } as FixedYear;
     } else if (type === "uniform") {
+      const currentYear = new Date().getFullYear();
+      const futureYear = currentYear + 5;
+      
       event[field] = {
         type: "uniform",
+        // MongoDB schema fields
+        startYear: currentYear,
+        endYear: futureYear,
+        // Frontend nested structure
         year: {
           type: "uniform",
           valueType: "amount",
-          min: new Date().getFullYear(),
-          max: new Date().getFullYear() + 5
+          min: currentYear,
+          max: futureYear
         }
       } as UniformYear;
     } else if (type === "normal") {
+      const currentYear = new Date().getFullYear();
+      
       event[field] = {
         type: "normal",
+        // MongoDB schema fields
+        mean: currentYear,
+        stdDev: 2,
+        // Frontend nested structure
         year: {
           type: "normal",
           valueType: "amount",
-          mean: new Date().getFullYear(),
+          mean: currentYear,
           stdDev: 2
         }
       } as NormalYear;
