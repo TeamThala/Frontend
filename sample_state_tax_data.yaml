@@ -1,0 +1,93 @@
+state: CA
+name: California
+tax_year: 2023
+
+income_tax:
+  single:
+    - bracket: 0
+      rate: 1.0
+    - bracket: 9325
+      rate: 2.0
+    - bracket: 22107
+      rate: 4.0
+    - bracket: 34892
+      rate: 6.0
+    - bracket: 48435
+      rate: 8.0
+    - bracket: 61214
+      rate: 9.3
+    - bracket: 312686
+      rate: 10.3
+    - bracket: 375221
+      rate: 11.3
+    - bracket: 625369
+      rate: 12.3
+  
+  married:
+    - bracket: 0
+      rate: 1.0
+    - bracket: 18650
+      rate: 2.0
+    - bracket: 44214
+      rate: 4.0
+    - bracket: 69784
+      rate: 6.0
+    - bracket: 96870
+      rate: 8.0
+    - bracket: 122428
+      rate: 9.3
+    - bracket: 625372
+      rate: 10.3
+    - bracket: 750442
+      rate: 11.3
+    - bracket: 1250738
+      rate: 12.3
+
+  head_of_household:
+    - bracket: 0
+      rate: 1.0
+    - bracket: 18663
+      rate: 2.0
+    - bracket: 44217
+      rate: 4.0
+    - bracket: 56999
+      rate: 6.0
+    - bracket: 70542
+      rate: 8.0
+    - bracket: 83324
+      rate: 9.3
+    - bracket: 425251
+      rate: 10.3
+    - bracket: 510303
+      rate: 11.3
+    - bracket: 850503
+      rate: 12.3
+
+standard_deduction:
+  single: 4803
+  married: 9606
+  head_of_household: 9606
+
+personal_exemption:
+  amount: 129
+  phaseout_threshold:
+    single: 202873
+    married: 405746
+    head_of_household: 304310
+
+additional_taxes:
+  - name: Mental Health Services Tax
+    description: 1% additional tax on income over $1 million
+    threshold: 1000000
+    rate: 1.0
+
+special_credits:
+  - name: California Earned Income Tax Credit
+    description: Credit for low to moderate income working individuals and couples
+    max_income: 30000
+    max_credit: 3160
+  
+  - name: Young Child Tax Credit
+    description: Credit for taxpayers with a child under 6
+    amount: 1000
+    income_limit: 25000 

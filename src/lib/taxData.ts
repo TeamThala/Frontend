@@ -38,7 +38,8 @@ interface StateTaxBracket {
   of_excess_over: number;
 }
 
-interface StateTaxData {
+// Export this interface
+export interface StateTaxData {
   [stateCode: string]: {
     [year: string]: {
       married_jointly_or_surviving_spouse: StateTaxBracket[];

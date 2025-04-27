@@ -68,6 +68,7 @@ const scenarioSchema = new Schema({
       max: { type: Number},
     },
     step: { type: Number, default: 0 },
+    customStateTaxYaml: { type: String },
 });
 
 const Scenario = models.Scenario || model("Scenario", scenarioSchema);
