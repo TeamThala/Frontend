@@ -10,7 +10,7 @@ export function exportResultsToJson(s: Scenario, filepath: string, year: number,
 
         const data = fs.readFileSync(filepath, 'utf-8');
         const jsonData = JSON.parse(data);
-        console.log('Loaded data:', jsonData);
+        // console.log('Loaded data:', jsonData);
 
         jsonData[year] = {
             "year": year,

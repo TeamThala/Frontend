@@ -15,6 +15,7 @@ import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson } from './exportResults';
+import { runInvestmentEvent } from './runInvestmentEvent';
 
 export async function simulation(scenario: Scenario){
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
@@ -252,9 +253,27 @@ export async function simulation(scenario: Scenario){
         curYearEarlyWithdrawals = 0;
         console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
-        // TODO: Run invest event scheduled for the current year
+        // payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        // Run invest event scheduled for the current year
+        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
+        // if (runInvestResult === null){
+        //     console.log("Error: Could not run investment event.");
+        //     return null;
+        // }
         // TODO: Run rebalance events scheduled for the current year
+
+        // Check if financial goal is met
+        let netWorth = 0;
+        for (let i=0; i<scenario.investments.length; i++){
+            const investment = scenario.investments[i];
+            netWorth += investment.value; // Add up all investments
+        }
+        console.log(`Net worth for year ${year} is ${netWorth}`);
+        if (netWorth < scenario.financialGoal){
+            console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
+            break;
+        }
+
 
 
         // End of loop calculations
@@ -293,7 +312,7 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains);
+        // exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains);
     }
     console.log("=====================SIMULATION FINISHED=====================");
     return;
