@@ -323,42 +323,22 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
         // console.log(event);
         if (event !== null){
             if (event.duration.type === "uniform"){
-                // Use either top-level or nested properties based on availability
-                const duration = event.duration as any; // Type assertion to avoid property access errors
-                const min = duration.startYear ?? duration.min ?? duration.year?.min;
-                const max = duration.endYear ?? duration.max ?? duration.year?.max;
-                
-                if (min !== undefined && max !== undefined) {
-                    const uniform = Math.random() * (max - min) + min;
-                    const simDuration: FixedYear = {
-                        type: "fixed",
-                        year: Math.floor(uniform)
-                    }
-                    event.duration = simDuration;
-                    console.log(`Event ${event.name}'s uniform duration rolled duration of ${event.duration.year}`);
-                } else {
-                    console.log(`Error: Missing min/max values for uniform duration in event ${event.name}`);
-                    return null;
+                const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
+                const simDuration: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(uniform)
                 }
+                event.duration = simDuration;
+                console.log(`Event ${event.name}'s uniform duration rolled duration of ${event.duration.year}`);
             }
             else if (event.duration.type === "normal"){
-                // Use either top-level or nested properties based on availability
-                const duration = event.duration as any; // Type assertion to avoid property access errors
-                const mean = duration.mean ?? duration.year?.mean;
-                const stdDev = duration.stdDev ?? duration.year?.stdDev;
-                
-                if (mean !== undefined && stdDev !== undefined) {
-                    const normal = randomNormal(mean, stdDev);
-                    const simDuration: FixedYear = {
-                        type: "fixed",
-                        year: Math.floor(normal())
-                    }
-                    event.duration = simDuration;
-                    console.log(`Event ${event.name}'s normal duration rolled duration of ${event.duration.year}`);
-                } else {
-                    console.log(`Error: Missing mean/stdDev values for normal duration in event ${event.name}`);
-                    return null;
+                const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
+                const simDuration: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(normal())
                 }
+                event.duration = simDuration;
+                console.log(`Event ${event.name}'s normal duration rolled duration of ${event.duration.year}`);
             }
             else { // type is "fixed"
                 // console.log(`Event ${event.name} has a fixed duration of ${event.duration.year}`);
@@ -368,42 +348,22 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
 
             // Resolve start year
             if (event.startYear.type === "uniform"){
-                // Use either top-level or nested properties based on availability
-                const startYear = event.startYear as any; // Type assertion to avoid property access errors
-                const min = startYear.startYear ?? startYear.min ?? startYear.year?.min;
-                const max = startYear.endYear ?? startYear.max ?? startYear.year?.max;
-                
-                if (min !== undefined && max !== undefined) {
-                    const uniform = Math.random() * (max - min) + min;
-                    const simStartYear: FixedYear = {
-                        type: "fixed",
-                        year: Math.floor(uniform)
-                    }
-                    event.startYear = simStartYear;
-                    console.log(`Event ${event.name}'s uniform startYear rolled startYear of ${event.startYear.year}`);
-                } else {
-                    console.log(`Error: Missing min/max values for uniform startYear in event ${event.name}`);
-                    return null;
+                const uniform = Math.random() * (event.startYear.year.max - event.startYear.year.min) + event.startYear.year.min;
+                const simStartYear: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(uniform)
                 }
+                event.startYear = simStartYear;
+                console.log(`Event ${event.name}'s uniform startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "normal"){
-                // Use either top-level or nested properties based on availability
-                const startYear = event.startYear as any; // Type assertion to avoid property access errors
-                const mean = startYear.mean ?? startYear.year?.mean;
-                const stdDev = startYear.stdDev ?? startYear.year?.stdDev;
-                
-                if (mean !== undefined && stdDev !== undefined) {
-                    const normal = randomNormal(mean, stdDev);
-                    const simStartYear: FixedYear = {
-                        type: "fixed",
-                        year: Math.floor(normal())
-                    }
-                    event.startYear = simStartYear;
-                    console.log(`Event ${event.name}'s normal startYear rolled startYear of ${event.startYear.year}`);
-                } else {
-                    console.log(`Error: Missing mean/stdDev values for normal startYear in event ${event.name}`);
-                    return null;
+                const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
+                const simStartYear: FixedYear = {
+                    type: "fixed",
+                    year: Math.floor(normal())
                 }
+                event.startYear = simStartYear;
+                console.log(`Event ${event.name}'s normal startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "event"){
                 // recursively resolve start years until we reach a fixed start year
