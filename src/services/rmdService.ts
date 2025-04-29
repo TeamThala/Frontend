@@ -28,11 +28,11 @@ export class RMDService {
    */
   public getRmdFactor(age: number): number {
     if (!this.currentRmdTable) {
-      throw new Error('RMD table not loaded');
+      throw new Error('RMD table not loaded - please call getRmdTable() first to initialize the table');
     }
     const factor = this.currentRmdTable[age];
     if (factor === undefined) {
-      throw new Error(`No RMD factor found for age ${age}`);
+      throw new Error(`No RMD factor found for age ${age} in the current RMD table`);
     }
     return factor;
   }

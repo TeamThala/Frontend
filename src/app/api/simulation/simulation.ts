@@ -150,6 +150,9 @@ export async function simulation(scenario: Scenario){
                 // Only proceed if we have pre-tax accounts and an RMD strategy
                 if (previousYearPretaxAccounts.length > 0 && Array.isArray(scenario.RMDStrategy) && scenario.RMDStrategy.length > 0) {
                     try {
+                        // Load the RMD table for the current year first
+                        await rmdService.getRmdTable(year);
+
                         // Create RMD strategy from the ordered array of investments
                         const rmdStrategy: RmdStrategy = {
                             name: "Simulation RMD Strategy",
