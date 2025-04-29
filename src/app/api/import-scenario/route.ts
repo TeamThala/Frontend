@@ -130,38 +130,24 @@ interface YamlScenario {
 // Type definitions to match your Mongoose schemas
 interface StartYear {
   type: string;
-  year?: number | {
-    min?: number;
-    max?: number;
-    mean?: number;
-    stdDev?: number;
-  };
+  year?: number;
   mean?: number;
   stdDev?: number;
   min?: number;
   max?: number;
   event?: Types.ObjectId;
   eventTime?: string;
-  startYear?: number;
-  endYear?: number;
 }
 
 interface Duration {
   type: string;
-  year?: number | {
-    min?: number;
-    max?: number;
-    mean?: number;
-    stdDev?: number;
-  };
+  year?: number;
   mean?: number;
   stdDev?: number;
   min?: number;
   max?: number;
   value?: number;
   valueType?: string;
-  startYear?: number;
-  endYear?: number;
 }
 
 interface DistributionValues {
@@ -376,13 +362,11 @@ export async function POST(request: NextRequest) {
       if (evt.start.type === 'fixed') {
         startYear.year = evt.start.value;
       } else if (evt.start.type === 'normal') {
-        // MongoDB schema fields for normal distribution
         startYear.mean = evt.start.mean;
         startYear.stdDev = evt.start.stdev;
       } else if (evt.start.type === 'uniform') {
-        // MongoDB schema fields for uniform distribution
-        startYear.startYear = evt.start.lower;
-        startYear.endYear = evt.start.upper;
+        startYear.min = evt.start.lower;
+        startYear.max = evt.start.upper;
       } else if (evt.start.type === 'startWith' || evt.start.type === 'startAfter') {
         startYear.eventTime = evt.start.type === 'startWith' ? 'start' : 'end';
         
@@ -410,15 +394,12 @@ export async function POST(request: NextRequest) {
 
         if (evt.duration.type === 'fixed') {
           duration.value = evt.duration.value;
-          duration.year = evt.duration.value;
         } else if (evt.duration.type === 'normal') {
-          // MongoDB schema fields for normal distribution
           duration.mean = evt.duration.mean;
           duration.stdDev = evt.duration.stdev;
         } else if (evt.duration.type === 'uniform') {
-          // MongoDB schema fields for uniform distribution
-          duration.startYear = evt.duration.lower;
-          duration.endYear = evt.duration.upper;
+          duration.min = evt.duration.lower;
+          duration.max = evt.duration.upper;
         }
       }
 

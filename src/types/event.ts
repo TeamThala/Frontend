@@ -18,16 +18,12 @@ export interface FixedYear {
 
 export interface UniformYear {
     type: "uniform";
-    year?: UniformDistributionValues;
-    startYear?: number;
-    endYear?: number;
+    year: UniformDistributionValues;
 }
 
 export interface NormalYear {
     type: "normal";
-    year?: NormalDistributionValues;
-    mean?: number;
-    stdDev?: number;
+    year: NormalDistributionValues;
 }
 
 export interface EventYear {

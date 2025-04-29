@@ -76,7 +76,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-mean-${index}`}
-                  value={event.startYear.mean ?? event.startYear.year?.mean}
+                  value={event.startYear.year.mean}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `mean:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -86,7 +86,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-stdDev-${index}`}
-                  value={event.startYear.stdDev ?? event.startYear.year?.stdDev}
+                  value={event.startYear.year.stdDev}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `stdDev:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="0"
@@ -102,7 +102,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-min-${index}`}
-                  value={event.startYear.startYear || event.startYear.year?.min}
+                  value={event.startYear.year.min}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `min:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -112,7 +112,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-max-${index}`}
-                  value={event.startYear.endYear || event.startYear.year?.max}
+                  value={event.startYear.year.max}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `max:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -195,7 +195,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-mean-${index}`}
-                  value={event.duration.mean || event.duration.year?.mean}
+                  value={event.duration.year.mean}
                   onChange={(e) => handlers.handleYearInputChange("duration", `mean:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"
@@ -206,7 +206,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-stdDev-${index}`}
-                  value={event.duration.stdDev || event.duration.year?.stdDev}
+                  value={event.duration.year.stdDev}
                   onChange={(e) => handlers.handleYearInputChange("duration", `stdDev:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="0"
@@ -222,7 +222,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-min-${index}`}
-                  value={event.duration.startYear || event.duration.year?.min}
+                  value={event.duration.year.min}
                   onChange={(e) => handlers.handleYearInputChange("duration", `min:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"
@@ -233,7 +233,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-max-${index}`}
-                  value={event.duration.endYear || event.duration.year?.max}
+                  value={event.duration.year.max}
                   onChange={(e) => handlers.handleYearInputChange("duration", `max:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"
