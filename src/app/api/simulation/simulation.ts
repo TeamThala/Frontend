@@ -80,11 +80,10 @@ export async function simulation(scenario: Scenario){
     initializeStrategy(scenario.RothConversionStrategy, scenario);
     initializeStrategy(scenario.expenseWithdrawalStrategy, scenario);
 
-
     // Variables to be carried into the next iteration of the loop
     let curYearGains: number = 0;
     let curYearEarlyWithdrawals: number = 0;
-    const taxData = getTaxData();
+    const taxData = await getTaxData(scenario.residenceState, scenario.owner.id);
     let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
 
     // Simulation loop
@@ -124,8 +123,7 @@ export async function simulation(scenario: Scenario){
         console.log(`Income for current year ${year}: ${curYearIncome}`);
         console.log(`Social Security for current year ${year}: ${curYearSS}`);
         
-        // RMD for previous year
-
+        // === RMD Processing: Calculate and distribute required minimum distributions for pre-tax accounts ===
         // Perform RMD for previous year if applicable
         if (age >= 74) {  // RMDs start at 73, paid at 74
             console.log(`=== Processing RMD for age ${age} in year ${year} ===`);
@@ -134,6 +132,7 @@ export async function simulation(scenario: Scenario){
             // Get previous year's pre-tax accounts
             const investmentEventType = currentInvestmentEvent.eventType as InvestmentEvent;
             if (investmentEventType.assetAllocation?.investments) {
+                //Filter pre-tax accounts with positive balances for RMD calculation
                 const previousYearPretaxAccounts = investmentEventType.assetAllocation.investments
                     .filter(inv => inv.taxStatus === "pre-tax" && inv.value > 0)
                     .map(inv => ({
@@ -171,8 +170,7 @@ export async function simulation(scenario: Scenario){
                         console.log(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
                         console.log(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
                         
-                        // Not sure if this is correct
-                        // Process the distributions - transfer from pre-tax to non-retirement
+                        // Process the distributions - transfer, reduce pre-tax, increase or create non-retirement investment
                         // Note: RMD transfers work in dollars only - no share counts or portfolio percentages per requirements
                         console.log('Processing distributions:');
                         for (const dist of distribution.distributedInvestments) {
@@ -215,7 +213,7 @@ export async function simulation(scenario: Scenario){
                         console.log('=== RMD processing complete ===');
                     } catch (error) {
                         console.error('Error executing RMD distribution:', error);
-                        // Continue simulation even if RMD fails
+                        // Handle errors gracefully to ensure simulation continues
                     }
                 } else {
                     console.log('Skipping RMD: No pre-tax accounts or RMD strategy available');

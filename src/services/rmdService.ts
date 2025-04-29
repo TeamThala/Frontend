@@ -53,11 +53,12 @@ export class RMDService {
     }
 
     const factor = this.getRmdFactor(age);
+    // Calculate RMD amount using previous year's balance and IRS factor
     return accountBalance / factor;
   }
 
   /**
-   * Retrieve the RMD table from DB or scrape if missing
+   * Retrieve the RMD table from DB
    */
   public async getRmdTable(year: number): Promise<RmdTable> {
     // Get data from MongoDB directly
@@ -72,7 +73,7 @@ export class RMDService {
       return table;
     }
 
-    // Fallback: use scraper API
+    // Fallback: only use scraper API if no table is found
     try {
       const response = await fetch('/api/rmdscraper');
       if (!response.ok) throw new Error('Failed to fetch RMD table from scraper');

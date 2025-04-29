@@ -29,7 +29,6 @@ export interface BaseScenario {
     editPermissions: User[];
     updatedAt: Date;
     contributionsLimit: number;
-    customStateTaxYaml?: string; // Added optional field for custom state tax YAML
 }
 
 export interface RothConversion {

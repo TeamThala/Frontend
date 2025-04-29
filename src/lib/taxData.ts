@@ -1,6 +1,9 @@
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
+import { ObjectId } from 'mongodb';
+import dbConnect from './dbConnect';
+import User from '@/models/User';
 
 // Match the scraped data structure
 // interface TaxBracket {
@@ -71,7 +74,7 @@ export interface TaxData {
   stateTaxData: StateTaxData;
 }
 
-export function getTaxData(): TaxData {
+export async function getTaxData(stateCode?: string, userId?: string): Promise<TaxData> {
   const rootDir = process.cwd();
   
   try {
@@ -87,9 +90,35 @@ export function getTaxData(): TaxData {
       fs.readFileSync(path.join(rootDir, 'capital_gains.yaml'), 'utf8')
     ) as { capitalGainsRates: CapitalGainsData };
     
+    // Load default state tax data
     const stateTaxData = yaml.load(
       fs.readFileSync(path.join(rootDir, 'state_tax_data.yaml'), 'utf8')
     ) as StateTaxData;
+
+    // If a state code and user ID are provided, try to load custom state tax data
+    if (stateCode && userId) {
+      try {
+        await dbConnect();
+        const user = await User.findById(userId);
+        
+        if (user && user.stateTaxFiles && user.stateTaxFiles.get(stateCode)) {
+          const customTaxFileId = user.stateTaxFiles.get(stateCode);
+          const customTaxFilePath = path.join(rootDir, 'data', 'state_tax', `${customTaxFileId}.yaml`);
+          
+          if (fs.existsSync(customTaxFilePath)) {
+            const customTaxData = yaml.load(
+              fs.readFileSync(customTaxFilePath, 'utf8')
+            ) as StateTaxData;
+            
+            // Merge custom state data with default data
+            stateTaxData[stateCode] = customTaxData[stateCode];
+          }
+        }
+      } catch (error) {
+        console.error('Error loading custom state tax data:', error);
+        // Continue with default data if there's an error
+      }
+    }
 
     return {
       taxBrackets,

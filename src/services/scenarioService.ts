@@ -70,7 +70,7 @@ export class ScenarioService {
                 throw new ScenarioValidationError('Invalid scenario ID format', ['id']);
             }
 
-            // Connect to database
+            // Connect to MongoDB and fetch the scenario document
             try {
                 await this.client.connect();
                 isConnected = true;
