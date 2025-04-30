@@ -12,6 +12,7 @@ export function exportResultsToJson(s: Scenario, filepath: string, year: number,
         const jsonData = JSON.parse(data);
         // log.push('Loaded data:', jsonData);
 
+
         jsonData[year] = {
             "year": year,
             "investments": s.investments,

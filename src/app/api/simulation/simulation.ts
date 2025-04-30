@@ -15,6 +15,8 @@ import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
+import { runInvestmentEvent } from './runInvestmentEvent';
+
 
 export async function simulation(scenario: Scenario){
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
@@ -254,9 +256,27 @@ export async function simulation(scenario: Scenario){
         curYearEarlyWithdrawals = 0;
         log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, log);
-        // TODO: Run invest event scheduled for the current year
+        // payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        // Run invest event scheduled for the current year
+        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
+        // if (runInvestResult === null){
+        //     console.log("Error: Could not run investment event.");
+        //     return null;
+        // }
         // TODO: Run rebalance events scheduled for the current year
+
+        // Check if financial goal is met
+        let netWorth = 0;
+        for (let i=0; i<scenario.investments.length; i++){
+            const investment = scenario.investments[i];
+            netWorth += investment.value; // Add up all investments
+        }
+        console.log(`Net worth for year ${year} is ${netWorth}`);
+        if (netWorth < scenario.financialGoal){
+            console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
+            break;
+        }
+
 
 
         // End of loop calculations
