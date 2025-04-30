@@ -75,7 +75,7 @@ export class RMDService {
 
     // Fallback: only use scraper API if no table is found
     try {
-      const response = await fetch('/api/rmdscraper');
+      const response = await fetch('http://localhost:3000/api/rmdscraper');
       if (!response.ok) throw new Error('Failed to fetch RMD table from scraper');
       const data = (await response.json()) as { rmdTable: RmdTableData };
 
