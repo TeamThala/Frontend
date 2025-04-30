@@ -7,19 +7,21 @@ import { Event } from "@/types/event";
 import { EventHandlers } from "./renderEventForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Helper function to safely access nested properties
-const safeGet = (obj: any, path: string, defaultValue: any = 0) => {
+// Helper function to safely access nested properties with type safety
+const safeGet = (obj: unknown, path: string, defaultValue: number | string = 0): number | string => {
+  if (!obj || typeof obj !== 'object') return defaultValue;
+  
   const parts = path.split('.');
-  let current = obj;
+  let current: Record<string, unknown> = obj as Record<string, unknown>;
   
   for (const part of parts) {
-    if (current === undefined || current === null) {
+    if (current === undefined || current === null || typeof current !== 'object') {
       return defaultValue;
     }
-    current = current[part];
+    current = current[part] as Record<string, unknown>;
   }
   
-  return current !== undefined && current !== null ? current : defaultValue;
+  return (typeof current === 'number' || typeof current === 'string') ? current : defaultValue;
 };
 
 export const renderBasicEventDetails = (
@@ -33,16 +35,6 @@ export const renderBasicEventDetails = (
   const startYear = event.startYear || { type: "fixed", year: 0 };
   const duration = event.duration || { type: "fixed", year: 0 };
   
-  // For backward compatibility - handle both old and new schema formats
-  const getUniformValue = (obj: any, prop: string) => {
-    // New format: obj.year.prop
-    if (obj.year && typeof obj.year === 'object') {
-      return obj.year[prop];
-    }
-    // Old format: obj.prop directly
-    return obj[prop];
-  };
-
   return (
     <div className="space-y-4">
       <div className="grid w-full max-w-md items-center gap-1.5">

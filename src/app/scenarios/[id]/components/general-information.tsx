@@ -25,6 +25,11 @@ import {FixedValues,
 // Helper type for distribution types used in UI controls
 type DistributionType = "fixed" | "normal" | "uniform";
 
+// Augment the Scenario interface to include customStateTaxYaml
+type ScenarioWithCustomTax = Scenario & {
+  customStateTaxYaml?: string;
+};
+
 interface GeneralInformationProps {
   scenario: Scenario | null;
   canEdit: boolean;
@@ -33,7 +38,7 @@ interface GeneralInformationProps {
 }
 
 export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext }: GeneralInformationProps) {
-  const [scenarioData, setScenarioData] = useState<Scenario | null>(scenario);
+  const [scenarioData, setScenarioData] = useState<ScenarioWithCustomTax | null>(scenario as ScenarioWithCustomTax);
   const [customTaxYamlContent, setCustomTaxYamlContent] = useState<string | null>(null); // State for YAML content
   const [showStateTaxWarning, setShowStateTaxWarning] = useState<boolean>(false); // State for warning visibility
 
@@ -43,12 +48,13 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
   }, []);
 
   useEffect(() => {
-    setScenarioData(scenario);
+    setScenarioData(scenario as ScenarioWithCustomTax);
     // Initialize YAML content and warning based on loaded scenario
     if (scenario) {
-        setCustomTaxYamlContent(scenario.customStateTaxYaml || null);
+        const scenarioWithTax = scenario as ScenarioWithCustomTax;
+        setCustomTaxYamlContent(scenarioWithTax.customStateTaxYaml || null);
         setShowStateTaxWarning(
-            isStateTaxYamlNeeded(scenario.residenceState) && !scenario.customStateTaxYaml
+            isStateTaxYamlNeeded(scenario.residenceState) && !scenarioWithTax.customStateTaxYaml
         );
     } else {
         setCustomTaxYamlContent(null);
@@ -521,7 +527,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
                     Custom State Tax Configuration (YAML)
                 </h3>
                 <p className="text-sm text-white-700 mb-4">
-                    State tax data for '{scenarioData.residenceState}' is not pre-configured. Please upload a 
+                    State tax data for &apos;{scenarioData.residenceState}&apos; is not pre-configured. Please upload a 
                     YAML file with the tax brackets and rates for this state. The format should match the structure used for NY/NJ/CT.
                 </p>
                 
@@ -578,7 +584,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        Warning: If no file is provided, state income tax calculations for '{scenarioData.residenceState}' will be ignored.
+                        Warning: If no file is provided, state income tax calculations for &apos;{scenarioData.residenceState}&apos; will be ignored.
                     </p>
                 )}
             </div>

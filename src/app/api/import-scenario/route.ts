@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions }  from "@/lib/auth";
 import dbConnect          from "@/lib/dbConnect";
+import { Types } from "mongoose";
 
 import User               from "@/models/User";
 import Scenario           from "@/models/Scenario";
@@ -13,8 +14,6 @@ import InvestmentType     from "@/models/InvestmentType";
 import Investment         from "@/models/Investment";
 import Event              from "@/models/Event";
 import RothConv           from "@/models/RothConversionStrategy";
-
-import mongoose, { Types } from "mongoose";
 import * as yaml           from "js-yaml";
 
 /* ────────────────────────────────
@@ -58,12 +57,108 @@ function stashIdVariants(humanId:string, mongoId:Types.ObjectId,
   }
 }
 
+// New function to get unique investment IDs
+function getUniqueInvestmentIds(map: Map<string, Types.ObjectId>): Types.ObjectId[] {
+  // Use Set to ensure uniqueness of ObjectIds
+  const uniqueIds = new Set<string>();
+  const result: Types.ObjectId[] = [];
+  
+  // Convert ObjectIds to strings for Set deduplication
+  for (const id of map.values()) {
+    const idStr = id.toString();
+    if (!uniqueIds.has(idStr)) {
+      uniqueIds.add(idStr);
+      result.push(id);
+    }
+  }
+  
+  return result;
+}
+
 /* ────────────────────────────────
    POST  handler
    ──────────────────────────────── */
 export const dynamic      = "force-dynamic";
 export const dynamicParams= true;
 export const revalidate   = 0;
+
+// Define Allocation interface here to be used later
+interface Allocation {
+  type: string;
+  investments: Types.ObjectId[];
+  percentages: number[];
+  initialPercentage?: number[];
+  finalPercentage?: number[];
+}
+
+interface YamlScenario {
+  name?: string;
+  description?: string;
+  financialGoal?: number;
+  investmentTypes?: Array<{
+    name: string;
+    description?: string;
+    returnDistribution?: DistributionYaml;
+    returnAmtOrPct?: string;
+    expenseRatio?: number;
+    incomeDistribution?: DistributionYaml;
+    incomeAmtOrPct?: string;
+    taxability?: string;
+  }>;
+  investments?: Array<{
+    id: string;
+    value: number;
+    investmentType: string;
+    taxStatus: string;
+  }>;
+  eventSeries?: Array<{
+    name: string;
+    description?: string;
+    type: string;
+    start: {
+      type: string;
+      value?: number;
+      mean?: number;
+      stdev?: number;
+      lower?: number;
+      upper?: number;
+      eventSeries?: string;
+    };
+    duration?: {
+      type: string;
+      value?: number;
+      mean?: number;
+      stdev?: number;
+      lower?: number;
+      upper?: number;
+    };
+    initialAmount?: number;
+    changeDistribution?: DistributionYaml;
+    changeAmtOrPct?: string;
+    inflationAdjusted?: boolean;
+    userFraction?: number;
+    socialSecurity?: boolean;
+    wage?: boolean;
+    discretionary?: boolean;
+    glidePath?: boolean;
+    assetAllocation?: Record<string, number>;
+    assetAllocation2?: Record<string, number>;
+    maxCash?: number;
+  }>;
+  maritalStatus?: string;
+  birthYears?: number[];
+  lifeExpectancy?: DistributionYaml[];
+  residenceState?: string;
+  inflationAssumption?: DistributionYaml;
+  spendingStrategy?: string[];
+  expenseWithdrawalStrategy?: string[];
+  RMDStrategy?: string[];
+  RothConversionOpt?: boolean;
+  RothConversionStrategy?: string[];
+  RothConversionStart?: number;
+  RothConversionEnd?: number;
+  customStateTaxYaml?: string;
+}
 
 export async function POST(req:NextRequest){
   try{
@@ -83,7 +178,7 @@ export async function POST(req:NextRequest){
     if(!file || !/\.ya?ml$/i.test(file.name))
       return NextResponse.json({success:false,error:"Upload a .yml / .yaml file."},{status:400});
     const ymlText  = await file.text();
-    const yml      = yaml.load(ymlText) as any;   /* professor-spec YAML */
+    const yml      = yaml.load(ymlText) as YamlScenario;
 
     /* maps for easy look-up later */
     const itTypeMap  = new Map<string,Types.ObjectId>();   // name  -> _id
@@ -124,7 +219,20 @@ export async function POST(req:NextRequest){
     /* 5️⃣  Events                                    */
     for(const ev of yml.eventSeries??[]){
       /* 5a  startYear ------------------------------ */
-      let start:any = { type:"fixed" };   // will mutate
+      interface StartYear {
+        type: string;
+        year?: number | {
+          mean?: number;
+          stdDev?: number;
+          min?: number;
+          max?: number;
+          valueType: string;
+        };
+        eventTime?: string;
+        event?: Types.ObjectId | null;
+      }
+
+      let start: StartYear = { type: "fixed" };   // will mutate
       switch(ev.start.type){
         case "fixed":
           start = { type: "fixed", year: ev.start.value };
@@ -161,7 +269,20 @@ export async function POST(req:NextRequest){
       }
 
       /* 5b  duration ------------------------------- */
-      let duration: any = undefined;
+      interface Duration {
+        type: string;
+        valueType: string;
+        value?: number;
+        year?: {
+          mean?: number;
+          stdDev?: number;
+          min?: number;
+          max?: number;
+          valueType: string;
+        };
+      }
+
+      let duration: Duration | undefined = undefined;
       if(ev.duration){
         duration = { type: ev.duration.type, valueType: "amount" };
         if (ev.duration.type === "fixed") {
@@ -182,7 +303,20 @@ export async function POST(req:NextRequest){
       }
 
       /* 5c  eventType details ---------------------- */
-      const eventType:any = { type: ev.type==="invest"?"investment":ev.type };
+      interface EventType {
+        type: string;
+        amount?: number;
+        expectedAnnualChange?: DistValue;
+        inflationAdjustment?: boolean;
+        percentageOfIncome?: number;
+        socialSecurity?: boolean;
+        wage?: boolean;
+        discretionary?: boolean;
+        assetAllocation?: Allocation[];
+        maximumCash?: number;
+      }
+
+      const eventType: EventType = { type: ev.type==="invest"?"investment":ev.type };
       if(ev.type==="income"||ev.type==="expense"){
         eventType.amount               = ev.initialAmount;
         eventType.expectedAnnualChange = dist(ev.changeDistribution,
@@ -196,15 +330,6 @@ export async function POST(req:NextRequest){
           eventType.discretionary  = ev.discretionary??false;
         }
       }else if(ev.type==="invest"||ev.type==="rebalance"){
-        // Use a properly typed interface for the allocation object
-        interface Allocation {
-          type: string;
-          investments: Types.ObjectId[];
-          percentages: number[];
-          initialPercentage?: number[];
-          finalPercentage?: number[];
-        }
-
         const alloc: Allocation = { 
           type: ev.glidePath ? "glidePath" : "fixed",
           investments: [] as Types.ObjectId[],
@@ -305,7 +430,7 @@ export async function POST(req:NextRequest){
       name             : yml.name,
       description      : yml.description ?? "",
       financialGoal    : yml.financialGoal??0,
-      investments      : Array.from(investMap.values()),
+      investments      : getUniqueInvestmentIds(investMap),
       eventSeries      : Array.from(eventMap.values()),
       spendingStrategy : spendingIds,
       expenseWithdrawalStrategy: expenseWithdrawalIds,
@@ -337,8 +462,8 @@ export async function POST(req:NextRequest){
 
     return NextResponse.json({success:true,scenarioId:scenario._id});
   }
-  catch(err:any){
-    console.error("import-scenario:",err);
+  catch(err: unknown){
+    console.error("import-scenario:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({success:false,error:String(err)},{status:500});
   }
 }
