@@ -3,19 +3,6 @@ import dbConnect from "@/lib/dbConnect";
 import StateTax from "@/models/StateTax";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
-import { Session } from "next-auth";
-
-// Use the same ExtendedSession interface
-interface ExtendedSession extends Session {
-  user: {
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    _id?: string;
-    id?: string;
-    isAdmin?: boolean;
-  }
-}
 
 // GET /api/state-taxes/[id] - Get a specific state tax configuration
 export async function GET(
@@ -50,7 +37,7 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-    const session = await getServerSession(authOptions) as ExtendedSession | null;
+    const session = await getServerSession(authOptions);
     
     // Check if user is authenticated
     if (!session?.user) {
@@ -70,8 +57,9 @@ export async function PUT(
     }
     
     // Check if user is authorized to update (either admin or creator)
-    const userId = session.user._id || session.user.id;
-    const isAdmin = session.user.isAdmin || false;
+    // Assuming session.user.id and isAdmin are added through JWT or session callback
+    const userId = (session.user as any)._id || (session.user as any).id;
+    const isAdmin = (session.user as any).isAdmin || false;
     
     if (stateTax.createdBy && stateTax.createdBy.toString() !== userId && !isAdmin) {
       return NextResponse.json(
