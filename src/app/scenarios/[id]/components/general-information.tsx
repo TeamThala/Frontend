@@ -72,23 +72,23 @@ export default function GeneralInformation({
       }
       
       const configs = await response.json();
-const normalizedConfigs = configs.map((c: any) => ({
-  ...c,
-  id: c.id || c._id,
-}));
-setStateTaxConfigs(normalizedConfigs);
+      const normalizedConfigs = configs.map((c: StateTax & { _id?: string }) => ({
+        ...c,
+        id: c.id || c._id,
+      }));
+      setStateTaxConfigs(normalizedConfigs);
 
-if (normalizedConfigs.length > 0) {
-  setSelectedStateTaxId(current => {
-    if (!current) {
-      return normalizedConfigs[0].id;
-    }
-    return current;
-  });
-  setShowStateTaxWarning(false);
-} else {
-  setShowStateTaxWarning(isStateTaxNeeded(stateCode));
-}
+      if (normalizedConfigs.length > 0) {
+        setSelectedStateTaxId(current => {
+          if (!current) {
+            return normalizedConfigs[0].id;
+          }
+          return current;
+        });
+        setShowStateTaxWarning(false);
+      } else {
+        setShowStateTaxWarning(isStateTaxNeeded(stateCode));
+      }
 
     } catch (error) {
       console.error('Error fetching state tax configurations:', error);

@@ -3,6 +3,19 @@ import dbConnect from "@/lib/dbConnect";
 import StateTax from "@/models/StateTax";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
+import { Session } from "next-auth";
+
+// Add this interface for typed user info
+interface ExtendedSession extends Session {
+  user: {
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    _id?: string;
+    id?: string;
+    isAdmin?: boolean;
+  }
+}
 
 // GET /api/state-taxes - Get all state tax configurations or filter by state code
 export async function GET(req: NextRequest) {
@@ -29,7 +42,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
     
     // Check if user is authenticated
     if (!session?.user) {
@@ -49,8 +62,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Get user ID from session
-    const userId = (session.user as any)._id || (session.user as any).id;
+    // Get user ID from session with proper typing
+    const userId = session.user._id || session.user.id;
     
     // Create new state tax configuration
     const stateTax = await StateTax.create({
@@ -73,7 +86,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await dbConnect();
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptions) as ExtendedSession | null;
     
     // Check if user is authenticated
     if (!session?.user) {
@@ -104,8 +117,8 @@ export async function DELETE(req: NextRequest) {
     }
     
     // Check if user is authorized to delete (either admin or creator)
-    const userId = (session.user as any)._id || (session.user as any).id;
-    const isAdmin = (session.user as any).isAdmin || false;
+    const userId = session.user._id || session.user.id;
+    const isAdmin = session.user.isAdmin || false;
     
     if (stateTax.createdBy && stateTax.createdBy.toString() !== userId && !isAdmin) {
       return NextResponse.json(
