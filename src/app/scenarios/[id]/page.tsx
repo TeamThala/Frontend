@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Scenario } from "@/types/scenario";
 
@@ -37,7 +37,7 @@ export default function ScenarioPage() {
   ];
 
   // Function to fetch scenario data from the server
-  const fetchScenarioData = async () => {
+  const fetchScenarioData =useCallback(async () => {
     try {
       const id = params.id as string;
       const response = await fetch(`/api/scenarios/${id}`);
@@ -73,7 +73,7 @@ export default function ScenarioPage() {
       setLoading(false);
       return false;
     }
-  };
+  },[params.id]);
 
   useEffect(() => {
     // Ensure the page has a black background
@@ -89,7 +89,7 @@ export default function ScenarioPage() {
         document.body.classList.remove("bg-black");
       }
     };
-  }, [params.id]);
+  },[fetchScenarioData]);
 
   const handleStepClick = async (step: number) => {
     if (step <= currentStep) {

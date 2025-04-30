@@ -165,10 +165,6 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
         // Store the file ID locally so we can see it immediately
         setStateTaxFileId(data.fileId);
         setShowStateTaxWarning(false);
-        
-        // Store the fileId in our local copy of stateTaxFiles as well 
-        // (this will help us keep track of it until parent fetches fresh data)
-        const stateCode = scenarioData.residenceState;
       } else {
         console.error("Error uploading state tax file:", data.error);
         setShowStateTaxWarning(true);

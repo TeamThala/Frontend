@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb';
 import yaml from 'js-yaml';
 import User from '@/models/User';
 import dbConnect from './dbConnect';
-import { StateTaxData } from './taxData';
 
 export async function saveStateTaxFile(
   userId: string,

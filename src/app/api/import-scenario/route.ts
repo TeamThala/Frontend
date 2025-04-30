@@ -7,7 +7,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions }  from "@/lib/auth";
 import dbConnect          from "@/lib/dbConnect";
 import { Types } from "mongoose";
-import mongoose from "mongoose";
 
 import User               from "@/models/User";
 import Scenario           from "@/models/Scenario";

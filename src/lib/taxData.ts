@@ -1,7 +1,6 @@
 import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
-import { ObjectId } from 'mongodb';
 import dbConnect from './dbConnect';
 import User from '@/models/User';
 

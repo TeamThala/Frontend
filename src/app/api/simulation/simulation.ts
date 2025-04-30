@@ -11,11 +11,9 @@ import { payNondiscExpenses } from './payNondiscExpenses';
 import { updateTaxBrackets } from './taxInflation';
 import { rothConversion } from './rothConversion';
 import { Investment } from '@/types/investment';
-import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
-import { runInvestmentEvent } from './runInvestmentEvent';
 
 
 export async function simulation(scenario: Scenario){
