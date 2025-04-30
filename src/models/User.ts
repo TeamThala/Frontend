@@ -5,6 +5,11 @@ const userSchema = new Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     image: { type: String },
+    stateTaxFiles: {
+      type: Map,
+      of: String,          // will hold TaxFile._id.toString()
+      default: new Map()
+    },
 
     // References to scenarios the user created or can read/write
     createdScenarios: [{ type: Schema.Types.ObjectId, ref: "Scenario", default: [] }],

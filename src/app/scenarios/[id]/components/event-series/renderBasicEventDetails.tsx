@@ -7,6 +7,23 @@ import { Event } from "@/types/event";
 import { EventHandlers } from "./renderEventForm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// Helper function to safely access nested properties with type safety
+const safeGet = (obj: unknown, path: string, defaultValue: number | string = 0): number | string => {
+  if (!obj || typeof obj !== 'object') return defaultValue;
+  
+  const parts = path.split('.');
+  let current: Record<string, unknown> = obj as Record<string, unknown>;
+  
+  for (const part of parts) {
+    if (current === undefined || current === null || typeof current !== 'object') {
+      return defaultValue;
+    }
+    current = current[part] as Record<string, unknown>;
+  }
+  
+  return (typeof current === 'number' || typeof current === 'string') ? current : defaultValue;
+};
+
 export const renderBasicEventDetails = (
   event: Event, 
   index: number, 
@@ -14,6 +31,10 @@ export const renderBasicEventDetails = (
   handlers: EventHandlers,
   allEvents?: Event[]
 ) => {
+  // Ensure event has the expected structure
+  const startYear = event.startYear || { type: "fixed", year: 0 };
+  const duration = event.duration || { type: "fixed", year: 0 };
+  
   return (
     <div className="space-y-4">
       <div className="grid w-full max-w-md items-center gap-1.5">
@@ -42,7 +63,7 @@ export const renderBasicEventDetails = (
         <div className="space-y-2">
           <Label>Start Year</Label>
           <RadioGroup
-            value={event.startYear.type}
+            value={startYear.type}
             onValueChange={(value) => handlers.handleYearTypeChange("startYear", value as "fixed" | "uniform" | "normal" | "event", index)}
             disabled={!canEdit}
             className="flex flex-wrap gap-2"
@@ -59,24 +80,24 @@ export const renderBasicEventDetails = (
             ))}
           </RadioGroup>
           
-          {event.startYear.type === "fixed" && (
+          {startYear.type === "fixed" && (
             <Input
               type="number"
-              value={event.startYear.year}
+              value={startYear.year || 0}
               onChange={(e) => handlers.handleYearInputChange("startYear", e.target.value, index)}
               disabled={!canEdit}
               className="mt-2"
             />
           )}
           
-          {event.startYear.type === "normal" && (
+          {startYear.type === "normal" && (
             <div className="flex space-x-2 mt-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`startYear-mean-${index}`}>Mean</Label>
                 <Input
                   type="number"
                   id={`startYear-mean-${index}`}
-                  value={event.startYear.year.mean}
+                  value={safeGet(startYear, 'year.mean')}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `mean:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -86,7 +107,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-stdDev-${index}`}
-                  value={event.startYear.year.stdDev}
+                  value={safeGet(startYear, 'year.stdDev')}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `stdDev:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="0"
@@ -95,14 +116,14 @@ export const renderBasicEventDetails = (
             </div>
           )}
           
-          {event.startYear.type === "uniform" && (
+          {startYear.type === "uniform" && (
             <div className="flex space-x-2 mt-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`startYear-min-${index}`}>Min</Label>
                 <Input
                   type="number"
                   id={`startYear-min-${index}`}
-                  value={event.startYear.year.min}
+                  value={safeGet(startYear, 'year.min')}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `min:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -112,7 +133,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`startYear-max-${index}`}
-                  value={event.startYear.year.max}
+                  value={safeGet(startYear, 'year.max')}
                   onChange={(e) => handlers.handleYearInputChange("startYear", `max:${e.target.value}`, index)}
                   disabled={!canEdit}
                 />
@@ -120,12 +141,12 @@ export const renderBasicEventDetails = (
             </div>
           )}
           
-          {event.startYear.type === "event" && (
+          {startYear.type === "event" && (
             <div className="space-y-2 mt-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`startYear-eventId-${index}`}>Reference Event</Label>
                 <Select
-                  value={event.startYear.eventId || ""}
+                  value={startYear.eventId || ""}
                   onValueChange={(value) => handlers.handleYearInputChange("startYear", `eventId:${value}`, index)}
                   disabled={!canEdit}
                 >
@@ -143,7 +164,7 @@ export const renderBasicEventDetails = (
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`startYear-eventTime-${index}`}>Event Time</Label>
                 <Select
-                  value={event.startYear.eventTime || "start"}
+                  value={startYear.eventTime || "start"}
                   onValueChange={(value) => handlers.handleYearInputChange("startYear", `eventTime:${value}`, index)}
                   disabled={!canEdit}
                 >
@@ -163,7 +184,7 @@ export const renderBasicEventDetails = (
         <div className="space-y-2">
           <Label>Duration (Years)</Label>
           <RadioGroup
-            value={event.duration.type}
+            value={duration.type}
             onValueChange={(value) => handlers.handleYearTypeChange("duration", value as "fixed" | "uniform" | "normal", index)}
             disabled={!canEdit}
             className="flex space-x-4"
@@ -178,24 +199,24 @@ export const renderBasicEventDetails = (
             ))}
           </RadioGroup>
           
-          {event.duration.type === "fixed" && (
+          {duration.type === "fixed" && (
             <Input
               type="number"
-              value={event.duration.year}
+              value={typeof duration.year === 'object' ? 0 : (duration.year || 0)}
               onChange={(e) => handlers.handleYearInputChange("duration", e.target.value, index)}
               disabled={!canEdit}
               className="mt-2"
             />
           )}
           
-          {event.duration.type === "normal" && (
+          {duration.type === "normal" && (
             <div className="flex space-x-2 mt-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`duration-mean-${index}`}>Mean</Label>
                 <Input
                   type="number"
                   id={`duration-mean-${index}`}
-                  value={event.duration.year.mean}
+                  value={safeGet(duration, 'year.mean')}
                   onChange={(e) => handlers.handleYearInputChange("duration", `mean:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"
@@ -206,7 +227,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-stdDev-${index}`}
-                  value={event.duration.year.stdDev}
+                  value={safeGet(duration, 'year.stdDev')}
                   onChange={(e) => handlers.handleYearInputChange("duration", `stdDev:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="0"
@@ -215,14 +236,14 @@ export const renderBasicEventDetails = (
             </div>
           )}
           
-          {event.duration.type === "uniform" && (
+          {duration.type === "uniform" && (
             <div className="flex space-x-2 mt-2">
               <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor={`duration-min-${index}`}>Min</Label>
                 <Input
                   type="number"
                   id={`duration-min-${index}`}
-                  value={event.duration.year.min}
+                  value={safeGet(duration, 'year.min')}
                   onChange={(e) => handlers.handleYearInputChange("duration", `min:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"
@@ -233,7 +254,7 @@ export const renderBasicEventDetails = (
                 <Input
                   type="number"
                   id={`duration-max-${index}`}
-                  value={event.duration.year.max}
+                  value={safeGet(duration, 'year.max')}
                   onChange={(e) => handlers.handleYearInputChange("duration", `max:${e.target.value}`, index)}
                   disabled={!canEdit}
                   min="1"

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,14 +30,37 @@ interface GeneralInformationProps {
   canEdit: boolean;
   onUpdate: (updatedScenario: Scenario) => void;
   handleNext: () => void;
+  stateTaxFiles?: Record<string, string>; // Map of state codes to tax file IDs
 }
 
-export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext }: GeneralInformationProps) {
+export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext, stateTaxFiles = {} }: GeneralInformationProps) {
   const [scenarioData, setScenarioData] = useState<Scenario | null>(scenario);
+  const [stateTaxFileId, setStateTaxFileId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [showStateTaxWarning, setShowStateTaxWarning] = useState<boolean>(false);
+
+  // Function to check if state tax YAML is needed
+  const isStateTaxYamlNeeded = useCallback((stateCode: string | undefined): boolean => {
+    return !!stateCode && !['NY', 'NJ', 'CT'].includes(stateCode);
+  }, []);
 
   useEffect(() => {
     setScenarioData(scenario);
-  }, [scenario]);
+    
+    // Check if there's a tax file ID for the current state
+    if (scenario?.residenceState) {
+      const fileId = stateTaxFiles[scenario.residenceState];
+      setStateTaxFileId(fileId || null);
+      
+      // Show warning if state needs tax file but doesn't have one
+      setShowStateTaxWarning(
+        isStateTaxYamlNeeded(scenario.residenceState) && !fileId
+      );
+    } else {
+      setStateTaxFileId(null);
+      setShowStateTaxWarning(false);
+    }
+  }, [scenario, stateTaxFiles, isStateTaxYamlNeeded]);
 
   const handleNextClick = () => {
     if (scenarioData) {
@@ -46,8 +69,6 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
     }
   };
     
-
-
   // --- Handlers ---
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -99,6 +120,63 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
             } as CoupleScenario;
         }
     });
+  };
+
+  // Handler for residence state change specifically from Select component
+  const handleResidenceStateChange = (value: string) => {
+    setScenarioData(prev => {
+        if (!prev) return null;
+        
+        // Check if we have a tax file for this state
+        const fileId = stateTaxFiles[value];
+        setStateTaxFileId(fileId || null);
+        
+        // Show warning if state needs tax file but doesn't have one
+        const needsYaml = isStateTaxYamlNeeded(value);
+        setShowStateTaxWarning(needsYaml && !fileId);
+
+        return {
+          ...prev,
+          residenceState: value,
+        };
+    });
+  };
+
+  // Handler for file input change
+  const handleTaxFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !canEdit || !scenarioData?.residenceState) return;
+    
+    try {
+      setIsUploading(true);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('stateCode', scenarioData.residenceState);
+      
+      const response = await fetch('/api/state-taxes', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.fileId) {
+        // Store the file ID locally so we can see it immediately
+        setStateTaxFileId(data.fileId);
+        setShowStateTaxWarning(false);
+      } else {
+        console.error("Error uploading state tax file:", data.error);
+        setShowStateTaxWarning(true);
+      }
+    } catch (error) {
+      console.error("Error uploading state tax file:", error);
+      setShowStateTaxWarning(true);
+    } finally {
+      setIsUploading(false);
+      // Reset the file input value
+      e.target.value = '';
+    }
   };
 
   // Generic handler for distribution type changes (Inflation, Owner LE, Spouse LE)
@@ -410,12 +488,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       <Label htmlFor="residenceState">Residence State</Label>
       <Select
         value={scenarioData.residenceState}
-        onValueChange={(value) => {
-          setScenarioData(prev => {
-            if (!prev) return null;
-            return { ...prev, residenceState: value };
-          });
-        }}
+        onValueChange={handleResidenceStateChange}
         disabled={!canEdit}
       >
         <SelectTrigger className="w-full">
@@ -443,6 +516,86 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       </Select>
     </div>
 
+       {/* Conditional State Tax YAML Upload */}
+       {isStateTaxYamlNeeded(scenarioData.residenceState) && (
+            <div className="grid w-full max-w-md items-center gap-1.5 mt-4 p-6 border rounded-md bg-amber-50/30">
+                <h3 className="text-lg font-semibold text-white-800">
+                    State Tax Configuration
+                </h3>
+                <p className="text-sm text-white-700 mb-4">
+                    State tax data for &apos;{scenarioData.residenceState}&apos; is not pre-configured. 
+                    Please upload a YAML file with the tax brackets and rates for this state.
+                </p>
+                
+                {!stateTaxFileId && !isUploading && (
+                    <label 
+                        htmlFor="stateTaxFile"
+                        className="flex items-center justify-center w-full max-w-xs py-3 px-4 text-purple-700 font-medium bg-purple-100 hover:bg-purple-200 rounded-md cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Choose File
+                        <input
+                            type="file"
+                            id="stateTaxFile"
+                            name="stateTaxFile"
+                            accept=".yaml, .yml"
+                            onChange={handleTaxFileChange}
+                            disabled={!canEdit}
+                            className="hidden"
+                        />
+                    </label>
+                )}
+                
+                {isUploading && (
+                    <div className="flex items-center space-x-2 text-purple-700">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Uploading...</span>
+                    </div>
+                )}
+                
+                {stateTaxFileId && (
+                    <div className="flex flex-col w-full p-4 bg-green-50 border border-green-200 rounded-md">
+                        <div className="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-green-700 font-medium">Tax file uploaded successfully!</span>
+                        </div>
+                        {canEdit && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    // We don't actually delete the file here, we just remove the reference
+                                    // The file remains in the database for potential reuse
+                                    setStateTaxFileId(null);
+                                    setShowStateTaxWarning(true);
+                                }}
+                                className="flex items-center mt-3 text-red-600 hover:text-red-800 font-medium text-sm"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Remove File
+                            </button>
+                        )}
+                    </div>
+                )}
+                
+                {showStateTaxWarning && canEdit && (
+                    <p className="mt-2 text-sm text-red-600 font-medium flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Warning: If no file is provided, state income tax calculations for &apos;{scenarioData.residenceState}&apos; will be ignored.
+                    </p>
+                )}
+            </div>
+        )}
 
       {/* Inflation Rate */}
       <div className="space-y-2">
@@ -467,7 +620,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
         </div>
       </div>
 
-       {/* Scenario Type (Individual/Couple) */}
+      {/* Scenario Type (Individual/Couple) */}
       <div className="space-y-2 border-t pt-4">
           <Label className="font-semibold">Scenario Type</Label>
           <RadioGroup
@@ -522,7 +675,9 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
           <button
             type="button"
             onClick={handleNextClick}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition disabled:bg-gray-400"
+            // Disable Next if state tax is needed but not provided
+            disabled={!canEdit || (isStateTaxYamlNeeded(scenarioData.residenceState) && !stateTaxFileId)}
           >
             Next
           </button>
