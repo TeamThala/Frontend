@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,8 +16,9 @@ import {
     Scenario,
     CoupleScenario,
     SingleScenario,
-    LifeExpectancy // Assuming LifeExpectancy = FixedValues | NormalDistributionValues based on original types
-} from "@/types/scenario"; // Adjust path as needed
+    LifeExpectancy,
+    StateTax
+} from "@/types/scenario";
 import {FixedValues,
   NormalDistributionValues,
   UniformDistributionValues} from "@/types/utils"
@@ -30,23 +31,147 @@ interface GeneralInformationProps {
   canEdit: boolean;
   onUpdate: (updatedScenario: Scenario) => void;
   handleNext: () => void;
+  availableStateTaxConfigs?: StateTax[]; // Add available state tax configurations
 }
 
-export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext }: GeneralInformationProps) {
+export default function GeneralInformation({ 
+  scenario, 
+  canEdit, 
+  onUpdate, 
+  handleNext,
+  availableStateTaxConfigs = [] // Default to empty array if not provided
+}: GeneralInformationProps) {
   const [scenarioData, setScenarioData] = useState<Scenario | null>(scenario);
+  const [selectedStateTaxId, setSelectedStateTaxId] = useState<string | null>(null);
+  const [showStateTaxWarning, setShowStateTaxWarning] = useState<boolean>(false);
+  const [uploadedYaml, setUploadedYaml] = useState<string | null>(null);
+  const [stateTaxConfigs, setStateTaxConfigs] = useState<StateTax[]>(availableStateTaxConfigs);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Function to check if state tax config is needed
+  const isStateTaxNeeded = useCallback((stateCode: string | undefined): boolean => {
+    return !!stateCode && !['NY', 'NJ', 'CT'].includes(stateCode);
+  }, []);
+
+  // Helper to find available tax configs for a state
+  const getStateTaxConfigsForState = useCallback((stateCode: string): StateTax[] => {
+    return stateTaxConfigs.filter(config => config.code === stateCode);
+  }, [stateTaxConfigs]);
+
+  // Fetch available tax configurations when component mounts or when residence state changes
+  const fetchStateTaxConfigs = useCallback(async (stateCode?: string) => {
+    if (!stateCode) return;
+    
+    try {
+      setIsLoading(true);
+      const url = stateCode ? `/api/state-taxes?stateCode=${stateCode}` : '/api/state-taxes';
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch state tax configurations');
+      }
+      
+      const configs = await response.json();
+      const normalizedConfigs = configs.map((c: StateTax & { _id?: string }) => ({
+        ...c,
+        id: c.id || c._id,
+      }));
+      setStateTaxConfigs(normalizedConfigs);
+
+      if (normalizedConfigs.length > 0) {
+        setSelectedStateTaxId(current => {
+          if (!current) {
+            return normalizedConfigs[0].id;
+          }
+          return current;
+        });
+        setShowStateTaxWarning(false);
+      } else {
+        setShowStateTaxWarning(isStateTaxNeeded(stateCode));
+      }
+
+    } catch (error) {
+      console.error('Error fetching state tax configurations:', error);
+      setStateTaxConfigs([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isStateTaxNeeded]); // Keep only isStateTaxNeeded in dependencies
 
   useEffect(() => {
     setScenarioData(scenario);
-  }, [scenario]);
+    
+    // Initialize state tax configuration
+    if (scenario) {
+      // Set selected tax ID if scenario has one
+      if (scenario.stateTaxConfig) {
+        setSelectedStateTaxId(scenario.stateTaxConfig.id);
+        setShowStateTaxWarning(false);
+      } else {
+        setSelectedStateTaxId(null);
+        // Show warning if state needs tax config but doesn't have one
+        setShowStateTaxWarning(isStateTaxNeeded(scenario.residenceState) && !scenario.stateTaxConfig);
+      }
+      
+      // Fetch tax configurations for this state
+      if (scenario.residenceState) {
+        fetchStateTaxConfigs(scenario.residenceState);
+      }
+    } else {
+      setSelectedStateTaxId(null);
+      setShowStateTaxWarning(false);
+    }
+  }, [scenario, isStateTaxNeeded, fetchStateTaxConfigs]);
+  
 
-  const handleNextClick = () => {
+  const handleNextClick = async () => {
     if (scenarioData) {
-      onUpdate(scenarioData);
+      let stateTaxConfigId = selectedStateTaxId;
+      
+      // If we have a new uploaded YAML but no selected tax config, create one
+      if (uploadedYaml && !selectedStateTaxId) {
+        try {
+          // Make API call to create a new state tax configuration
+          const response = await fetch('/api/state-taxes', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              code: scenarioData.residenceState,
+              name: `${scenarioData.residenceState} Tax Configuration - ${new Date().toLocaleDateString()}`,
+              yaml: uploadedYaml
+            }),
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to create state tax configuration');
+          }
+          
+          const newConfig = await response.json();
+          stateTaxConfigId = newConfig._id || newConfig.id;
+          console.log("Created new state tax configuration with ID:", stateTaxConfigId);
+        } catch (error) {
+          console.error("Error creating state tax configuration:", error);
+          // Show error to user (you might want to add state for this)
+          alert("Failed to create state tax configuration. Please try again.");
+          return;
+        }
+      }
+      
+      // Update the scenario with the selected tax config ID
+      // Since we only have the ID at this point, we'll update just that reference
+      // The full StateTax object would be populated when fetching the scenario again
+      const dataToUpdate = {
+        ...scenarioData,
+        // Use a partial StateTax object with just the ID for the update
+        stateTaxConfig: stateTaxConfigId ? { id: stateTaxConfigId } as StateTax : undefined
+      };
+      
+      onUpdate(dataToUpdate);
       handleNext();
     }
   };
-    
-
 
   // --- Handlers ---
 
@@ -68,6 +193,11 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       }
 
       console.log(name,":", processedValue);
+
+      // Update state tax warning visibility if residenceState changes
+      if (name === 'residenceState') {
+         setShowStateTaxWarning(isStateTaxNeeded(value) && !uploadedYaml);
+      }
 
       return {
         ...prev,
@@ -99,6 +229,63 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
             } as CoupleScenario;
         }
     });
+  };
+
+  // Handler for residence state change specifically from Select component
+  const handleResidenceStateChange = (value: string) => {
+    // Only fetch configs if we're changing to a different state
+    if (scenarioData?.residenceState !== value) {
+      // If the state changes, reset selected tax ID and uploaded YAML
+      setSelectedStateTaxId(null);
+      setUploadedYaml(null);
+      
+      // Fetch new configs for this state
+      fetchStateTaxConfigs(value);
+    }
+    
+    setScenarioData(prev => {
+      if (!prev) return null;
+      
+      return {
+        ...prev,
+        residenceState: value,
+        // StateTaxConfig will be set when user proceeds
+        stateTaxConfig: undefined // Clear previous state tax config when state changes
+      };
+    });
+  };
+
+  // Handler for file input change
+  const handleTaxFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && canEdit) {
+      const reader = new FileReader();
+      reader.onload = (readEvent) => {
+        const content = readEvent.target?.result as string;
+        setUploadedYaml(content);
+        setShowStateTaxWarning(false); // Hide warning once file is loaded
+        console.log("Loaded state tax YAML content. Will be saved as a new configuration.");
+      };
+      reader.onerror = () => {
+        console.error("Error reading the state tax YAML file.");
+        setUploadedYaml(null);
+        setShowStateTaxWarning(isStateTaxNeeded(scenarioData?.residenceState));
+      };
+      reader.readAsText(file);
+    } else {
+      // Reset if no file is selected or cannot edit
+      setUploadedYaml(null);
+      setShowStateTaxWarning(isStateTaxNeeded(scenarioData?.residenceState));
+    }
+    // Reset the file input value so the same file can be selected again if needed after removal
+    e.target.value = '';
+  };
+
+  // Handler for selecting an existing tax configuration
+  const handleStateTaxConfigSelect = (taxId: string) => {
+    setSelectedStateTaxId(taxId);
+    setUploadedYaml(null); // Clear any uploaded YAML since we're using an existing config
+    setShowStateTaxWarning(false);
   };
 
   // Generic handler for distribution type changes (Inflation, Owner LE, Spouse LE)
@@ -238,7 +425,6 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
     });
   };
 
-
   // --- Render Logic ---
 
   if (!scenarioData) {
@@ -246,7 +432,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
   }
   
   // Helper function to render distribution inputs remains the same
-  const renderDistributionInputs = ( /* ... same as before ... */
+  const renderDistributionInputs = (
         field: "inflationRate" | "ownerLifeExpectancy" | "spouseLifeExpectancy"
     ) => {
         // ... (No changes needed inside this function based on errors)
@@ -410,12 +596,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       <Label htmlFor="residenceState">Residence State</Label>
       <Select
         value={scenarioData.residenceState}
-        onValueChange={(value) => {
-          setScenarioData(prev => {
-            if (!prev) return null;
-            return { ...prev, residenceState: value };
-          });
-        }}
+        onValueChange={handleResidenceStateChange}
         disabled={!canEdit}
       >
         <SelectTrigger className="w-full">
@@ -443,6 +624,122 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       </Select>
     </div>
 
+      {/* Conditional State Tax Configuration Selection */}
+      {isStateTaxNeeded(scenarioData.residenceState) && (
+        <div className="grid w-full max-w-md items-center gap-1.5 mt-4 p-6 border rounded-md bg-amber-50/30">
+          <h3 className="text-lg font-semibold text-white-800">
+            State Tax Configuration
+          </h3>
+          <p className="text-sm text-white-700 mb-4">
+            State tax data for &apos;{scenarioData.residenceState}&apos; is not pre-configured. 
+            Please select an existing tax configuration or upload a new YAML file.
+          </p>
+          
+          {/* Loading indicator */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"></div>
+              <span className="ml-2 text-purple-700">Loading tax configurations...</span>
+            </div>
+          )}
+          
+          {/* Show available tax configs if any exist */}
+          {!isLoading && getStateTaxConfigsForState(scenarioData.residenceState).length > 0 && (
+            <div className="mb-4">
+              <Label htmlFor="stateTaxConfig">Select Tax Configuration</Label>
+              <Select
+                value={selectedStateTaxId || ''}
+                onValueChange={handleStateTaxConfigSelect}
+                disabled={!canEdit || isLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a tax configuration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getStateTaxConfigsForState(scenarioData.residenceState).map((config, index) => {
+                    const normalizedId = config.id || config._id || `tax-config-${index}`;
+                    return (
+                      <SelectItem key={normalizedId} value={normalizedId}>
+                        {config.name}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
+          {/* Upload new configuration option */}
+          {!uploadedYaml && (
+            <div>
+              <Label htmlFor="uploadStateTax" className="mb-2 block">
+                {getStateTaxConfigsForState(scenarioData.residenceState).length > 0 
+                  ? "Or Upload New Configuration" 
+                  : "Upload New Configuration"}
+              </Label>
+              <label 
+                htmlFor="uploadStateTax"
+                className={`flex items-center justify-center w-full max-w-xs py-3 px-4 text-purple-700 font-medium bg-purple-100 hover:bg-purple-200 rounded-md cursor-pointer transition-colors ${
+                  !canEdit || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Choose YAML File
+                <input
+                  type="file"
+                  id="uploadStateTax"
+                  name="uploadStateTax"
+                  accept=".yaml, .yml"
+                  onChange={handleTaxFileChange}
+                  disabled={!canEdit || isLoading}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
+          
+          {/* Show uploaded YAML info */}
+          {uploadedYaml && (
+            <div className="flex flex-col w-full p-4 bg-green-50 border border-green-200 rounded-md">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-green-700 font-medium">
+                  New YAML configuration ready to upload (will be saved when you proceed).
+                </span>
+              </div>
+              {canEdit && !isLoading && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedYaml(null);
+                    setShowStateTaxWarning(true);
+                  }}
+                  className="flex items-center mt-3 text-red-600 hover:text-red-800 font-medium text-sm"
+                  disabled={isLoading}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove File
+                </button>
+              )}
+            </div>
+          )}
+          
+          {showStateTaxWarning && canEdit && (
+            <p className="mt-2 text-sm text-red-600 font-medium flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Warning: If no tax configuration is provided, state income tax calculations for &apos;{scenarioData.residenceState}&apos; will be ignored.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Inflation Rate */}
       <div className="space-y-2">
@@ -467,7 +764,7 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
         </div>
       </div>
 
-       {/* Scenario Type (Individual/Couple) */}
+      {/* Scenario Type (Individual/Couple) */}
       <div className="space-y-2 border-t pt-4">
           <Label className="font-semibold">Scenario Type</Label>
           <RadioGroup
@@ -522,9 +819,15 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
           <button
             type="button"
             onClick={handleNextClick}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition disabled:bg-gray-400 flex items-center"
+            disabled={!canEdit || isLoading || (isStateTaxNeeded(scenarioData.residenceState) && !selectedStateTaxId && !uploadedYaml)}
           >
-            Next
+            {isLoading ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+                Processing...
+              </>
+            ) : 'Next'}
           </button>
         </div>
     </div>

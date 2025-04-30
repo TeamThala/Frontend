@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
         // console.log("LOADSCENARIO RESPONSE:")
         // console.log(scenario);
         if (scenario !== null){
+            console.log('Received scenario:', scenario.id, scenario.name);
             console.log("Scenario found, running simulation...");
             // console.log(scenario);
             await simulation(scenario);

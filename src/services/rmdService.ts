@@ -28,11 +28,11 @@ export class RMDService {
    */
   public getRmdFactor(age: number): number {
     if (!this.currentRmdTable) {
-      throw new Error('RMD table not loaded');
+      throw new Error('RMD table not loaded - please call getRmdTable() first to initialize the table');
     }
     const factor = this.currentRmdTable[age];
     if (factor === undefined) {
-      throw new Error(`No RMD factor found for age ${age}`);
+      throw new Error(`No RMD factor found for age ${age} in the current RMD table`);
     }
     return factor;
   }
@@ -53,11 +53,12 @@ export class RMDService {
     }
 
     const factor = this.getRmdFactor(age);
+    // Calculate RMD amount using previous year's balance and IRS factor
     return accountBalance / factor;
   }
 
   /**
-   * Retrieve the RMD table from DB or scrape if missing
+   * Retrieve the RMD table from DB
    */
   public async getRmdTable(year: number): Promise<RmdTable> {
     // Get data from MongoDB directly
@@ -72,9 +73,9 @@ export class RMDService {
       return table;
     }
 
-    // Fallback: use scraper API
+    // Fallback: only use scraper API if no table is found
     try {
-      const response = await fetch('/api/rmdscraper');
+      const response = await fetch('http://localhost:3000/api/rmdscraper');
       if (!response.ok) throw new Error('Failed to fetch RMD table from scraper');
       const data = (await response.json()) as { rmdTable: RmdTableData };
 

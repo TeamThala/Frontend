@@ -1,0 +1,59 @@
+state: TX
+name: Texas
+tax_year: 2023
+
+# Texas has no state income tax
+income_tax: null
+
+property_tax:
+  average_rate: 1.80  # Average percentage of property value
+  homestead_exemption: 40000
+  over65_exemption: 10000
+  disability_exemption: 10000
+
+sales_tax:
+  state_rate: 6.25
+  max_local_rate: 2.00  # Maximum local tax rate allowed
+  max_combined_rate: 8.25
+  
+  exemptions:
+    - category: Groceries
+      exempt: true
+    - category: Prescription Drugs
+      exempt: true
+    - category: Non-prescription Drugs
+      exempt: false
+    - category: Clothing
+      exempt: false
+    - category: Manufacturing Equipment
+      exempt: true
+
+business_taxes:
+  # Texas Franchise Tax (Margin Tax)
+  franchise_tax:
+    threshold: 1230000  # No tax due if revenue is below this
+    rate_retail_wholesale: 0.00375  # 0.375%
+    rate_other: 0.0075  # 0.75%
+    
+local_taxes:
+  # Examples of local taxes that may apply
+  - name: Hotel Occupancy Tax
+    rate: 6.0  # State rate
+    local_max: 7.0  # Maximum additional local rate
+    
+  - name: Mixed Beverage Tax
+    rate: 6.7
+
+special_provisions:
+  - name: No State Income Tax
+    description: Texas does not tax wages, salaries, or other personal income
+    
+  - name: Property Tax Limits
+    description: Annual increases in appraised value of residence homesteads are capped at 10%
+    
+  - name: Tax-Free Weekend
+    description: Sales tax holiday for certain items before school year begins
+    applicable_items:
+      - Clothing and footwear under $100
+      - School supplies under $100
+      - Backpacks under $100 

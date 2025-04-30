@@ -133,6 +133,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     scenario.ownerBirthYear = body.ownerBirthYear;
     scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
     scenario.type = body.type;
+    scenario.customStateTaxYaml = body.customStateTaxYaml;
     if (scenario.type === "couple") {
       scenario.spouseBirthYear = body.spouseBirthYear;
       scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;

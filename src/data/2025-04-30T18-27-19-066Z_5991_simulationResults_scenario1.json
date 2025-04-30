@@ -1,0 +1,5322 @@
+{
+  "2026": {
+    "year": 2026,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 61126.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 61126.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2027": {
+    "year": 2027,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 112253,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 112253,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2028": {
+    "year": 2028,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 163379.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 163379.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2029": {
+    "year": 2029,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 214506,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 214506,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2030": {
+    "year": 2030,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 265632.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 265632.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2031": {
+    "year": 2031,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 316759,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 316759,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2032": {
+    "year": 2032,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 367885.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 367885.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2033": {
+    "year": 2033,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 419012,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 419012,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2034": {
+    "year": 2034,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 470138.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 470138.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2035": {
+    "year": 2035,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 521265,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 521265,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2036": {
+    "year": 2036,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 572391.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 572391.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2037": {
+    "year": 2037,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 623518,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 623518,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2038": {
+    "year": 2038,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 674644.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 674644.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2039": {
+    "year": 2039,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 725771,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 725771,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2040": {
+    "year": 2040,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 776897.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 776897.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2041": {
+    "year": 2041,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 828024,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 828024,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2042": {
+    "year": 2042,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 879150.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 879150.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2043": {
+    "year": 2043,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 930277,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 930277,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2044": {
+    "year": 2044,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 981403.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 981403.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2045": {
+    "year": 2045,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1032530,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1032530,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2046": {
+    "year": 2046,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1083656.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1083656.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2047": {
+    "year": 2047,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1134783,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1134783,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2048": {
+    "year": 2048,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1185909.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1185909.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2049": {
+    "year": 2049,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1237036,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1237036,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2050": {
+    "year": 2050,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1288162.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1288162.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2051": {
+    "year": 2051,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1339289,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1339289,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2052": {
+    "year": 2052,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1390415.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1390415.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2053": {
+    "year": 2053,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1441542,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1441542,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2054": {
+    "year": 2054,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1492668.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1492668.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2055": {
+    "year": 2055,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1543795,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1543795,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2056": {
+    "year": 2056,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1594921.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1594921.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2057": {
+    "year": 2057,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1649048,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1649048,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2058": {
+    "year": 2058,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1703174.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1703174.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2059": {
+    "year": 2059,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1757301,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1757301,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2060": {
+    "year": 2060,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1811427.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1811427.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2061": {
+    "year": 2061,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1865554,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1865554,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2062": {
+    "year": 2062,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1919680.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1919680.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2063": {
+    "year": 2063,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 1973807,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 1973807,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2064": {
+    "year": 2064,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 2027933.5,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 2027933.5,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  },
+  "2065": {
+    "year": 2065,
+    "investments": [
+      {
+        "id": "cashInvestment",
+        "value": 2082060,
+        "investmentType": {
+          "id": "cash",
+          "name": "Cash Account",
+          "description": "Default cash investment",
+          "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          },
+          "expenseRatio": 0,
+          "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+          },
+          "taxability": true
+        },
+        "taxStatus": "non-retirement",
+        "purchasePrice": 0
+      }
+    ],
+    "inflation": 1,
+    "eventSeries": [
+      {
+        "id": "cashOnly",
+        "name": "Cash Only Event",
+        "description": "Default cash event and no other investments.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2020
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 99
+        },
+        "eventType": {
+          "type": "investment",
+          "inflationAdjustment": true,
+          "assetAllocation": {
+            "type": "fixed",
+            "investments": [
+              {
+                "id": "cashInvestment",
+                "value": 2082060,
+                "investmentType": {
+                  "id": "cash",
+                  "name": "Cash Account",
+                  "description": "Default cash investment",
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 100
+                  },
+                  "expenseRatio": 0,
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "taxability": true
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0
+              }
+            ],
+            "percentages": [
+              100
+            ]
+          },
+          "maxCash": 999999999
+        }
+      },
+      {
+        "id": "mortgageExpense",
+        "name": "Mortgage Event",
+        "description": "Default mortgage expense with no annual change, with inflation adjustment, single",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 30
+        },
+        "eventType": {
+          "discretionary": false,
+          "type": "expense",
+          "amount": 3000,
+          "inflationAdjustment": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      },
+      {
+        "id": "incomeEvent1",
+        "name": "Income Event 1",
+        "description": "Default fixed income event with inflation adjustment. Fixed start year and duration.",
+        "startYear": {
+          "type": "fixed",
+          "year": 2025
+        },
+        "duration": {
+          "type": "fixed",
+          "year": 50
+        },
+        "eventType": {
+          "type": "income",
+          "amount": 70000,
+          "inflationAdjustment": true,
+          "socialSecurity": false,
+          "wage": true,
+          "expectedAnnualChange": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+          }
+        }
+      }
+    ],
+    "curYearIncome": 70000,
+    "curYearEarlyWithdrawals": 0,
+    "curYearSS": 0,
+    "curYearGains": 0
+  }
+}

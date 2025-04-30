@@ -4,6 +4,7 @@ import "@/models/Event";
 import "@/models/User";
 import "@/models/InvestmentType";
 import "@/models/RothConversionStrategy";
+import "@/models/StateTax";
 /**
  * Sub-schemas for distribution-like fields:
  * (FixedValues, NormalDistributionValues, UniformDistributionValues)
@@ -36,6 +37,7 @@ const scenarioSchema = new Schema({
     RothConversionEndYear: { type: Number, default: null },
   },  
   residenceState: { type: String, default: "NY" },
+  stateTaxConfig: { type: Schema.Types.ObjectId, ref: "StateTax" }, // Reference to StateTax model
   owner: { type: Schema.Types.ObjectId, ref: "User", required: false },
   ownerBirthYear: { type: Number, default: 2000 },
   ownerLifeExpectancy: { 
