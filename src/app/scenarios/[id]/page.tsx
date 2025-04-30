@@ -36,49 +36,52 @@ export default function ScenarioPage() {
     "Summary"
   ];
 
+  // Function to fetch scenario data from the server
+  const fetchScenarioData = async () => {
+    try {
+      const id = params.id as string;
+      const response = await fetch(`/api/scenarios/${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("You don't have permission to view this scenario");
+          setLoading(false);
+          return false;
+        } else if (response.status === 404) {
+          setError("Scenario not found");
+          setLoading(false);
+          return false;
+        }
+        throw new Error("Failed to fetch scenario");
+      }
+      
+      const data = await response.json();
+      setScenario(data.scenario);
+      
+      // Store state tax files if they exist in the response
+      if (data.stateTaxFiles) {
+        setStateTaxFiles(data.stateTaxFiles);
+      }
+      
+      // Determine if user can edit this scenario
+      setCanEdit(data.isOwner || data.hasEditPermission);
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error fetching scenario:", error);
+      setError("An error occurred while fetching the scenario");
+      setLoading(false);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Ensure the page has a black background
     if (document) {
       document.body.classList.add("bg-black");
     }
     
-    const fetchScenario = async () => {
-      try {
-        const id = params.id as string;
-        const response = await fetch(`/api/scenarios/${id}`);
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            setError("You don't have permission to view this scenario");
-            setLoading(false);
-            return;
-          } else if (response.status === 404) {
-            setError("Scenario not found");
-            setLoading(false);
-            return;
-          }
-          throw new Error("Failed to fetch scenario");
-        }
-        
-        const data = await response.json();
-        setScenario(data.scenario);
-        
-        // Store state tax files if they exist in the response
-        if (data.stateTaxFiles) {
-          setStateTaxFiles(data.stateTaxFiles);
-        }
-        
-        // Determine if user can edit this scenario
-        setCanEdit(data.isOwner || data.hasEditPermission);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching scenario:", error);
-        setError("An error occurred while fetching the scenario");
-        setLoading(false);
-      }
-    };
-
-    fetchScenario();
+    fetchScenarioData();
     
     // Cleanup function
     return () => {
@@ -88,8 +91,13 @@ export default function ScenarioPage() {
     };
   }, [params.id]);
 
-  const handleStepClick = (step: number) => {
+  const handleStepClick = async (step: number) => {
     if (step <= currentStep) {
+      // If navigating back to General Info (step 0), refresh the data to get latest tax files
+      if (step === 0) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
       setCurrentStep(step);
     }
   };
@@ -102,8 +110,13 @@ export default function ScenarioPage() {
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentStep > 0) {
+      // If going back to General Info (step 0), refresh the data
+      if (currentStep === 1) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
       setCurrentStep(currentStep - 1);
     }
   };
