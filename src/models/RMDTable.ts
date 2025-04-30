@@ -15,7 +15,7 @@
 //   findOne
 // };
 import { Filter, UpdateFilter, FindOneAndUpdateOptions, Document, ObjectId } from 'mongodb';
-import client from '@/lib/db';
+import clientPromise from '@/lib/db';
 
 /**
  * Interface for RMD table document in MongoDB
@@ -38,11 +38,13 @@ export async function findOneAndUpdate(
   update: UpdateFilter<Document>,
   options?: FindOneAndUpdateOptions
 ) {
+  const client = await clientPromise;
   const collection = client.db().collection<RmdTableDocument>('rmdtables');
   return collection.findOneAndUpdate(filter, { $set: update }, { ...options });
 }
 
 export async function findOne(filter: Filter<Document>) {
+  const client = await clientPromise;
   const collection = client.db().collection<RmdTableDocument>('rmdtables');
   return collection.findOne(filter);
 }
