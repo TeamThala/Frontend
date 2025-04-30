@@ -5,8 +5,8 @@ import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 import { TaxData } from "@/lib/taxData";
 
-export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData){
-    console.log(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
+export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData, log: string[]){
+    log.push(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
     let prevYearTaxes: number = 0;
 
     // Federal taxes
@@ -19,19 +19,19 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         const upperLimit = parseFloat(bracket.upto.substring(1).split(",").join("")); // Get rid of "$" and ","
         if (upperLimit !== null && curYearIncome <= upperLimit){
             fedTaxRate = getNumericRate(bracket.rate); // Get rid of "%"
-            console.log(`Found federal tax rate of ${fedTaxRate} for income of ${curYearIncome}`);
+            log.push(`Found federal tax rate of ${fedTaxRate} for income of ${curYearIncome}`);
             finalUpperLimit = upperLimit;
             finalRate = fedTaxRate;
             break;
         }
     }
     prevYearTaxes += fedTaxRate * (curYearIncome - standardDeductions + curYearSS * 0.85); // federal taxes
-    console.log(`Federal taxes for ${year} are calculated to ${prevYearTaxes} {upperLimit: ${finalUpperLimit}, rate: ${finalRate}}`);
-    // console.log(taxData.capitalGainsRates.zeroPercent[0].range);
+    log.push(`Federal taxes for ${year} are calculated to ${prevYearTaxes} {upperLimit: ${finalUpperLimit}, rate: ${finalRate}}`);
+    // log.push(taxData.capitalGainsRates.zeroPercent[0].range);
 
     // State taxes
     if (!taxData.stateTaxData[state] || !taxData.stateTaxData[state].hasOwnProperty(year)) {
-        console.log(`Error: Could not find state tax data for ${state} in ${year}`);
+        log.push(`Error: Could not find state tax data for ${state} in ${year}`);
         return null;
     }
     const stateTaxBrackets = taxData.stateTaxData[state][year][married ? 'married_jointly_or_surviving_spouse' : 'single_or_married_separately'];
@@ -43,30 +43,30 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         if (upperLimit !== null && curYearIncome <= upperLimit){
             const ofExcessOver = bracket.of_excess_over === null ? bracket.over : bracket.of_excess_over;
             stateTaxAmount = bracket.base_tax + (curYearIncome - ofExcessOver) * bracket.rate / 100;
-            console.log(`Found state tax rate for income of ${curYearIncome} {upperLimit: ${upperLimit}, rate: ${bracket.rate}, ofExcessOver: ${ofExcessOver}, over: ${bracket.over}, baseTax: ${bracket.base_tax}}`);
+            log.push(`Found state tax rate for income of ${curYearIncome} {upperLimit: ${upperLimit}, rate: ${bracket.rate}, ofExcessOver: ${ofExcessOver}, over: ${bracket.over}, baseTax: ${bracket.base_tax}}`);
             break;
         }
     }
     prevYearTaxes += stateTaxAmount; // state taxes
-    console.log(`State taxes for ${year} are calculated to ${stateTaxAmount}`);
+    log.push(`State taxes for ${year} are calculated to ${stateTaxAmount}`);
 
     // TODO: Add capital gains taxes
     const capitalGainsRates = taxData.capitalGainsRates;
     let capitalGainsTaxAmount = 0;
     if (prevYearGains >= parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.to)){
         capitalGainsTaxAmount = 0; // 0% rate
-        console.log(`Using 0% tax for capital gains`)
+        log.push(`Using 0% tax for capital gains`)
     }
     else if (prevYearGains >= parseFloat(capitalGainsRates.fifteenPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.fifteenPercent[married ? 1:0].range.to)){
         capitalGainsTaxAmount = prevYearGains * 0.15; // 15% rate
-        console.log(`Using 15% tax for capital gains`)
+        log.push(`Using 15% tax for capital gains`)
     }
     else if (prevYearGains >= parseFloat(capitalGainsRates.twentyPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.twentyPercent[married ? 1:0].range.to)){
         capitalGainsTaxAmount = prevYearGains * 0.2; // 20% rate
-        console.log(`Using 20% tax for capital gains`)
+        log.push(`Using 20% tax for capital gains`)
     }
     prevYearTaxes += capitalGainsTaxAmount; // capital 
-    console.log(`Capital gains taxes for ${year} are calculated to ${capitalGainsTaxAmount}`);
+    log.push(`Capital gains taxes for ${year} are calculated to ${capitalGainsTaxAmount}`);
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
         const event = expenseEvents[i];
@@ -76,19 +76,19 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
             if (withinDuration){
-                console.log(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
+                log.push(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
                 totalPayments += eventType.amount;
             }
         }
     }
-    const cashInvestment = findCashInvestment(currentInvestmentEvent);
+    const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
     if (cashInvestment === null){
-        console.log(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+        log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;
     }
-    console.log(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
+    log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
     cashInvestment.value -= totalPayments;
-    console.log(`Cash investment with value ${cashInvestment.value} is going to have ${prevYearTaxes} withdrawn for prevYearTaxes`);
+    log.push(`Cash investment with value ${cashInvestment.value} is going to have ${prevYearTaxes} withdrawn for prevYearTaxes`);
     cashInvestment.value -= prevYearTaxes;
 
     // Withdraw until cash investment is 0
@@ -97,7 +97,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
     for(let i=0; i<expenseWithdrawalStrategy.length; i++){
         const investment = expenseWithdrawalStrategy[i];
         if (cashInvestment.value >= 0){ // withdraw until cash is 0
-            console.log(`Cash investment value is ${cashInvestment.value}, ending withdrawals...`);
+            log.push(`Cash investment value is ${cashInvestment.value}, ending withdrawals...`);
             break;
         }
         if (investment.value > 0){
@@ -113,13 +113,13 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
             investment.value -= withdrawalAmount;
             cashInvestment.value += withdrawalAmount;
             
-            console.log(`Withdrew ${withdrawalAmount} from ${investment.id}, new value: ${investment.value}`);
-            console.log(`Capital gains increase by ${dCurYearGains}`);
+            log.push(`Withdrew ${withdrawalAmount} from ${investment.id}, new value: ${investment.value}`);
+            log.push(`Capital gains increase by ${dCurYearGains}`);
         }
     }
 
     if (cashInvestment.value < 0){
-        console.log(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
+        log.push(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
         return null;
     }
 
@@ -136,7 +136,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
                     if (eventType.expectedAnnualChange.type === "normal"){
                         const normal = randomNormal(eventType.expectedAnnualChange.mean, eventType.expectedAnnualChange.stdDev);
                         const iterValue = normal();
-                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${iterValue} of type ${eventType.expectedAnnualChange.valueType}`);
+                        log.push(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${iterValue} of type ${eventType.expectedAnnualChange.valueType}`);
                         if (eventType.expectedAnnualChange.valueType === "percentage"){
                             eventType.amount *= iterValue/100;
                         }
@@ -146,7 +146,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
                     }
                     else if (eventType.expectedAnnualChange.type === "uniform"){
                         const uniform = Math.random() * (eventType.expectedAnnualChange.max - eventType.expectedAnnualChange.min) + eventType.expectedAnnualChange.min;
-                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${uniform} of type ${eventType.expectedAnnualChange.valueType}`);
+                        log.push(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${uniform} of type ${eventType.expectedAnnualChange.valueType}`);
                         if (eventType.expectedAnnualChange.valueType === "percentage"){
                             eventType.amount *= uniform/100;
                         }

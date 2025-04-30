@@ -3,8 +3,8 @@ import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 
-export function payDiscExpenses(year: number, expenseEvents: Event[], currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[]){
-    console.log(`=== PAYING DISCRETIONARY EXPENSES FOR ${year} ===`);
+export function payDiscExpenses(year: number, expenseEvents: Event[], currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], log: string[]){
+    log.push(`=== PAYING DISCRETIONARY EXPENSES FOR ${year} ===`);
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
         const event = expenseEvents[i];
@@ -14,17 +14,17 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
             if (withinDuration){
-                console.log(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
+                log.push(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
                 totalPayments += eventType.amount;
             }
         }
     }
-    const cashInvestment = findCashInvestment(currentInvestmentEvent);
+    const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
     if (cashInvestment === null){
-        console.log(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+        log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;
     }
-    console.log(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
+    log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
     cashInvestment.value -= totalPayments;
 
     // Withdraw until cash investment is 0
@@ -33,7 +33,7 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
     for(let i=0; i<expenseWithdrawalStrategy.length; i++){
         const investment = expenseWithdrawalStrategy[i];
         if (cashInvestment.value >= 0){ // withdraw until cash is 0
-            console.log(`Cash investment value is ${cashInvestment.value}, ending withdrawals...`);
+            log.push(`Cash investment value is ${cashInvestment.value}, ending withdrawals...`);
             break;
         }
         if (investment.value > 0){
@@ -49,13 +49,13 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
             investment.value -= withdrawalAmount;
             cashInvestment.value += withdrawalAmount;
             
-            console.log(`Withdrew ${withdrawalAmount} from ${investment.id}, new value: ${investment.value}`);
-            console.log(`Capital gains increase by ${dCurYearGains}`);
+            log.push(`Withdrew ${withdrawalAmount} from ${investment.id}, new value: ${investment.value}`);
+            log.push(`Capital gains increase by ${dCurYearGains}`);
         }
     }
 
     if (cashInvestment.value < 0){
-        console.log(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
+        log.push(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
         return null;
     }
 
@@ -72,7 +72,7 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
                     if (eventType.expectedAnnualChange.type === "normal"){
                         const normal = randomNormal(eventType.expectedAnnualChange.mean, eventType.expectedAnnualChange.stdDev);
                         const iterValue = normal();
-                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${iterValue} of type ${eventType.expectedAnnualChange.valueType}`);
+                        log.push(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${iterValue} of type ${eventType.expectedAnnualChange.valueType}`);
                         if (eventType.expectedAnnualChange.valueType === "percentage"){
                             eventType.amount *= iterValue/100;
                         }
@@ -82,7 +82,7 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
                     }
                     else if (eventType.expectedAnnualChange.type === "uniform"){
                         const uniform = Math.random() * (eventType.expectedAnnualChange.max - eventType.expectedAnnualChange.min) + eventType.expectedAnnualChange.min;
-                        console.log(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${uniform} of type ${eventType.expectedAnnualChange.valueType}`);
+                        log.push(`Non-discretionary Expense Event ${event.name} annual change has rolled a value of ${uniform} of type ${eventType.expectedAnnualChange.valueType}`);
                         if (eventType.expectedAnnualChange.valueType === "percentage"){
                             eventType.amount *= uniform/100;
                         }

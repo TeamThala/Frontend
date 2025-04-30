@@ -221,7 +221,7 @@
                             "purchasePrice": 5000
                         }
                     ],
-                    "percentages": [50,50]
+                    "percentages": [25, 25, 25, 25]
                 },
                 "maxCash": 999999999
             }
@@ -412,7 +412,7 @@
     "rothConversion": null,
     "residenceState": "NY",
     "owner": {
-        "id": "user1",
+        "id": "67df1c649d834cac351fbe44",
         "name": "John Doe",
         "email": "johndoe@test.com",
         "image": "https://example.com/johndoe.jpg",
