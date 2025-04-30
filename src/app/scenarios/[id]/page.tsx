@@ -24,6 +24,7 @@ export default function ScenarioPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [canEdit, setCanEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stateTaxFiles, setStateTaxFiles] = useState<Record<string, string>>({});
 
   const steps = [
     "General Info",
@@ -61,6 +62,11 @@ export default function ScenarioPage() {
         
         const data = await response.json();
         setScenario(data.scenario);
+        
+        // Store state tax files if they exist in the response
+        if (data.stateTaxFiles) {
+          setStateTaxFiles(data.stateTaxFiles);
+        }
         
         // Determine if user can edit this scenario
         setCanEdit(data.isOwner || data.hasEditPermission);
@@ -164,6 +170,7 @@ export default function ScenarioPage() {
           <GeneralInformation 
             scenario={scenario} 
             canEdit={canEdit}
+            stateTaxFiles={stateTaxFiles}
             onUpdate={(updatedScenario) => {
               setScenario(updatedScenario);
               if (canEdit) {
@@ -229,20 +236,8 @@ export default function ScenarioPage() {
             handlePrevious={handlePrevious}
           />
         )}
-        {/* {currentStep === 5 && (
-          <RothAndRMD 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => setScenario(updatedScenario)}
-          />
-        )}
-        {currentStep === 6 && (
-          <Summary 
-            scenario={scenario} 
-            canEdit={canEdit}
-          />
-        )} */}
-        
+        {/* {currentStep === 5 && <RothAndRMD />}
+        {currentStep === 6 && <Summary />} */}
       </div>
     </div>
   );

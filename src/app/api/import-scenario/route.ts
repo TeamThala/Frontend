@@ -7,6 +7,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions }  from "@/lib/auth";
 import dbConnect          from "@/lib/dbConnect";
 import { Types } from "mongoose";
+import mongoose from "mongoose";
 
 import User               from "@/models/User";
 import Scenario           from "@/models/Scenario";
@@ -15,6 +16,7 @@ import Investment         from "@/models/Investment";
 import Event              from "@/models/Event";
 import RothConv           from "@/models/RothConversionStrategy";
 import * as yaml           from "js-yaml";
+import TaxFile            from "@/models/TaxFile";
 
 /* ────────────────────────────────
    helpers
@@ -185,6 +187,19 @@ export async function POST(req:NextRequest){
     const investMap  = new Map<string,Types.ObjectId>();   // label -> _id
     const eventMap   = new Map<string,Types.ObjectId>();   // name  -> _id
     const depTracker = new Map<string,string>();           // event needing -> dep name
+
+    /* Check if we need to create a state tax file */
+    if (yml.customStateTaxYaml && yml.residenceState) {
+      const taxFile = await TaxFile.create({
+        user: user._id,
+        state: yml.residenceState,
+        content: yml.customStateTaxYaml
+      });
+
+      // Update the user's state tax files map
+      user.stateTaxFiles.set(yml.residenceState, taxFile._id.toString());
+      await user.save();
+    }
 
     /* 3️⃣  Investment Types */
     for(const t of yml.investmentTypes??[]){
@@ -452,8 +467,7 @@ export async function POST(req:NextRequest){
                              dist(yml.lifeExpectancy[1],"amount") : undefined,
       viewPermissions : [],
       editPermissions : [],
-      updatedAt       : new Date(),
-      customStateTaxYaml: yml.customStateTaxYaml
+      updatedAt       : new Date()
     });
 
     /* 9️⃣  link scenario to user */
