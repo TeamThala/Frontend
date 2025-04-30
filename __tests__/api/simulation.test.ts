@@ -5,6 +5,7 @@ import { Investment } from '@/types/investment';
 import { rothConversion } from '@/app/api/simulation/rothConversion';
 import { getTaxData } from '@/lib/taxData';
 
+const mockLog: string[] = [];
 const mockIncomeEvent: Event = {
     "id": "incomeEvent1",
     "name": "Income Event 1",
@@ -251,7 +252,7 @@ const mockInvestment3: Investment = {
 
 describe('Simulation: Run income events', () => {
     it('should update income events correctly', async () => {
-        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage");
+        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage", mockLog);
         expect(updatedEvents).toBeDefined(); // Ensure the result is not undefined or null
         expect(updatedEvents).toHaveProperty('incomeEvents'); // Ensure 'incomeEvents' exists
         expect(updatedEvents).toHaveProperty('curYearIncome'); // Ensure 'curYearIncome' exists
@@ -268,7 +269,7 @@ describe('Simulation: Run income events', () => {
 
 describe('Simulation: Update values of investments', () => {
     it('should update investment events correctly', () => {
-        const dCurYearIncome = updateInvestmentEvent(mockInvestmentEvent2);
+        const dCurYearIncome = updateInvestmentEvent(mockInvestmentEvent2, mockLog);
         expect(dCurYearIncome).toBeDefined(); // Ensure the result is not undefined or null
         expect(dCurYearIncome).toBe(1000); // non-retirement income from investment1
 
@@ -280,7 +281,7 @@ describe('Simulation: Update values of investments', () => {
 describe('Simulation: Roth Conversion optimizer', () => {
     it('should transfer investments correctly', () => {
         const taxData = getTaxData(); // has 2025 tax data
-        const rc = rothConversion(70000, 0, taxData, false, 2025, [mockInvestment2], [mockCashInvestment, mockInvestment1, mockInvestment2, mockInvestment3]);
+        const rc = rothConversion(70000, 0, taxData, false, 2025, [mockInvestment2], [mockCashInvestment, mockInvestment1, mockInvestment2, mockInvestment3], mockLog);
         expect(rc).toBeDefined(); // Ensure the result is not undefined or null
         expect(rc).toBeCloseTo(45125);
     });
