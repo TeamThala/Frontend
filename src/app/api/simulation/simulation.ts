@@ -14,14 +14,15 @@ import { Investment } from '@/types/investment';
 import { payDiscExpenses } from './payDiscExpenses';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
-import { exportResultsToJson } from './exportResults';
+import { exportResultsToJson, saveLogToFile } from './exportResults';
 
 export async function simulation(scenario: Scenario){
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
     const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
     const currentYear = new Date().getFullYear();
     let year = currentYear;
-    console.log(`Owner birthyear: ${scenario.ownerBirthYear} of type ${typeof scenario.ownerBirthYear}`);
+    const log: string[] = [];
+    log.push(`Owner birthyear: ${scenario.ownerBirthYear} of type ${typeof scenario.ownerBirthYear}`);
 
     // Sample life expectancy
     let ownerLifeExpectancy: number | null = null;
@@ -31,10 +32,10 @@ export async function simulation(scenario: Scenario){
     else{
         const normal = randomNormal(scenario.ownerLifeExpectancy.mean, scenario.ownerLifeExpectancy.stdDev);
         ownerLifeExpectancy = Math.floor(normal()); // Life expectancy should be a whole number for the loop
-        console.log(`Owner normal life expectancy rolled as ${ownerLifeExpectancy}`);
+        log.push(`Owner normal life expectancy rolled as ${ownerLifeExpectancy}`);
     }
     if (ownerLifeExpectancy === null){
-        console.log("Error: Could not sample life expectancy.");
+        log.push("Error: Could not sample life expectancy.");
         return null;
     }
 
@@ -53,15 +54,15 @@ export async function simulation(scenario: Scenario){
     // Obtain initial tax brackets with which to use for simulation
     // const initialTaxBrackets = await getTaxData(currentYear, scenario.residenceState);
     // let prevTaxBrackets = initialTaxBrackets;
-    console.log(`Fetched initial tax brackets for ${scenario.residenceState} in ${currentYear}`);
+    log.push(`Fetched initial tax brackets for ${scenario.residenceState} in ${currentYear}`);
 
     // Initialize durations for all events and sort all of them by type
-    const eventArrays = await initializeEvents(scenario.eventSeries);
+    const eventArrays = await initializeEvents(scenario.eventSeries, log);
     if (eventArrays === null){
-        console.log("Error: Could not initialize events.");
+        log.push("Error: Could not initialize events.");
         return null;
     }
-    console.log(`Initialized events: ${eventArrays}`);
+    log.push(`Initialized events: ${eventArrays}`);
     let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[];//,  rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
@@ -71,14 +72,14 @@ export async function simulation(scenario: Scenario){
         // rebalanceEvents = eventArrays[3];
     }
     else {
-        console.log("Error: No events found.");
+        log.push("Error: No events found.");
         return null;
     }
     // Initialize investment related fields to use unified objects
-    initializeInvestmentEvents(investmentEvents, scenario);
-    initializeStrategy(scenario.RMDStrategy, scenario);
-    initializeStrategy(scenario.RothConversionStrategy, scenario);
-    initializeStrategy(scenario.expenseWithdrawalStrategy, scenario);
+    initializeInvestmentEvents(investmentEvents, scenario, log);
+    initializeStrategy(scenario.RMDStrategy, scenario, log);
+    initializeStrategy(scenario.RothConversionStrategy, scenario, log);
+    initializeStrategy(scenario.expenseWithdrawalStrategy, scenario, log);
 
     // Variables to be carried into the next iteration of the loop
     let curYearGains: number = 0;
@@ -87,19 +88,19 @@ export async function simulation(scenario: Scenario){
     let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
 
     // Simulation loop
-    console.log("=====================SIMULATION STARTED=====================");
+    log.push("=====================SIMULATION STARTED=====================");
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
-        // console.log(incomeEvents[0])
+        // log.push(incomeEvents[0])
         // Inflation assumption calculation for this year
         const inflation = getInflationRate(scenario.inflationRate);
-        console.log(`Inflation rate for age ${age} parsed as ${inflation}`);
+        log.push(`Inflation rate for age ${age} parsed as ${inflation}`);
 
         // update retirement account contributions annual limits
         scenario.contributionsLimit *= inflation; // Update contribution limits for next year
 
-        // console.log(`Age: ${age}`);
-        console.log(`=====================Year: ${year}=====================`);
+        // log.push(`Age: ${age}`);
+        log.push(`=====================Year: ${year}=====================`);
 
 
         // Find the current investment event
@@ -109,24 +110,24 @@ export async function simulation(scenario: Scenario){
             (event.startYear.year + event.duration.year) >= year);
 
         if (!currentInvestmentEvent) {
-            console.log(`Error: Could not find investment event for year ${year}`);
+            log.push(`Error: Could not find investment event for year ${year}`);
             return null;
         }
 
-        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType);
+        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, log);
         if (incomeResults === null){
-            console.log("Error: Could not update income events.");
+            log.push("Error: Could not update income events.");
             return null;
         }
         let curYearIncome = incomeResults.curYearIncome;
         const curYearSS = incomeResults.curYearSS;
-        console.log(`Income for current year ${year}: ${curYearIncome}`);
-        console.log(`Social Security for current year ${year}: ${curYearSS}`);
+        log.push(`Income for current year ${year}: ${curYearIncome}`);
+        log.push(`Social Security for current year ${year}: ${curYearSS}`);
         
         // === RMD Processing: Calculate and distribute required minimum distributions for pre-tax accounts ===
         // Perform RMD for previous year if applicable
         if (age >= 74) {  // RMDs start at 73, paid at 74
-            console.log(`=== Processing RMD for age ${age} in year ${year} ===`);
+            log.push(`=== Processing RMD for age ${age} in year ${year} ===`);
             const rmdService = RMDService.getInstance();
             
             // Get previous year's pre-tax accounts
@@ -142,9 +143,9 @@ export async function simulation(scenario: Scenario){
                         accountType: "pretax" as const
                     } as RMDInvestment));
 
-                console.log(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
+                log.push(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
                 previousYearPretaxAccounts.forEach(acc => {
-                    console.log(`  - ${acc.name}: $${acc.balance}`);
+                    log.push(`  - ${acc.name}: $${acc.balance}`);
                 });
 
                 // Only proceed if we have pre-tax accounts and an RMD strategy
@@ -158,7 +159,7 @@ export async function simulation(scenario: Scenario){
                             name: "Simulation RMD Strategy",
                             investmentOrder: scenario.RMDStrategy.map(inv => inv.id)
                         };
-                        console.log(`RMD distribution order: ${rmdStrategy.investmentOrder.join(', ')}`);
+                        log.push(`RMD distribution order: ${rmdStrategy.investmentOrder.join(', ')}`);
 
                         // Execute RMD distribution
                         const distribution = await rmdService.executeRmdDistribution(
@@ -170,14 +171,14 @@ export async function simulation(scenario: Scenario){
 
                         // Add RMD to current year's income
                         curYearIncome += distribution.distributionAmount;
-                        console.log(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
-                        console.log(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
+                        log.push(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
+                        log.push(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
                         
                         // Process the distributions - transfer, reduce pre-tax, increase or create non-retirement investment
                         // Note: RMD transfers work in dollars only - no share counts or portfolio percentages per requirements
-                        console.log('Processing distributions:');
+                        log.push('Processing distributions:');
                         for (const dist of distribution.distributedInvestments) {
-                            console.log(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
+                            log.push(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
                             const sourceInv = investmentEventType.assetAllocation.investments
                                 .find(inv => inv.id === dist.investmentId);
                             
@@ -185,7 +186,7 @@ export async function simulation(scenario: Scenario){
                                 // Reduce the pre-tax investment value
                                 const oldValue = sourceInv.value;
                                 sourceInv.value -= dist.amount;
-                                console.log(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
+                                log.push(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
 
                                 // Find or create corresponding non-retirement investment
                                 const targetInv = investmentEventType.assetAllocation.investments
@@ -198,7 +199,7 @@ export async function simulation(scenario: Scenario){
                                     // Add to existing non-retirement investment
                                     const oldTargetValue = targetInv.value;
                                     targetInv.value += dist.amount;
-                                    console.log(`  Added to existing non-retirement ${targetInv.id}: $${oldTargetValue} -> $${targetInv.value}`);
+                                    log.push(`  Added to existing non-retirement ${targetInv.id}: $${oldTargetValue} -> $${targetInv.value}`);
                                 } else { //CREATING NEW INVESTMENT HERE!
                                     // Create new non-retirement investment
                                     const newInv = {
@@ -209,40 +210,40 @@ export async function simulation(scenario: Scenario){
                                         purchasePrice: dist.amount  // Set purchase price to distribution amount
                                     };
                                     investmentEventType.assetAllocation.investments.push(newInv);
-                                    console.log(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
+                                    log.push(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
                                 }
                             }
                         }
-                        console.log('=== RMD processing complete ===');
+                        log.push('=== RMD processing complete ===');
                     } catch (error) {
                         console.error('Error executing RMD distribution:', error);
                         // Handle errors gracefully to ensure simulation continues
                     }
                 } else {
-                    console.log('Skipping RMD: No pre-tax accounts or RMD strategy available');
+                    log.push('Skipping RMD: No pre-tax accounts or RMD strategy available');
                 }
             }
         }
 
-        const investmentResults = updateInvestmentEvent(currentInvestmentEvent);
+        const investmentResults = updateInvestmentEvent(currentInvestmentEvent, log);
         if (investmentResults === null){
-            console.log("Error: Could not update investment events.");
+            log.push("Error: Could not update investment events.");
             return null;
         }
 
         curYearIncome += investmentResults;
         if (scenario.rothConversion !== null){
-            console.log(`Roth conversion for ${year} is ${scenario.rothConversion}`);
-            const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments);
+            log.push(`Roth conversion for ${year} is ${scenario.rothConversion}`);
+            const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments, log);
             if (rc === null || rc === undefined){
-                console.log(`Error: Could not finish Roth conversion for year ${year}`);
+                log.push(`Error: Could not finish Roth conversion for year ${year}`);
                 return null;
             }
             curYearIncome += rc;
         }
-        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData);
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, log);
         if (nondiscExpenseRet === null){
-            console.log(`Ending simulation run...`);
+            log.push(`Ending simulation run...`);
             return null;
         }
         curYearGains += nondiscExpenseRet.dCurYearGains;
@@ -251,16 +252,16 @@ export async function simulation(scenario: Scenario){
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;
         curYearEarlyWithdrawals = 0;
-        console.log(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
+        log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, log);
         // TODO: Run invest event scheduled for the current year
         // TODO: Run rebalance events scheduled for the current year
 
 
         // End of loop calculations
         year++;
-        updateTaxBrackets(taxData, inflation); // Update tax brackets for next year
+        updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
         
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
@@ -294,9 +295,10 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains);
+        exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, log);
     }
-    console.log("=====================SIMULATION FINISHED=====================");
+    log.push("=====================SIMULATION FINISHED=====================");
+    saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
     return;
 }
 
@@ -304,12 +306,12 @@ export async function simulation(scenario: Scenario){
 
 
 
-async function initializeEvents(events: Event[]){ // assuming it is only invoked on scenario.eventSeries
+async function initializeEvents(events: Event[], log: string[]){ // assuming it is only invoked on scenario.eventSeries
     // Resolves all durations and start years that are not fixed
     // Collects events into arrays by type
 
     // Initialize durations for all events
-    console.log("Initializing event durations...");
+    log.push("Initializing event durations...");
 
     const incomeEvents: Event[] = [];
     const expenseEvents: Event[] = [];
@@ -319,9 +321,9 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
 
     for (let i = 0; i < events.length; i++){
         let event: Event = events[i];
-        console.log(`Initializing event with name: ${events[i].name}...`);
+        log.push(`Initializing event with name: ${events[i].name}...`);
         event = events[i];
-        // console.log(event);
+        // log.push(event);
         if (event !== null){
             if (event.duration.type === "uniform"){
                 const uniform = Math.random() * (event.duration.year.max - event.duration.year.min) + event.duration.year.min;
@@ -330,7 +332,7 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                     year: Math.floor(uniform)
                 }
                 event.duration = simDuration;
-                console.log(`Event ${event.name}'s uniform duration rolled duration of ${event.duration.year}`);
+                log.push(`Event ${event.name}'s uniform duration rolled duration of ${event.duration.year}`);
             }
             else if (event.duration.type === "normal"){
                 const normal = randomNormal(event.duration.year.mean, event.duration.year.stdDev);
@@ -339,10 +341,10 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                     year: Math.floor(normal())
                 }
                 event.duration = simDuration;
-                console.log(`Event ${event.name}'s normal duration rolled duration of ${event.duration.year}`);
+                log.push(`Event ${event.name}'s normal duration rolled duration of ${event.duration.year}`);
             }
             else { // type is "fixed"
-                // console.log(`Event ${event.name} has a fixed duration of ${event.duration.year}`);
+                // log.push(`Event ${event.name} has a fixed duration of ${event.duration.year}`);
                 // All random durations will be converted to fixed durations at runtime
                 // If already fixed, do nothing
             }
@@ -355,7 +357,7 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                     year: Math.floor(uniform)
                 }
                 event.startYear = simStartYear;
-                console.log(`Event ${event.name}'s uniform startYear rolled startYear of ${event.startYear.year}`);
+                log.push(`Event ${event.name}'s uniform startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "normal"){
                 const normal = randomNormal(event.startYear.year.mean, event.startYear.year.stdDev);
@@ -364,17 +366,17 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                     year: Math.floor(normal())
                 }
                 event.startYear = simStartYear;
-                console.log(`Event ${event.name}'s normal startYear rolled startYear of ${event.startYear.year}`);
+                log.push(`Event ${event.name}'s normal startYear rolled startYear of ${event.startYear.year}`);
             }
             else if (event.startYear.type === "event"){
                 // recursively resolve start years until we reach a fixed start year
                 const startYear = event.startYear as EventYear;
                 const matchingEvent = events.find(e => e.id === startYear.eventId);
                 if (!matchingEvent) {
-                    console.log(`Error: Could not find event with id ${event.startYear.eventId}`);
+                    log.push(`Error: Could not find event with id ${event.startYear.eventId}`);
                     return null;
                 }
-                await initializeEvents([matchingEvent]);
+                await initializeEvents([matchingEvent], log);
                 if (event.startYear.eventTime === "start"){
                     const finalStartYear = matchingEvent.startYear as FixedYear; // should be resolved to a fixed year
                     event.startYear = {
@@ -392,7 +394,7 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                 }
             }
             else{ // type is "fixed"
-                // console.log(`Event ${event.name} has a fixed start year of ${event.startYear.year}`);
+                // log.push(`Event ${event.name} has a fixed start year of ${event.startYear.year}`);
                 // All random start years will be converted to fixed start years at runtime
                 // If already fixed, do nothing
             }
@@ -408,7 +410,7 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
                 investmentEvents.push(event);
                 const nestedInvestments = event.eventType.assetAllocation.investments;
                 if (nestedInvestments === null){
-                    console.log(`Error: Could not find the investments nested inside ${event.id}, ${event.name}`);
+                    log.push(`Error: Could not find the investments nested inside ${event.id}, ${event.name}`);
                     return null;
                 }
                 // cashInvestment = nestedInvestments.find(investment => investment.investmentType.name === "cash") || null;
@@ -418,21 +420,21 @@ async function initializeEvents(events: Event[]){ // assuming it is only invoked
             }
         }
         else {
-            console.log(`Error: During initializeEvents(), event ${i} is null`);
+            log.push(`Error: During initializeEvents(), event ${i} is null`);
             return null;
         }
     }
     return [incomeEvents, expenseEvents, investmentEvents, rebalanceEvents];
 }
 
-function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenario){
+function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenario, log: string[]){
     // replaces investments in all investment events with references to investment objects in scenario.investments
     for (let i=0; i<investmentEvents.length; i++){
         const investmentEvent = investmentEvents[i];
         const investmentType = investmentEvent.eventType as InvestmentEvent;
         const investments = investmentType.assetAllocation.investments;
         if (investments === null){
-            console.log(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+            log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
             return null;
         }
         for (let j=0; j<investments.length; j++){
@@ -443,14 +445,14 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
                 investments[j] = investmentInField; // replace with reference to investment object in scenario.investments
             }
             else{
-                console.log(`Error: Could not find investment with id ${investmentId}`);
+                log.push(`Error: Could not find investment with id ${investmentId}`);
                 return null;
             }
         }
     }
 }
 
-function initializeStrategy(strategy: Investment[], scenario: Scenario){
+function initializeStrategy(strategy: Investment[], scenario: Scenario, log: string[]){
     // replace any Investment[] strategy with references to investment objects in scenario.investments
     for(let i=0; i<strategy.length; i++){
         const investment = strategy[i];
@@ -460,7 +462,7 @@ function initializeStrategy(strategy: Investment[], scenario: Scenario){
             strategy[i] = investmentInField; // replace with reference to investment object in scenario.investments
         }
         else{
-            console.log(`Error: Could not find investment with id ${investmentId}`);
+            log.push(`Error: Could not find investment with id ${investmentId}`);
             return null;
         }
     }

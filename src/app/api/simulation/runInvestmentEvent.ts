@@ -3,16 +3,15 @@ import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { FixedYear } from "@/types/event";
 
-export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number){ // e = currentInvestmentEvent, l = contributionsLimit
-    console.log(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
+export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number, log: string[]){ // e = currentInvestmentEvent, l = contributionsLimit
+    log.push(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
     const eType = e.eventType as InvestmentEvent;
     if (eType.assetAllocation.investments === null){
-        console.log(`Error: Could not find investments in asset allocation in ${e.name}`);
+        log.push(`Error: Could not find investments in asset allocation in ${e.name}`);
         return null;
     }
     const investments: Investment[] = eType.assetAllocation.investments;
-    console.log(`Investments: ${investments}`);
-    console.log(investments);
+    log.push(`Investments: ${investments}`);
     let b = 0; // sum of amount to buy in after tax accounts
 
     // Compute amount each investment needs to increase to reach allocation
@@ -26,19 +25,19 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             b += investment.value; // sum of amount to buy in after tax accounts
         }
     }
-    console.log(`Collected a b value of ${b} from after tax accounts`);
-    console.log(`Collected a net value of ${investmentNetValue} from all investments`);
-    const cashInvestment = findCashInvestment(e);
+    log.push(`Collected a b value of ${b} from after tax accounts`);
+    log.push(`Collected a net value of ${investmentNetValue} from all investments`);
+    const cashInvestment = findCashInvestment(e, log);
     if (cashInvestment === null){
-        console.log(`Error: Could not find cash investment in ${e.name}`);
+        log.push(`Error: Could not find cash investment in ${e.name}`);
         return null;
     }
-    console.log(`Cash investment found in ${e.name}: ${cashInvestment}`);
+    log.push(`Cash investment found in ${e.name}: ${cashInvestment}`);
     const excessCash = eType.maxCash - cashInvestment.value; // excess cash in the account
-    console.log(`Excess cash in the account: ${excessCash}`);
-    console.log(`Cash investment value before withdrawal: ${cashInvestment.value}`);
+    log.push(`Excess cash in the account: ${excessCash}`);
+    log.push(`Cash investment value before withdrawal: ${cashInvestment.value}`);
     cashInvestment.value -= Math.max(0, excessCash); // withdraw from cash account to invest
-    console.log(`Cash investment value after withdrawal: ${cashInvestment.value}`);
+    log.push(`Cash investment value after withdrawal: ${cashInvestment.value}`);
     const targetInvestmentValues: number[] = [];
 
     if (eType.assetAllocation.type === "fixed"){
@@ -59,10 +58,10 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         }
 
     }
-    console.log(`Target investment values: ${targetInvestmentValues}`);
+    log.push(`Target investment values: ${targetInvestmentValues}`);
 
     if (b>l){
-        console.log(`After tax accounts will receive investments exceeding annual limits of ${l}. Scaling down...`)
+        log.push(`After tax accounts will receive investments exceeding annual limits of ${l}. Scaling down...`)
         let diff = 0;
         let numNonAfterAccounts = 0;
         for (let i=0; i<investments.length; i++){
@@ -75,8 +74,8 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
                 numNonAfterAccounts += 1; // count number of non-after tax accounts
             }
         }
-        console.log(`Diff: ${diff}`);
-        console.log(`Number of non-after tax accounts: ${numNonAfterAccounts}`);
+        log.push(`Diff: ${diff}`);
+        log.push(`Number of non-after tax accounts: ${numNonAfterAccounts}`);
 
         const scaleUp = diff / numNonAfterAccounts; // scale up non-after tax accounts by this amount
         for (let i=0; i<investments.length; i++){
@@ -96,6 +95,6 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             investment.value += targetInvestmentValues[i]; // invest excess cash
         }
     }
-    console.log(`Investment values after investment: ${investmentValues}`);
+    log.push(`Investment values after investment: ${investmentValues}`);
     return 0
 }

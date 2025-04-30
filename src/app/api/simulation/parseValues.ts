@@ -5,9 +5,9 @@ enum ValueType {
     Percentage = "percentage",
 }
 
-export function parseFixedValue(valueType: string, value: number): FixedValues | null {
+export function parseFixedValue(valueType: string, value: number, log: string[]): FixedValues | null {
     if (valueType !== ValueType.Amount && valueType !== ValueType.Percentage) {
-        console.log("Error: Invalid valueType.");
+        log.push("Error: Invalid valueType.");
         return null;
     }
     return {
@@ -17,9 +17,9 @@ export function parseFixedValue(valueType: string, value: number): FixedValues |
     };
 }
 
-export function parseNormalDistribution(valueType: string, mean: number, stdDev: number): NormalDistributionValues | null {
+export function parseNormalDistribution(valueType: string, mean: number, stdDev: number, log: string[]): NormalDistributionValues | null {
     if (valueType !== ValueType.Amount && valueType !== ValueType.Percentage) {
-        console.log("Error: Invalid valueType.");
+        log.push("Error: Invalid valueType.");
         return null;
     }
     return {
@@ -30,9 +30,9 @@ export function parseNormalDistribution(valueType: string, mean: number, stdDev:
     };
 }
 
-export function parseUniformDistribution(valueType: string, min: number, max: number): UniformDistributionValues | null {
+export function parseUniformDistribution(valueType: string, min: number, max: number, log: string[]): UniformDistributionValues | null {
     if (valueType !== ValueType.Amount && valueType !== ValueType.Percentage) {
-        console.log("Error: Invalid valueType.");
+        log.push("Error: Invalid valueType.");
         return null;
     }
     return {
