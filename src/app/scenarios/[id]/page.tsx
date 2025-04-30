@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Scenario } from "@/types/scenario";
 
@@ -24,6 +24,7 @@ export default function ScenarioPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [canEdit, setCanEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stateTaxFiles, setStateTaxFiles] = useState<Record<string, string>>({});
 
   const steps = [
     "General Info",
@@ -35,44 +36,52 @@ export default function ScenarioPage() {
     "Summary"
   ];
 
+  // Function to fetch scenario data from the server
+  const fetchScenarioData =useCallback(async () => {
+    try {
+      const id = params.id as string;
+      const response = await fetch(`/api/scenarios/${id}`);
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError("You don't have permission to view this scenario");
+          setLoading(false);
+          return false;
+        } else if (response.status === 404) {
+          setError("Scenario not found");
+          setLoading(false);
+          return false;
+        }
+        throw new Error("Failed to fetch scenario");
+      }
+      
+      const data = await response.json();
+      setScenario(data.scenario);
+      
+      // Store state tax files if they exist in the response
+      if (data.stateTaxFiles) {
+        setStateTaxFiles(data.stateTaxFiles);
+      }
+      
+      // Determine if user can edit this scenario
+      setCanEdit(data.isOwner || data.hasEditPermission);
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Error fetching scenario:", error);
+      setError("An error occurred while fetching the scenario");
+      setLoading(false);
+      return false;
+    }
+  },[params.id]);
+
   useEffect(() => {
     // Ensure the page has a black background
     if (document) {
       document.body.classList.add("bg-black");
     }
     
-    const fetchScenario = async () => {
-      try {
-        const id = params.id as string;
-        const response = await fetch(`/api/scenarios/${id}`);
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            setError("You don't have permission to view this scenario");
-            setLoading(false);
-            return;
-          } else if (response.status === 404) {
-            setError("Scenario not found");
-            setLoading(false);
-            return;
-          }
-          throw new Error("Failed to fetch scenario");
-        }
-        
-        const data = await response.json();
-        setScenario(data.scenario);
-        
-        // Determine if user can edit this scenario
-        setCanEdit(data.isOwner || data.hasEditPermission);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching scenario:", error);
-        setError("An error occurred while fetching the scenario");
-        setLoading(false);
-      }
-    };
-
-    fetchScenario();
+    fetchScenarioData();
     
     // Cleanup function
     return () => {
@@ -80,10 +89,15 @@ export default function ScenarioPage() {
         document.body.classList.remove("bg-black");
       }
     };
-  }, [params.id]);
+  },[fetchScenarioData]);
 
-  const handleStepClick = (step: number) => {
+  const handleStepClick = async (step: number) => {
     if (step <= currentStep) {
+      // If navigating back to General Info (step 0), refresh the data to get latest tax files
+      if (step === 0) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
       setCurrentStep(step);
     }
   };
@@ -96,8 +110,13 @@ export default function ScenarioPage() {
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = async () => {
     if (currentStep > 0) {
+      // If going back to General Info (step 0), refresh the data
+      if (currentStep === 1) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
       setCurrentStep(currentStep - 1);
     }
   };
@@ -164,6 +183,7 @@ export default function ScenarioPage() {
           <GeneralInformation 
             scenario={scenario} 
             canEdit={canEdit}
+            stateTaxFiles={stateTaxFiles}
             onUpdate={(updatedScenario) => {
               setScenario(updatedScenario);
               if (canEdit) {
@@ -229,20 +249,8 @@ export default function ScenarioPage() {
             handlePrevious={handlePrevious}
           />
         )}
-        {/* {currentStep === 5 && (
-          <RothAndRMD 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => setScenario(updatedScenario)}
-          />
-        )}
-        {currentStep === 6 && (
-          <Summary 
-            scenario={scenario} 
-            canEdit={canEdit}
-          />
-        )} */}
-        
+        {/* {currentStep === 5 && <RothAndRMD />}
+        {currentStep === 6 && <Summary />} */}
       </div>
     </div>
   );

@@ -69,6 +69,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!user) {
       return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
     }
+    // Include stateTaxFiles map to return to frontend
+    const stateTaxFiles = Object.fromEntries(user.stateTaxFiles || []);
+
 
     // Check if user has permission to view this scenario
     const isOwner = scenario.owner.toString() === user._id.toString();
@@ -88,7 +91,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     
 
-    return NextResponse.json({ success: true, scenario, isOwner, hasEditPermission, hasViewPermission }, { status: 200 });
+    return NextResponse.json({ success: true, scenario, isOwner, hasEditPermission, hasViewPermission, stateTaxFiles }, { status: 200 });
   } catch (error) {
     console.error('Error fetching scenario:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch scenario' }, { status: 500 });
@@ -133,7 +136,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     scenario.ownerBirthYear = body.ownerBirthYear;
     scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
     scenario.type = body.type;
-    scenario.customStateTaxYaml = body.customStateTaxYaml;
     if (scenario.type === "couple") {
       scenario.spouseBirthYear = body.spouseBirthYear;
       scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;

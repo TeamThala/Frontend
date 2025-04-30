@@ -25,22 +25,19 @@ import {FixedValues,
 // Helper type for distribution types used in UI controls
 type DistributionType = "fixed" | "normal" | "uniform";
 
-// Augment the Scenario interface to include customStateTaxYaml
-type ScenarioWithCustomTax = Scenario & {
-  customStateTaxYaml?: string;
-};
-
 interface GeneralInformationProps {
   scenario: Scenario | null;
   canEdit: boolean;
   onUpdate: (updatedScenario: Scenario) => void;
   handleNext: () => void;
+  stateTaxFiles?: Record<string, string>; // Map of state codes to tax file IDs
 }
 
-export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext }: GeneralInformationProps) {
-  const [scenarioData, setScenarioData] = useState<ScenarioWithCustomTax | null>(scenario as ScenarioWithCustomTax);
-  const [customTaxYamlContent, setCustomTaxYamlContent] = useState<string | null>(null); // State for YAML content
-  const [showStateTaxWarning, setShowStateTaxWarning] = useState<boolean>(false); // State for warning visibility
+export default function GeneralInformation({ scenario, canEdit, onUpdate, handleNext, stateTaxFiles = {} }: GeneralInformationProps) {
+  const [scenarioData, setScenarioData] = useState<Scenario | null>(scenario);
+  const [stateTaxFileId, setStateTaxFileId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [showStateTaxWarning, setShowStateTaxWarning] = useState<boolean>(false);
 
   // Function to check if state tax YAML is needed
   const isStateTaxYamlNeeded = useCallback((stateCode: string | undefined): boolean => {
@@ -48,34 +45,30 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
   }, []);
 
   useEffect(() => {
-    setScenarioData(scenario as ScenarioWithCustomTax);
-    // Initialize YAML content and warning based on loaded scenario
-    if (scenario) {
-        const scenarioWithTax = scenario as ScenarioWithCustomTax;
-        setCustomTaxYamlContent(scenarioWithTax.customStateTaxYaml || null);
-        setShowStateTaxWarning(
-            isStateTaxYamlNeeded(scenario.residenceState) && !scenarioWithTax.customStateTaxYaml
-        );
+    setScenarioData(scenario);
+    
+    // Check if there's a tax file ID for the current state
+    if (scenario?.residenceState) {
+      const fileId = stateTaxFiles[scenario.residenceState];
+      setStateTaxFileId(fileId || null);
+      
+      // Show warning if state needs tax file but doesn't have one
+      setShowStateTaxWarning(
+        isStateTaxYamlNeeded(scenario.residenceState) && !fileId
+      );
     } else {
-        setCustomTaxYamlContent(null);
-        setShowStateTaxWarning(false);
+      setStateTaxFileId(null);
+      setShowStateTaxWarning(false);
     }
-  }, [scenario, isStateTaxYamlNeeded]);
+  }, [scenario, stateTaxFiles, isStateTaxYamlNeeded]);
 
   const handleNextClick = () => {
     if (scenarioData) {
-      // Ensure the latest YAML content is included before updating/navigating
-      const dataToUpdate = {
-          ...scenarioData,
-          customStateTaxYaml: customTaxYamlContent || undefined // Store null as undefined or handle explicitly
-      };
-      onUpdate(dataToUpdate);
+      onUpdate(scenarioData);
       handleNext();
     }
   };
     
-
-
   // --- Handlers ---
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,11 +89,6 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
       }
 
       console.log(name,":", processedValue);
-
-      // Update state tax warning visibility if residenceState changes
-      if (name === 'residenceState') {
-         setShowStateTaxWarning(isStateTaxYamlNeeded(value) && !customTaxYamlContent);
-      }
 
       return {
         ...prev,
@@ -138,49 +126,57 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
   const handleResidenceStateChange = (value: string) => {
     setScenarioData(prev => {
         if (!prev) return null;
+        
+        // Check if we have a tax file for this state
+        const fileId = stateTaxFiles[value];
+        setStateTaxFileId(fileId || null);
+        
+        // Show warning if state needs tax file but doesn't have one
         const needsYaml = isStateTaxYamlNeeded(value);
-        setShowStateTaxWarning(needsYaml && !customTaxYamlContent);
-        // If changing TO a state that doesn't need YAML, clear any existing custom YAML
-        const updatedCustomYaml = needsYaml ? customTaxYamlContent : null;
-        setCustomTaxYamlContent(updatedCustomYaml); // Update YAML state
+        setShowStateTaxWarning(needsYaml && !fileId);
 
         return {
           ...prev,
           residenceState: value,
-          customStateTaxYaml: updatedCustomYaml || undefined, // Update scenario data as well
         };
-      });
+    });
   };
 
   // Handler for file input change
-  const handleTaxFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file && canEdit) {
-          const reader = new FileReader();
-          reader.onload = (readEvent) => {
-              const content = readEvent.target?.result as string;
-              setCustomTaxYamlContent(content);
-              // Update scenarioData directly as well
-              setScenarioData(prev => prev ? { ...prev, customStateTaxYaml: content } : null);
-              setShowStateTaxWarning(false); // Hide warning once file is loaded
-              console.log("Loaded state tax YAML content.");
-          };
-          reader.onerror = () => {
-              console.error("Error reading the state tax YAML file.");
-              setCustomTaxYamlContent(null);
-               // Optionally show an error message to the user
-              setScenarioData(prev => prev ? { ...prev, customStateTaxYaml: undefined } : null);
-              setShowStateTaxWarning(isStateTaxYamlNeeded(scenarioData?.residenceState)); // Re-show warning if needed
-          };
-          reader.readAsText(file);
+  const handleTaxFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !canEdit || !scenarioData?.residenceState) return;
+    
+    try {
+      setIsUploading(true);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('stateCode', scenarioData.residenceState);
+      
+      const response = await fetch('/api/state-taxes', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.fileId) {
+        // Store the file ID locally so we can see it immediately
+        setStateTaxFileId(data.fileId);
+        setShowStateTaxWarning(false);
       } else {
-          // Reset if no file is selected or cannot edit
-          setCustomTaxYamlContent(null);
-          setScenarioData(prev => prev ? { ...prev, customStateTaxYaml: undefined } : null);
-          setShowStateTaxWarning(isStateTaxYamlNeeded(scenarioData?.residenceState));
+        console.error("Error uploading state tax file:", data.error);
+        setShowStateTaxWarning(true);
       }
-       // Reset the file input value so the same file can be selected again if needed after removal
-       e.target.value = '';
+    } catch (error) {
+      console.error("Error uploading state tax file:", error);
+      setShowStateTaxWarning(true);
+    } finally {
+      setIsUploading(false);
+      // Reset the file input value
+      e.target.value = '';
+    }
   };
 
   // Generic handler for distribution type changes (Inflation, Owner LE, Spouse LE)
@@ -521,19 +517,19 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
     </div>
 
        {/* Conditional State Tax YAML Upload */}
-        {isStateTaxYamlNeeded(scenarioData.residenceState) && (
+       {isStateTaxYamlNeeded(scenarioData.residenceState) && (
             <div className="grid w-full max-w-md items-center gap-1.5 mt-4 p-6 border rounded-md bg-amber-50/30">
                 <h3 className="text-lg font-semibold text-white-800">
-                    Custom State Tax Configuration (YAML)
+                    State Tax Configuration
                 </h3>
                 <p className="text-sm text-white-700 mb-4">
-                    State tax data for &apos;{scenarioData.residenceState}&apos; is not pre-configured. Please upload a 
-                    YAML file with the tax brackets and rates for this state. The format should match the structure used for NY/NJ/CT.
+                    State tax data for &apos;{scenarioData.residenceState}&apos; is not pre-configured. 
+                    Please upload a YAML file with the tax brackets and rates for this state.
                 </p>
                 
-                {!customTaxYamlContent && (
+                {!stateTaxFileId && !isUploading && (
                     <label 
-                        htmlFor="customStateTaxYaml"
+                        htmlFor="stateTaxFile"
                         className="flex items-center justify-center w-full max-w-xs py-3 px-4 text-purple-700 font-medium bg-purple-100 hover:bg-purple-200 rounded-md cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -542,8 +538,8 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
                         Choose File
                         <input
                             type="file"
-                            id="customStateTaxYaml"
-                            name="customStateTaxYaml"
+                            id="stateTaxFile"
+                            name="stateTaxFile"
                             accept=".yaml, .yml"
                             onChange={handleTaxFileChange}
                             disabled={!canEdit}
@@ -552,21 +548,32 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
                     </label>
                 )}
                 
-                {customTaxYamlContent && (
+                {isUploading && (
+                    <div className="flex items-center space-x-2 text-purple-700">
+                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Uploading...</span>
+                    </div>
+                )}
+                
+                {stateTaxFileId && (
                     <div className="flex flex-col w-full p-4 bg-green-50 border border-green-200 rounded-md">
                         <div className="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            <span className="text-green-700 font-medium">YAML file loaded. Content length: {customTaxYamlContent.length} characters.</span>
+                            <span className="text-green-700 font-medium">Tax file uploaded successfully!</span>
                         </div>
                         {canEdit && (
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setCustomTaxYamlContent(null);
-                                    setScenarioData(prev => prev ? { ...prev, customStateTaxYaml: undefined } : null);
-                                    setShowStateTaxWarning(true); // Show warning again after removal
+                                    // We don't actually delete the file here, we just remove the reference
+                                    // The file remains in the database for potential reuse
+                                    setStateTaxFileId(null);
+                                    setShowStateTaxWarning(true);
                                 }}
                                 className="flex items-center mt-3 text-red-600 hover:text-red-800 font-medium text-sm"
                             >
@@ -669,8 +676,8 @@ export default function GeneralInformation({ scenario, canEdit, onUpdate, handle
             type="button"
             onClick={handleNextClick}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition disabled:bg-gray-400"
-             // Disable Next if state tax is needed but not provided
-             disabled={!canEdit && isStateTaxYamlNeeded(scenarioData.residenceState) && !customTaxYamlContent}
+            // Disable Next if state tax is needed but not provided
+            disabled={!canEdit || (isStateTaxYamlNeeded(scenarioData.residenceState) && !stateTaxFileId)}
           >
             Next
           </button>

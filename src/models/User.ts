@@ -7,7 +7,7 @@ const userSchema = new Schema(
     image: { type: String },
     stateTaxFiles: {
       type: Map,
-      of: String, // Maps state code to file ID
+      of: String,          // will hold TaxFile._id.toString()
       default: new Map()
     },
 
