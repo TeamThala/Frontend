@@ -5,18 +5,6 @@ import { Event } from "./event";
 
 export type Scenario = SingleScenario | CoupleScenario;
 
-// StateTax type definition
-export interface StateTax {
-    _id?: string;
-    id: string;
-    code: string;
-    name: string;
-    yaml: string;
-    lastUpdated: Date;
-    isDefault: boolean;
-    createdBy?: User;
-}
-
 // Event is the most specific version (in event vs. investmentEvent vs. investment)
 
 export interface BaseScenario {
@@ -33,8 +21,7 @@ export interface BaseScenario {
     RothConversionStrategy: Investment[]; // Todo: Add Roth Conversion Strategy
     RMDStrategy: Investment[]; // Array of investments in order of distribution
     rothConversion: WithRothConversion | null;
-    residenceState: string;
-    stateTaxConfig?: StateTax; // Reference to state tax configuration
+    residenceState: string
     owner: User;
     ownerBirthYear: number;
     ownerLifeExpectancy: FixedValues | NormalDistributionValues;
