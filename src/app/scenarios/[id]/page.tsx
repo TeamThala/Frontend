@@ -12,7 +12,7 @@ import Investments from "./components/investments";
 import EventSeries from "./components/event-series";
 import SpendingStrategy from "./components/spending-strategy";
 import ExpenseWithdrawalStrategy from "./components/expense-withdrawal-strategy";
-// import RothAndRMD from "./components/roth-and-rmd";
+import RothAndRMD from "./components/roth-and-rmd";
 // import Summary from "./components/summary";
 
 
@@ -249,8 +249,21 @@ export default function ScenarioPage() {
             handlePrevious={handlePrevious}
           />
         )}
-        {/* {currentStep === 5 && <RothAndRMD />}
-        {currentStep === 6 && <Summary />} */}
+        {currentStep === 5 && (
+          <RothAndRMD 
+            scenario={scenario} 
+            canEdit={canEdit}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
+            handleNext={handleNext}
+            handlePrevious={handlePrevious}
+          />
+        )}
+        {/* {currentStep === 6 && <Summary />} */}
       </div>
     </div>
   );

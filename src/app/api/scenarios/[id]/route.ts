@@ -359,7 +359,46 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
     
-    // 6. Update Inflation Rate
+    // 6. Update RMD Strategy
+    // Clear existing RMD strategy
+    scenario.RMDStrategy = [];
+    
+    // Update RMD strategy if it exists in request body
+    if (body.RMDStrategy && Array.isArray(body.RMDStrategy)) {
+      for (const investmentItem of body.RMDStrategy) {
+        // Only include investments that have valid MongoDB IDs
+        if (investmentItem._id && mongoose.Types.ObjectId.isValid(investmentItem._id)) {
+          // Verify the investment exists
+          const investmentExists = await Investment.findById(investmentItem._id);
+          if (investmentExists) {
+            scenario.RMDStrategy.push(investmentItem._id);
+          }
+        }
+      }
+    }
+    
+    // 7. Update Roth Conversion Strategy
+    // Clear existing Roth Conversion strategy
+    scenario.RothConversionStrategy = [];
+    
+    // Update Roth Conversion strategy if it exists in request body
+    if (body.RothConversionStrategy && Array.isArray(body.RothConversionStrategy)) {
+      for (const investmentItem of body.RothConversionStrategy) {
+        // Only include investments that have valid MongoDB IDs
+        if (investmentItem._id && mongoose.Types.ObjectId.isValid(investmentItem._id)) {
+          // Verify the investment exists
+          const investmentExists = await Investment.findById(investmentItem._id);
+          if (investmentExists) {
+            scenario.RothConversionStrategy.push(investmentItem._id);
+          }
+        }
+      }
+    }
+    
+    // 8. Update Roth Conversion settings
+    scenario.rothConversion = body.rothConversion || null;
+    
+    // 9. Update Inflation Rate
     scenario.inflationRate = body.inflationRate;
 
     // Save the updated scenario
