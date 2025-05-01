@@ -14,6 +14,7 @@ import { Investment } from '@/types/investment';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
+import { payDiscExpenses } from './payDiscExpenses';
 
 
 export async function simulation(scenario: Scenario){
@@ -254,7 +255,7 @@ export async function simulation(scenario: Scenario){
         curYearEarlyWithdrawals = 0;
         log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        // payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         // Run invest event scheduled for the current year
         // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
         // if (runInvestResult === null){
@@ -269,7 +270,7 @@ export async function simulation(scenario: Scenario){
             const investment = scenario.investments[i];
             netWorth += investment.value; // Add up all investments
         }
-        console.log(`Net worth for year ${year} is ${netWorth}`);
+        log.push(`Net worth for year ${year} is ${netWorth}`);
         if (netWorth < scenario.financialGoal){
             console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
             break;
