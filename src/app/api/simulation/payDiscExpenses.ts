@@ -3,7 +3,16 @@ import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 
-export function payDiscExpenses(year: number, expenseEvents: Event[], currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], log: string[]){
+export function payDiscExpenses(year: number, expenseEvents: Event[], currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], financialGoal: number, investments: Investment[], log: string[]){
+    // Calculate net worth
+    let netWorth = 0;
+    for (let i=0; i<investments.length; i++){
+        const investment = investments[i];
+        if (investment.value > 0){
+            netWorth += investment.value;
+        }
+    }
+    log.push(`Temporary net worth for payDiscExpenses is ${netWorth}`);
     log.push(`=== PAYING DISCRETIONARY EXPENSES FOR ${year} ===`);
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
@@ -13,12 +22,15 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
             const eventStartYear = event.startYear as FixedYear;
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
-            if (withinDuration){
+            netWorth -= eventType.amount; // deduct from net worth
+            if (withinDuration && netWorth > 0){ // only pay if within duration and net worth is positive
                 log.push(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
                 totalPayments += eventType.amount;
             }
         }
     }
+    log.push(`Total payments for discretionary expenses is ${totalPayments}`);
+    log.push(`Net worth after discretionary expenses is ${netWorth}`);
     const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
     if (cashInvestment === null){
         log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
