@@ -91,13 +91,17 @@ export async function simulation(scenario: Scenario){
     const taxData = await getTaxData(scenario.residenceState, scenario.owner.id);
     let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
 
+    let inflation: number = 0;
+    let curYearIncome: number = 0;
+    let curYearSS: number = 0; // Social Security income for the current year
+
     // Simulation loop
     log.push("=====================SIMULATION STARTED=====================");
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         // log.push(incomeEvents[0])
         // Inflation assumption calculation for this year
-        const inflation = getInflationRate(scenario.inflationRate);
+        inflation = getInflationRate(scenario.inflationRate);
         log.push(`Inflation rate for age ${age} parsed as ${inflation}`);
 
         // update retirement account contributions annual limits
@@ -123,8 +127,8 @@ export async function simulation(scenario: Scenario){
             log.push("Error: Could not update income events.");
             return null;
         }
-        let curYearIncome = incomeResults.curYearIncome;
-        const curYearSS = incomeResults.curYearSS;
+        curYearIncome = incomeResults.curYearIncome;
+        curYearSS = incomeResults.curYearSS;
         log.push(`Income for current year ${year}: ${curYearIncome}`);
         log.push(`Social Security for current year ${year}: ${curYearSS}`);
         
@@ -318,9 +322,10 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        finalReturn = exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, success, log);
+        
     }
     log.push("=====================SIMULATION FINISHED=====================");
+    finalReturn = exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, success, log);
     saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
     return finalReturn;
 }
