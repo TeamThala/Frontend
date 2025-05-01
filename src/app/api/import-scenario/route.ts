@@ -496,9 +496,9 @@ export async function POST(req:NextRequest){
     const spendingIds = toIds(yml.spendingStrategy, eventMap);
     const expenseWithdrawalIds = toIds(yml.expenseWithdrawalStrategy, investIdMap);
     
-    // Process RMD Strategy with better error handling
+    // Process RMD Strategy with better error handling and fallback
     const rmdIds: Types.ObjectId[] = [];
-    if (yml.RMDStrategy) {
+    if (yml.RMDStrategy && yml.RMDStrategy.length > 0) {
       console.log("Processing RMD Strategy:", yml.RMDStrategy);
       for (const id of yml.RMDStrategy) {
         const investmentId = findInvestmentById(id);
@@ -509,53 +509,80 @@ export async function POST(req:NextRequest){
           console.warn(`Failed to find investment ${id} for RMD strategy`);
         }
       }
+    } else {
+      // Fallback: If no RMD strategy is specified, add all pre-tax investments
+      console.log("No RMD strategy specified, adding all pre-tax investments");
+      for (const inv of yml.investments || []) {
+        if (inv.taxStatus === "pre-tax") {
+          const invId = investIdMap.get(inv.id);
+          if (invId) {
+            rmdIds.push(invId);
+            console.log(`Added ${inv.id} to RMD strategy as fallback`);
+          }
+        }
+      }
     }
 
-    // Process Roth Conversion Strategy directly
+    // Process Roth Conversion Strategy with special handling and fallback
     let directRothConversionInvestmentIds: Types.ObjectId[] = [];
-    if (yml.RothConversionOpt && yml.RothConversionStrategy) {
-      console.log("Processing Roth Conversion Strategy with special handling:", yml.RothConversionStrategy);
-      
-      // Special handling for S&P 500 pre-tax investments
-      const hasSP500PreTax = yml.RothConversionStrategy.some(id => 
-        id.includes("S&P 500") && id.includes("pre-tax"));
-      
-      if (hasSP500PreTax) {
-        console.log("Looking for S&P 500 pre-tax investment explicitly");
+    
+    if (yml.RothConversionOpt) {
+      if (yml.RothConversionStrategy && yml.RothConversionStrategy.length > 0) {
+        console.log("Processing Roth Conversion Strategy with special handling:", yml.RothConversionStrategy);
         
-        // Find all investments where type = "S&P 500" and taxStatus = "pre-tax"
-        for (const inv of yml.investments || []) {
-          if (inv.investmentType === "S&P 500" && inv.taxStatus === "pre-tax") {
-            const invId = investIdMap.get(inv.id);
-            if (invId) {
-              console.log(`Found S&P 500 pre-tax investment with ID ${inv.id}, adding to strategy`);
-              directRothConversionInvestmentIds.push(invId);
+        // Special handling for S&P 500 pre-tax investments
+        const hasSP500PreTax = yml.RothConversionStrategy.some(id => 
+          id.includes("S&P 500") && id.includes("pre-tax"));
+        
+        if (hasSP500PreTax) {
+          console.log("Looking for S&P 500 pre-tax investment explicitly");
+          
+          // Find all investments where type = "S&P 500" and taxStatus = "pre-tax"
+          for (const inv of yml.investments || []) {
+            if (inv.investmentType === "S&P 500" && inv.taxStatus === "pre-tax") {
+              const invId = investIdMap.get(inv.id);
+              if (invId) {
+                console.log(`Found S&P 500 pre-tax investment with ID ${inv.id}, adding to strategy`);
+                directRothConversionInvestmentIds.push(invId);
+              }
+            }
+          }
+        } else {
+          // Regular processing for other investments
+          for (const id of yml.RothConversionStrategy) {
+            const investmentId = findInvestmentById(id);
+            if (investmentId) {
+              directRothConversionInvestmentIds.push(investmentId);
+              console.log(`Added ${id} to Roth conversion strategy directly`);
+            } else {
+              console.warn(`Failed to find investment ${id} for Roth conversion strategy`);
+            }
+          }
+        }
+        
+        // If still empty and we're supposed to have S&P 500 pre-tax, try a fallback approach
+        if (directRothConversionInvestmentIds.length === 0 && hasSP500PreTax) {
+          console.log("Fallback approach: searching investments for S&P 500 pre-tax by ObjectId");
+          
+          // Find any investment with S&P in the ID
+          for (const [key, value] of investIdMap.entries()) {
+            if (key.includes("S&P") && key.includes("pre-tax")) {
+              console.log(`Fallback found: ${key} -> ${value}`);
+              directRothConversionInvestmentIds.push(value);
+              break;
             }
           }
         }
       } else {
-        // Regular processing for other investments
-        for (const id of yml.RothConversionStrategy) {
-          const investmentId = findInvestmentById(id);
-          if (investmentId) {
-            directRothConversionInvestmentIds.push(investmentId);
-            console.log(`Added ${id} to Roth conversion strategy directly`);
-          } else {
-            console.warn(`Failed to find investment ${id} for Roth conversion strategy`);
-          }
-        }
-      }
-      
-      // If still empty and we're supposed to have S&P 500 pre-tax, try a fallback approach
-      if (directRothConversionInvestmentIds.length === 0 && hasSP500PreTax) {
-        console.log("Fallback approach: searching investments for S&P 500 pre-tax by ObjectId");
-        
-        // Find any investment with S&P in the ID
-        for (const [key, value] of investIdMap.entries()) {
-          if (key.includes("S&P") && key.includes("pre-tax")) {
-            console.log(`Fallback found: ${key} -> ${value}`);
-            directRothConversionInvestmentIds.push(value);
-            break;
+        // Fallback: If Roth Conversion is enabled but no strategy specified, add all pre-tax investments
+        console.log("Roth Conversion enabled but no strategy specified, adding all pre-tax investments");
+        for (const inv of yml.investments || []) {
+          if (inv.taxStatus === "pre-tax") {
+            const invId = investIdMap.get(inv.id);
+            if (invId) {
+              directRothConversionInvestmentIds.push(invId);
+              console.log(`Added ${inv.id} to Roth conversion strategy as fallback`);
+            }
           }
         }
       }
@@ -583,34 +610,63 @@ export async function POST(req:NextRequest){
     }
 
     /* 8️⃣  Scenario */
+    // First, handle investments and IDs
+    const uniqueInvestmentIds = getUniqueInvestmentIds(investMap);
+    
+    // Handle Roth Conversion Strategy
+    let finalRothConversionStrategy;
+    // According to the schema, RothConversionStrategy should be an array of references to RothConversionStrategy model
+    // However, the UI treats it as direct Investment references, so we need to adapt
+    
+    // Create a RothConversionStrategy document if we have Roth investments and option is enabled
+    if (yml.RothConversionOpt && directRothConversionInvestmentIds.length > 0) {
+      try {
+        // Try creating the RothConversionStrategy document
+        const rothStrategy = await RothConv.create({
+          name: "Imported Strategy",
+          investmentOrder: directRothConversionInvestmentIds,
+          owner: user._id
+        });
+        finalRothConversionStrategy = [rothStrategy._id]; // Store reference to the document
+        console.log(`Created RothConversionStrategy document with ID: ${rothStrategy._id}`);
+      } catch (error) {
+        // Fallback to direct investment IDs if there's an error
+        console.warn("Error creating RothConversionStrategy document:", error);
+        finalRothConversionStrategy = directRothConversionInvestmentIds;
+      }
+    } else {
+      // If Roth option is disabled or no investments, use empty array
+      finalRothConversionStrategy = [];
+    }
+
     const scenario = await Scenario.create({
-      type             : yml.maritalStatus==="couple"?"couple":"individual",
-      name             : yml.name,
-      description      : yml.description ?? "",
-      financialGoal    : yml.financialGoal??0,
-      investments      : getUniqueInvestmentIds(investMap),
-      eventSeries      : Array.from(eventMap.values()),
-      spendingStrategy : spendingIds,
+      type              : yml.maritalStatus==="couple"?"couple":"individual",
+      name              : yml.name,
+      description       : yml.description ?? "",
+      financialGoal     : yml.financialGoal??0,
+      investments       : uniqueInvestmentIds,
+      eventSeries       : Array.from(eventMap.values()),
+      spendingStrategy  : spendingIds,
       expenseWithdrawalStrategy: expenseWithdrawalIds,
-      inflationRate    : dist(yml.inflationAssumption,"percentage"),
-      RothConversionStrategy   : rothInvestmentIds,
-      RMDStrategy              : filteredRmdIds,
-      rothConversion : {
-        rothConversion     : !!yml.RothConversionOpt,
+      inflationRate     : dist(yml.inflationAssumption,"percentage"),
+      RothConversionStrategy   : finalRothConversionStrategy,
+      RMDStrategy              : rmdIds,
+      rothConversion    : {
+        rothConversion        : !!yml.RothConversionOpt,
         RothConversionStartYear: yml.RothConversionStart ?? null,
         RothConversionEndYear  : yml.RothConversionEnd   ?? null
       },
-      residenceState   : yml.residenceState ?? "NY",
-      owner            : user._id,
-      ownerBirthYear   : yml.birthYears?.[0] ?? null,
+      residenceState    : yml.residenceState ?? "NY",
+      owner             : user._id,
+      ownerBirthYear    : yml.birthYears?.[0] ?? null,
       ownerLifeExpectancy: yml.lifeExpectancy?.[0] ? 
-                           dist(yml.lifeExpectancy[0],"amount") : undefined,
-      spouseBirthYear      : yml.maritalStatus==="couple" ? yml.birthYears?.[1] : undefined,
-      spouseLifeExpectancy : yml.maritalStatus==="couple" && yml.lifeExpectancy?.[1] ?
+                            dist(yml.lifeExpectancy[0],"amount") : undefined,
+      spouseBirthYear   : yml.maritalStatus==="couple" ? yml.birthYears?.[1] : undefined,
+      spouseLifeExpectancy: yml.maritalStatus==="couple" && yml.lifeExpectancy?.[1] ?
                              dist(yml.lifeExpectancy[1],"amount") : undefined,
-      viewPermissions : [],
-      editPermissions : [],
-      updatedAt       : new Date()
+      viewPermissions   : [],
+      editPermissions   : [],
+      updatedAt         : new Date()
     });
 
     /* 9️⃣  link scenario to user */

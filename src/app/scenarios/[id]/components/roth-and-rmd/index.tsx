@@ -1,19 +1,17 @@
 "use client";
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2 } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -24,235 +22,181 @@ import {
 } from "@/components/ui/select";
 
 import { Scenario } from "@/types/scenario";
-import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "@/types/utils";
 import { Investment } from "@/types/investment";
 
-// Helper type for distribution types used in UI controls
-type DistributionType = "fixed" | "normal" | "uniform";
+/* ------------------------------------------------------------ */
+/*  helpers                                                     */
+/* ------------------------------------------------------------ */
+const invId = (inv: Partial<Investment> | string | undefined) =>
+  typeof inv === "string"
+    ? inv
+    : (inv?.id as string) ??
+      (inv?._id as string) ??
+      ""; // last fallback – never undefined
 
-interface RothAndRMDProps {
+interface Props {
   scenario: Scenario | null;
   canEdit: boolean;
-  onUpdate: (updatedScenario: Scenario) => void;
+  onUpdate: (s: Scenario) => void;
   handlePrevious: () => void;
   handleNext: () => void;
 }
 
-export default function RothAndRMD({ scenario, canEdit, onUpdate, handlePrevious, handleNext }: RothAndRMDProps) {
-  const [scenarioData, setScenarioData] = useState<Scenario | null>(scenario);
-  const [rothEnabled, setRothEnabled] = useState<boolean>(false);
-  const [startYear, setStartYear] = useState<number>(new Date().getFullYear());
-  const [endYear, setEndYear] = useState<number>(new Date().getFullYear() + 5);
-  const [rmdInvestmentOrder, setRmdInvestmentOrder] = useState<string[]>([]);
-  const [rothInvestmentOrder, setRothInvestmentOrder] = useState<string[]>([]);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [indexToDelete, setIndexToDelete] = useState<number | null>(null);
-  const [section, setSection] = useState<'roth' | 'rmd'>('roth');
-  
-  // Update scenario data when scenario prop changes
+export default function RothAndRMD({
+  scenario,
+  canEdit,
+  onUpdate,
+  handlePrevious,
+  handleNext,
+}: Props) {
+  /* ---------------------------------------------------------- */
+  /*  state                                                     */
+  /* ---------------------------------------------------------- */
+  const [data, setData] = useState<Scenario | null>(scenario);
+  const [rothEnabled, setRothEnabled] = useState(false);
+  const [startYear, setStartYear] = useState(new Date().getFullYear());
+  const [endYear, setEndYear] = useState(new Date().getFullYear() + 5);
+  const [rmdOrder, setRmdOrder] = useState<string[]>([]);
+  const [rothOrder, setRothOrder] = useState<string[]>([]);
+  const [section, setSection] = useState<"roth" | "rmd">("roth");
+
+  /* ---------------------------------------------------------- */
+  /*  load / refresh from props                                 */
+  /* ---------------------------------------------------------- */
   useEffect(() => {
     if (!scenario) return;
-    
-    setScenarioData(scenario);
-    /* RMD */
-    setRmdInvestmentOrder(
-      scenario.RMDStrategy.map((inv: any) =>
-        typeof inv === "string" ? inv : (inv.id ?? inv._id.toString())
-      )
-    );
-    /* Roth */
-    setRothInvestmentOrder(
-      scenario.RothConversionStrategy.map((inv: any) =>
-        typeof inv === "string" ? inv : (inv.id ?? inv._id.toString())
-      )
-    );
 
-    
-    // Initialize Roth conversion settings
+    setData(scenario);
+
+    setRmdOrder(scenario.RMDStrategy.map(invId));
+    setRothOrder(scenario.RothConversionStrategy.map(invId));
+
     if (scenario.rothConversion) {
       setRothEnabled(true);
-      setStartYear(scenario.rothConversion.RothConversionStartYear || new Date().getFullYear());
-      setEndYear(scenario.rothConversion.RothConversionEndYear || new Date().getFullYear() + 5);
+      setStartYear(
+        scenario.rothConversion.RothConversionStartYear ?? startYear
+      );
+      setEndYear(scenario.rothConversion.RothConversionEndYear ?? endYear);
     } else {
       setRothEnabled(false);
-      setStartYear(new Date().getFullYear());
-      setEndYear(new Date().getFullYear() + 5);
     }
-    
-    // Initialize RMD strategy
-    if (scenario.RMDStrategy && scenario.RMDStrategy.length > 0) {
-      setRmdInvestmentOrder(scenario.RMDStrategy.map(investment => investment.id));
-    } else {
-      setRmdInvestmentOrder([]);
-    }
-    
-    // Initialize Roth Conversion strategy
-    if (scenario.RothConversionStrategy && scenario.RothConversionStrategy.length > 0) {
-      setRothInvestmentOrder(scenario.RothConversionStrategy.map(investment => investment.id));
-    } else {
-      setRothInvestmentOrder([]);
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario]);
 
-  // Handle next button click
-  const handleNextClick = () => {
-    if (scenarioData) {
-      const updatedScenario = updateScenarioWithCurrentData();
-      if (updatedScenario) {
-        onUpdate(updatedScenario);
-      }
-      handleNext();
-    }
-  };
+  /* ---------------------------------------------------------- */
+  /*  helpers                                                   */
+  /* ---------------------------------------------------------- */
+  const mapIdsToInvestments = (ids: string[]) =>
+    ids
+      .map((id) => data?.investments.find((inv) => invId(inv) === id))
+      .filter(Boolean) as Investment[];
 
-  // Handle previous button click
-  const handlePreviousClick = () => {
-    if (scenarioData) {
-      const updatedScenario = updateScenarioWithCurrentData();
-      if (updatedScenario) {
-        onUpdate(updatedScenario);
-      }
-      handlePrevious();
-    }
-  };
-
-  // Update scenario object with current component state
-  const updateScenarioWithCurrentData = () => {
-    if (!scenarioData) return scenarioData;
-
-    // Map investment IDs back to investment objects
-    const rmdStrategy = rmdInvestmentOrder
-      .map(id => scenarioData.investments.find(inv => inv.id === id))
-      .filter((inv): inv is Investment => inv !== undefined);
-
-    const rothStrategy = rothInvestmentOrder
-      .map(id => scenarioData.investments.find(inv => inv.id === id))
-      .filter((inv): inv is Investment => inv !== undefined);
-
-    return {
-      ...scenarioData,
-      RMDStrategy: rmdStrategy,
-      RothConversionStrategy: rothStrategy,
-      rothConversion: rothEnabled ? {
-        rothConversion: true as const,
-        RothConversionStartYear: startYear,
-        RothConversionEndYear: endYear
-      } : null
+  const commit = () => {
+    if (!data) return;
+    const updated: Scenario = {
+      ...data,
+      RMDStrategy: mapIdsToInvestments(rmdOrder),
+      RothConversionStrategy: mapIdsToInvestments(rothOrder),
+      rothConversion: rothEnabled
+        ? {
+            rothConversion: true,
+            RothConversionStartYear: startYear,
+            RothConversionEndYear: endYear,
+          }
+        : null,
     };
+    onUpdate(updated);
   };
 
-  // Toggle Roth conversion enabled/disabled
-  const handleRothEnabledChange = (enabled: boolean) => {
-    setRothEnabled(enabled);
-    if (!enabled) {
-      // Clear Roth conversion data when disabling
-      if (scenarioData) {
-        const updatedScenario = {
-          ...scenarioData,
-          rothConversion: null,
-          RothConversionStrategy: []
-        };
-        setScenarioData(updatedScenario);
-      }
+  /* ---------------------------------------------------------- */
+  /*  move / add / remove                                       */
+  /* ---------------------------------------------------------- */
+  const move = (
+    id: string,
+    dir: "up" | "down",
+    type: "rmd" | "roth"
+  ) => {
+    const list = type === "rmd" ? [...rmdOrder] : [...rothOrder];
+    const idx = list.indexOf(id);
+    if (idx < 0) return;
+
+    if (dir === "up" && idx > 0) {
+      [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
     }
+    if (dir === "down" && idx < list.length - 1) {
+      [list[idx], list[idx + 1]] = [list[idx + 1], list[idx]];
+    }
+    type === "rmd" ? setRmdOrder(list) : setRothOrder(list);
   };
 
-  // Handler for moving investments in priority order
-  const moveInvestment = (investmentId: string, direction: 'up' | 'down', type: 'rmd' | 'roth') => {
-    const orderArray = type === 'rmd' ? [...rmdInvestmentOrder] : [...rothInvestmentOrder];
-    const currentIndex = orderArray.indexOf(investmentId);
-    
-    if (currentIndex === -1) return;
-    
-    if (direction === 'up' && currentIndex > 0) {
-      // Move up (higher priority)
-      [orderArray[currentIndex - 1], orderArray[currentIndex]] = 
-      [orderArray[currentIndex], orderArray[currentIndex - 1]];
-    } else if (direction === 'down' && currentIndex < orderArray.length - 1) {
-      // Move down (lower priority)
-      [orderArray[currentIndex], orderArray[currentIndex + 1]] = 
-      [orderArray[currentIndex + 1], orderArray[currentIndex]];
-    }
-    
-    if (type === 'rmd') {
-      setRmdInvestmentOrder(orderArray);
+  const add = (id: string, type: "rmd" | "roth") => {
+    const clean = id.trim();
+    if (!clean) return;
+
+    if (type === "rmd") {
+      setRmdOrder((p) => (p.includes(clean) ? p : [...p, clean]));
     } else {
-      setRothInvestmentOrder(orderArray);
+      setRothOrder((p) => (p.includes(clean) ? p : [...p, clean]));
     }
   };
 
-  // Add investment to strategy
-  const addInvestmentToStrategy = (investmentId: string, type: 'rmd' | 'roth') => {
-    if (type === 'rmd') {
-      if (!rmdInvestmentOrder.includes(investmentId)) {
-        setRmdInvestmentOrder([...rmdInvestmentOrder, investmentId]);
-      }
-    } else {
-      if (!rothInvestmentOrder.includes(investmentId)) {
-        setRothInvestmentOrder([...rothInvestmentOrder, investmentId]);
-      }
-    }
-  };
+  const remove = (id: string, type: "rmd" | "roth") =>
+    type === "rmd"
+      ? setRmdOrder((p) => p.filter((x) => x !== id))
+      : setRothOrder((p) => p.filter((x) => x !== id));
 
-  // Remove investment from strategy
-  const removeInvestmentFromStrategy = (investmentId: string, type: 'rmd' | 'roth') => {
-    if (type === 'rmd') {
-      setRmdInvestmentOrder(rmdInvestmentOrder.filter(id => id !== investmentId));
-    } else {
-      setRothInvestmentOrder(rothInvestmentOrder.filter(id => id !== investmentId));
-    }
-  };
+  /* ---------------------------------------------------------- */
+  /*  filters for dropdowns                                     */
+  /* ---------------------------------------------------------- */
+  const eligible = (forType: "rmd" | "roth") =>
+    data?.investments.filter(
+      (inv) =>
+        inv.taxStatus === "pre-tax" &&
+        (forType === "rmd" 
+          ? !rmdOrder.includes(invId(inv))
+          : !rothOrder.includes(invId(inv)))
+    ) ?? [];
 
-  // Get eligible investments for RMD (pre-tax retirement accounts)
-  const getEligibleRmdInvestments = () => {
-    if (!scenarioData) return [];
-    return scenarioData.investments.filter(inv => 
-      inv.taxStatus === "pre-tax" && !rmdInvestmentOrder.includes(inv.id)
-    );
-  };
+  /* ---------------------------------------------------------- */
+  /*  render guards                                             */
+  /* ---------------------------------------------------------- */
+  if (!data) return <div>Loading...</div>;
 
-  // Get eligible investments for Roth conversion (pre-tax retirement accounts not already in strategy)
-  const getEligibleRothInvestments = () => {
-    if (!scenarioData) return [];
-    return scenarioData.investments.filter(inv => 
-      inv.taxStatus === "pre-tax" && !rothInvestmentOrder.includes(inv.id)
-    );
-  };
+  const curYear = new Date().getFullYear();
+  const rmdStart = data.ownerBirthYear + 73;
 
-  if (!scenarioData) {
-    return <div>Loading scenario data...</div>;
-  }
-
-  // Get current year based on owner's birth year
-  const currentYear = new Date().getFullYear();
-  const ownerAge = currentYear - scenarioData.ownerBirthYear;
-  const rmdStartYear = scenarioData.ownerBirthYear + 73; // RMD starts at age 73
-
+  /* ---------------------------------------------------------- */
+  /*  JSX starts here                                           */
+  /* ---------------------------------------------------------- */
   return (
     <div className="space-y-6 p-4 border rounded-md">
-      {/* Tab selection */}
+      {/* Tabs -------------------------------------------------- */}
       <div className="flex border-b border-gray-600 mb-6">
-        <button
-          className={`px-4 py-2 font-medium ${section === 'roth' ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-400'}`}
-          onClick={() => setSection('roth')}
-        >
-          Roth Conversion
-        </button>
-        <button
-          className={`px-4 py-2 font-medium ${section === 'rmd' ? 'border-b-2 border-purple-600 text-purple-600' : 'text-gray-400'}`}
-          onClick={() => setSection('rmd')}
-        >
-          Required Minimum Distributions
-        </button>
+        {["roth", "rmd"].map((s) => (
+          <button
+            key={s}
+            className={`px-4 py-2 font-medium ${
+              section === s
+                ? "border-b-2 border-purple-600 text-purple-600"
+                : "text-gray-400"
+            }`}
+            onClick={() => setSection(s as any)}
+          >
+            {s === "roth" ? "Roth Conversion" : "Required Minimum Distributions"}
+          </button>
+        ))}
       </div>
 
-      {section === 'roth' && (
+      {/* ------------------------------------------------------ */}
+      {/*       ROTH TAB                                         */}
+      {/* ------------------------------------------------------ */}
+      {section === "roth" && (
         <div className="space-y-6">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="enable-roth"
               checked={rothEnabled}
-              onCheckedChange={(checked) => handleRothEnabledChange(checked === true)}
+              onCheckedChange={(c) => setRothEnabled(c === true)}
               disabled={!canEdit}
               className="border-purple-400 data-[state=checked]:bg-purple-600"
             />
@@ -269,10 +213,10 @@ export default function RothAndRMD({ scenario, canEdit, onUpdate, handlePrevious
                   <Input
                     id="start-year"
                     type="number"
-                    min={currentYear}
+                    min={curYear}
                     max={endYear}
                     value={startYear}
-                    onChange={(e) => setStartYear(parseInt(e.target.value))}
+                    onChange={(e) => setStartYear(+e.target.value)}
                     disabled={!canEdit}
                   />
                 </div>
@@ -283,199 +227,68 @@ export default function RothAndRMD({ scenario, canEdit, onUpdate, handlePrevious
                     type="number"
                     min={startYear}
                     value={endYear}
-                    onChange={(e) => setEndYear(parseInt(e.target.value))}
+                    onChange={(e) => setEndYear(+e.target.value)}
                     disabled={!canEdit}
                   />
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Conversion Priority</h3>
-                  <p className="text-sm text-zinc-400">
-                    Arrange investments in order of conversion priority
-                  </p>
-                </div>
+              {/* priority list */}
+              <PriorityList
+                title="Conversion Priority"
+                note="Arrange investments in order of conversion priority"
+                order={rothOrder}
+                all={data.investments}
+                move={(id, dir) => move(id, dir, "roth")}
+                remove={(id) => remove(id, "roth")}
+                canEdit={canEdit}
+              />
 
-                {/* Selected investments for Roth conversion with priority */}
-                <div className="space-y-2 border rounded-md p-4 bg-zinc-800">
-                  {rothInvestmentOrder.length === 0 ? (
-                    <p className="text-zinc-400 italic">No investments selected for Roth conversion</p>
-                  ) : (
-                    rothInvestmentOrder.map((investmentId, index) => {
-                      const investment = scenarioData.investments.find(inv => inv.id === investmentId);
-                      if (!investment) return null;
-                      
-                      return (
-                        <div key={`roth-${investmentId}-${index}`} className="flex items-center justify-between py-2 border-b border-zinc-700">
-                          <div className="flex items-center">
-                            <span className="w-6 h-6 rounded-full bg-purple-700 flex items-center justify-center text-xs mr-3">
-                              {index + 1}
-                            </span>
-                            <span>
-                              {`${investment.investmentType.name} (${investment.taxStatus})`}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => moveInvestment(investmentId, 'up', 'roth')}
-                              disabled={!canEdit || index === 0}
-                              className="h-8 w-8 bg-zinc-700"
-                            >
-                              ↑
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => moveInvestment(investmentId, 'down', 'roth')}
-                              disabled={!canEdit || index === rothInvestmentOrder.length - 1}
-                              className="h-8 w-8 bg-zinc-700"
-                            >
-                              ↓
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="destructive"
-                              onClick={() => removeInvestmentFromStrategy(investmentId, 'roth')}
-                              disabled={!canEdit}
-                              className="h-8 w-8"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Add investment dropdown */}
-                {canEdit && (
-                  <div className="mt-4">
-                    <Label htmlFor="add-roth-investment">Add Investment</Label>
-                    <Select 
-                      onValueChange={(value) => addInvestmentToStrategy(value, 'roth')}
-                      disabled={getEligibleRothInvestments().length === 0}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an investment" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getEligibleRothInvestments().map((investment, index) => (
-                          <SelectItem key={`roth-option-${investment.id}-${index}`} value={investment.id}>
-                            {`${investment.investmentType.name} (${investment.taxStatus})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+              {/* add dropdown */}
+              {canEdit && (
+                <AddDropdown
+                  label="Add Investment"
+                  eligible={eligible("roth")}
+                  onAdd={(id) => add(id, "roth")}
+                  disabled={!eligible("roth").length}
+                />
+              )}
             </div>
           )}
         </div>
       )}
 
-      {section === 'rmd' && (
+      {/* ------------------------------------------------------ */}
+      {/*       RMD TAB                                          */}
+      {/* ------------------------------------------------------ */}
+      {section === "rmd" && (
         <div className="space-y-6">
           <div className="mb-4">
             <h3 className="font-semibold text-lg">Required Minimum Distributions (RMDs)</h3>
             <p className="text-zinc-400 mt-1">
-              RMDs will start in {rmdStartYear} (when you turn 73). Define the order in which investments should be withdrawn.
+              RMDs will start in {rmdStart} (age&nbsp;73). Define the order in which
+              investments should be withdrawn.
             </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">RMD Withdrawal Priority</h3>
-              <p className="text-sm text-zinc-400">
-                Arrange investments in order of withdrawal priority
-              </p>
-            </div>
+          <PriorityList
+            title="RMD Withdrawal Priority"
+            note="Arrange investments in order of withdrawal priority"
+            order={rmdOrder}
+            all={data.investments}
+            move={(id, dir) => move(id, dir, "rmd")}
+            remove={(id) => remove(id, "rmd")}
+            canEdit={canEdit}
+          />
 
-            {/* Selected investments for RMD with priority */}
-            <div className="space-y-2 border rounded-md p-4 bg-zinc-800">
-              {rmdInvestmentOrder.length === 0 ? (
-                <p className="text-zinc-400 italic">No investments selected for RMD withdrawal</p>
-              ) : (
-                rmdInvestmentOrder.map((investmentId, index) => {
-                  const investment = scenarioData.investments.find(
-                    inv => inv.id === investmentId || inv._id?.toString() === investmentId
-                  );
-                  
-                  if (!investment) return null;
-                  
-                  return (
-                    <div key={`rmd-${investmentId}-${index}`} className="flex items-center justify-between py-2 border-b border-zinc-700">
-                      <div className="flex items-center">
-                        <span className="w-6 h-6 rounded-full bg-purple-700 flex items-center justify-center text-xs mr-3">
-                          {index + 1}
-                        </span>
-                        <span>
-                          {`${investment.investmentType.name} (${investment.taxStatus})`}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => moveInvestment(investmentId, 'up', 'rmd')}
-                          disabled={!canEdit || index === 0}
-                          className="h-8 w-8 bg-zinc-700"
-                        >
-                          ↑
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => moveInvestment(investmentId, 'down', 'rmd')}
-                          disabled={!canEdit || index === rmdInvestmentOrder.length - 1}
-                          className="h-8 w-8 bg-zinc-700"
-                        >
-                          ↓
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          onClick={() => removeInvestmentFromStrategy(investmentId, 'rmd')}
-                          disabled={!canEdit}
-                          className="h-8 w-8"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Add investment dropdown */}
-            {canEdit && (
-              <div className="mt-4">
-                <Label htmlFor="add-rmd-investment">Add Investment</Label>
-                <Select 
-                  onValueChange={(value) => addInvestmentToStrategy(value, 'rmd')}
-                  disabled={getEligibleRmdInvestments().length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an investment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getEligibleRmdInvestments().map((investment, index) => (
-                      <SelectItem key={`rmd-option-${investment.id}-${index}`} value={investment.id}>
-                        {`${investment.investmentType.name} (${investment.taxStatus})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+          {canEdit && (
+            <AddDropdown
+              label="Add Investment"
+              eligible={eligible("rmd")}
+              onAdd={(id) => add(id, "rmd")}
+              disabled={!eligible("rmd").length}
+            />
+          )}
         </div>
       )}
 
@@ -485,17 +298,24 @@ export default function RothAndRMD({ scenario, canEdit, onUpdate, handlePrevious
         </p>
       )}
 
+      {/* nav buttons */}
       <div className="flex justify-end pt-4 border-t mt-6 space-x-4">
         <button
           type="button"
-          onClick={handlePreviousClick}
+          onClick={() => {
+            commit();
+            handlePrevious();
+          }}
           className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition"
         >
           Previous
         </button>
         <button
           type="button"
-          onClick={handleNextClick}
+          onClick={() => {
+            commit();
+            handleNext();
+          }}
           className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
         >
           Next
@@ -503,4 +323,130 @@ export default function RothAndRMD({ scenario, canEdit, onUpdate, handlePrevious
       </div>
     </div>
   );
-} 
+}
+
+/* ====================================================================== */
+/*  reusable sub-components                                               */
+/* ====================================================================== */
+type ListProps = {
+  title: string;
+  note: string;
+  order: string[];
+  all: Investment[];
+  move: (id: string, dir: "up" | "down") => void;
+  remove: (id: string) => void;
+  canEdit: boolean;
+};
+
+const PriorityList = ({
+  title,
+  note,
+  order,
+  all,
+  move,
+  remove,
+  canEdit,
+}: ListProps) => (
+  <div className="space-y-4">
+    <div className="flex items-center justify-between">
+      <h3 className="font-semibold">{title}</h3>
+      <p className="text-sm text-zinc-400">{note}</p>
+    </div>
+
+    <div className="space-y-2 border rounded-md p-4 bg-zinc-800">
+      {order.length === 0 ? (
+        <p className="text-zinc-400 italic">No investments selected</p>
+      ) : (
+        order.map((id, idx) => {
+          const inv = all.find((i) => invId(i) === id);
+          if (!inv) {
+            console.warn("Investment not found for id", id);
+            return null;
+          }
+
+          return (
+            <div
+              key={`${title}-${id}`}
+              className="flex items-center justify-between py-2 border-b border-zinc-700"
+            >
+              <div className="flex items-center">
+                <span className="w-6 h-6 rounded-full bg-purple-700 flex items-center justify-center text-xs mr-3">
+                  {idx + 1}
+                </span>
+                <span>
+                  {inv.investmentType.name} ({inv.taxStatus})
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => move(id, "up")}
+                  disabled={!canEdit || idx === 0}
+                  className="h-8 w-8 bg-zinc-700"
+                >
+                  ↑
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => move(id, "down")}
+                  disabled={!canEdit || idx === order.length - 1}
+                  className="h-8 w-8 bg-zinc-700"
+                >
+                  ↓
+                </Button>
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={() => remove(id)}
+                  disabled={!canEdit}
+                  className="h-8 w-8"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  </div>
+);
+
+type DropProps = {
+  label: string;
+  eligible: Investment[];
+  onAdd: (id: string) => void;
+  disabled: boolean;
+};
+
+const AddDropdown = ({ label, eligible, onAdd, disabled }: DropProps) => (
+  <div className="mt-4">
+    <Label>{label}</Label>
+    <Select
+      onValueChange={onAdd}
+      disabled={disabled}
+      // closes & clears after select
+      defaultValue=""
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Select an investment" />
+      </SelectTrigger>
+      <SelectContent>
+        {eligible.map((inv) => (
+          <SelectItem key={invId(inv)} value={invId(inv)}>
+            {inv.investmentType.name} ({inv.taxStatus})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    {disabled && (
+      <p className="text-yellow-400 text-sm mt-2">
+        No eligible pre-tax accounts available. Add them in the Investments step
+        first.
+      </p>
+    )}
+  </div>
+);
