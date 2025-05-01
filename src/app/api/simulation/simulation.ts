@@ -14,9 +14,13 @@ import { Investment } from '@/types/investment';
 import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
+import { payDiscExpenses } from './payDiscExpenses';
+import { SimulationResult } from '@/types/simulationResult';
 
 
 export async function simulation(scenario: Scenario){
+    let success: boolean = true;
+    let finalReturn: SimulationResult | null = null;
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
     const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
     const currentYear = new Date().getFullYear();
@@ -254,7 +258,7 @@ export async function simulation(scenario: Scenario){
         curYearEarlyWithdrawals = 0;
         log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        // payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy);
+        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         // Run invest event scheduled for the current year
         // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
         // if (runInvestResult === null){
@@ -269,9 +273,10 @@ export async function simulation(scenario: Scenario){
             const investment = scenario.investments[i];
             netWorth += investment.value; // Add up all investments
         }
-        console.log(`Net worth for year ${year} is ${netWorth}`);
+        log.push(`Net worth for year ${year} is ${netWorth}`);
         if (netWorth < scenario.financialGoal){
             console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
+            success = false;
             break;
         }
 
@@ -313,11 +318,11 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, log);
+        finalReturn = exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, success, log);
     }
     log.push("=====================SIMULATION FINISHED=====================");
     saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
-    return;
+    return finalReturn;
 }
 
 

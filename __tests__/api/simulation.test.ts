@@ -279,8 +279,8 @@ describe('Simulation: Update values of investments', () => {
 });
 
 describe('Simulation: Roth Conversion optimizer', () => {
-    it('should transfer investments correctly', () => {
-        const taxData = getTaxData(); // has 2025 tax data
+    it('should transfer investments correctly', async () => {
+        const taxData = await getTaxData(); // has 2025 tax data
         const rc = rothConversion(70000, 0, taxData, false, 2025, [mockInvestment2], [mockCashInvestment, mockInvestment1, mockInvestment2, mockInvestment3], mockLog);
         expect(rc).toBeDefined(); // Ensure the result is not undefined or null
         expect(rc).toBeCloseTo(45125);
