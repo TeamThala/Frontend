@@ -524,7 +524,7 @@ export async function POST(req:NextRequest){
     }
 
     // Process Roth Conversion Strategy with special handling and fallback
-    let directRothConversionInvestmentIds: Types.ObjectId[] = [];
+    const directRothConversionInvestmentIds: Types.ObjectId[] = [];
     
     if (yml.RothConversionOpt) {
       if (yml.RothConversionStrategy && yml.RothConversionStrategy.length > 0) {
@@ -590,14 +590,7 @@ export async function POST(req:NextRequest){
       // Log what we're adding to the Roth conversion strategy
       console.log(`Final Roth conversion strategy investment IDs: ${directRothConversionInvestmentIds}`);
     }
-    
-    // Ensure RMD strategy only includes pre-tax investments
-    const filteredRmdIds = rmdIds.length > 0 ? rmdIds : [];
-    
-    // Create a direct reference to the investments for Roth Strategy
-    const rothInvestmentIds = directRothConversionInvestmentIds.length > 0 ? 
-      directRothConversionInvestmentIds : [];
-      
+
     // Create RothConv document for backward compatibility
     let rothConvIds: Types.ObjectId[] = [];
     if (yml.RothConversionOpt && directRothConversionInvestmentIds.length > 0) {

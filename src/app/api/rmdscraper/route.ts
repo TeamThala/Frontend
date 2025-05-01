@@ -35,8 +35,6 @@ export async function GET() {
   try {
     // Test MongoDB connection
     // await client.connect();
-    const client = await clientPromise; // This is the connection to the MongoDB instance. db operations are done in RMDTable.ts.
-    console.log('MongoDB connected');
 
     // Scrape RMD Table III (Uniform Life Table) from IRS Publication 590-B
     const rmdTableData = await scrapeRmdTable();
