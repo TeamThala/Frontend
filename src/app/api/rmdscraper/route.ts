@@ -5,7 +5,7 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
 import RMDTable from '@/models/RMDTable';
-import client from '@/lib/db';
+import clientPromise from '@/lib/db';
 import type { RmdTableDocument } from '@/models/RMDTable';
 
 interface RmdTable {
@@ -34,7 +34,8 @@ function validateRmdTable(table: RmdTable): boolean {
 export async function GET() {
   try {
     // Test MongoDB connection
-    await client.connect();
+    // await client.connect();
+    const client = await clientPromise; // This is the connection to the MongoDB instance. db operations are done in RMDTable.ts.
     console.log('MongoDB connected');
 
     // Scrape RMD Table III (Uniform Life Table) from IRS Publication 590-B
@@ -93,9 +94,6 @@ export async function GET() {
       error: 'Failed to scrape or save RMD data',
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
-  } finally {
-    // Close MongoDB connection
-    await client.close();
   }
 }
 
