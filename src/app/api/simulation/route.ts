@@ -4,12 +4,21 @@ import { promises as fs } from "fs"
 import { Scenario } from '@/types/scenario'
 // import client from '@/lib/db'
 import { simulation } from './simulation'
+import os from 'os'
 // import { Investment, InvestmentType } from '@/types/investment'
 // import { parseFixedValue, parseNormalDistribution } from './parseValues'
 // import { Event } from '@/types/event'
 // import { FixedValues, NormalDistributionValues } from '@/types/utils'
 // import { FixedYear, UniformYear, NormalYear, EventYear } from '@/types/event'
 
+// Use available CPUs for parallelization (but limit to a reasonable number)
+const MAX_CONCURRENT = Math.min(os.cpus().length, 4);
+
+// Define a more specific simulation result interface based on your actual data structure
+interface SimulationResult {
+  yearlyResults: Record<string, unknown>[];
+  [key: string]: unknown;
+}
 
 export async function POST(req: NextRequest) {
     // Expects the POST request to send {"id": id} as a body to the server
@@ -17,22 +26,61 @@ export async function POST(req: NextRequest) {
     try{
         const data = await req.json(); // Assuming body is never null
         const filepath = data.filepath;
+        const simulationCount = data.simulationCount || 1;
+        
+        console.log("FILEPATH:", filepath);
+        console.log("SIMULATION COUNT:", simulationCount);
+        console.log("MAX CONCURRENT:", MAX_CONCURRENT);
+        
         // const scenario = await getScenario(data.id);
         const scenario = await loadScenario(filepath); // Placeholder to load scenario data from JSON
-        // console.log("LOADSCENARIO RESPONSE:")
-        // console.log(scenario);
-        if (scenario !== null){
-            console.log('Received scenario:', scenario.id, scenario.name);
-            console.log("Scenario found, running simulation...");
-            // console.log(scenario);
-            await simulation(scenario);
-        }
-        else{
+        
+        if (scenario !== null) {
+            console.log("Scenario found, running simulations...");
+            
+            if (simulationCount === 1) {
+                // Run a single simulation
+                const result = await simulation(scenario);
+                console.log("Simulation result:", result);
+                
+                if (result === null) {
+                    return NextResponse.json({ message: "Error: Simulation failed" });
+                }
+                
+                return NextResponse.json(result);
+            } else {
+                // We can't easily run simulations in separate threads due to module dependencies
+                // Instead, we'll run them in batches using Promise.all for concurrency
+                const results = await runBatchedSimulations(scenario, simulationCount);
+                console.log(`Completed ${results.length} simulations`);
+                
+                if (results.length === 0) {
+                    return NextResponse.json({ 
+                        message: "Warning: All simulations failed",
+                        scenario: scenario,
+                        simulationResults: []
+                    });
+                }
+                
+                // Extract all yearly results from each simulation run
+                // Make sure to only include results that have yearlyResults property
+                const allSimulationResults = results
+                    .filter(result => result && 'yearlyResults' in result && Array.isArray(result.yearlyResults))
+                    .map((result, index) => ({
+                        simulationId: index,
+                        yearlyResults: result.yearlyResults
+                    }));
+                
+                return NextResponse.json({ 
+                    scenario: scenario, 
+                    simulationResults: allSimulationResults
+                });
+            }
+        } else {
             return NextResponse.json({ message: "Error: Scenario Not Found" });
         }
-        
-        return NextResponse.json(scenario); // Placeholder, debug
     } catch(e) {
+        console.error("Error in simulation route:", e);
         return NextResponse.json({ message: "Error: Invalid Request", error: e })
     }
 }
@@ -41,12 +89,60 @@ async function loadScenario(filepath:string="src/data/jsonScenarios/scenario1.js
     try {
         const data = await fs.readFile(filepath, 'utf8');
         const scenario = JSON.parse(data) as Scenario;
-        console.log("Scenario loaded successfully:", scenario);
+        //console.log("Scenario loaded successfully:", scenario);
         return scenario;
     } catch (err) {
         console.error("Error reading or parsing file:", err);
         return null;
     }
+}
+
+/**
+ * Runs multiple simulations in batches to maximize parallelism
+ * without overloading the system
+ */
+async function runBatchedSimulations(scenario: Scenario, count: number): Promise<SimulationResult[]> {
+    const batchSize = MAX_CONCURRENT;
+    const batches = Math.ceil(count / batchSize);
+    const allResults: SimulationResult[] = [];
+    
+    console.log(`Running ${count} simulations in ${batches} batches with max ${batchSize} concurrent simulations per batch`);
+    
+    // For each batch...
+    for (let batch = 0; batch < batches; batch++) {
+        const batchStart = batch * batchSize;
+        const currentBatchSize = Math.min(batchSize, count - batchStart);
+        
+        console.log(`Starting batch ${batch + 1}/${batches} with ${currentBatchSize} concurrent simulations`);
+        
+        // Create a deep clone of the scenario for each simulation in this batch
+        const simulationPromises = Array.from({ length: currentBatchSize }, () => {
+            const scenarioCopy = JSON.parse(JSON.stringify(scenario));
+            return simulation(scenarioCopy) as Promise<SimulationResult | null>;
+        });
+        
+        try {
+            // Run all simulations in this batch concurrently
+            const batchResults = await Promise.all(simulationPromises);
+            
+            // Verify each result has the expected structure before adding it
+            const validResults = batchResults.filter((result): result is SimulationResult => 
+                result !== null && 
+                result !== undefined && 
+                'yearlyResults' in result && 
+                Array.isArray(result.yearlyResults)
+            );
+            
+            console.log(`Batch ${batch + 1}/${batches}: ${validResults.length} valid results out of ${batchResults.length}`);
+            allResults.push(...validResults);
+            console.log(`Completed batch ${batch + 1}/${batches} with ${validResults.length} successful simulations`);
+        } catch (error) {
+            console.error(`Error in batch ${batch + 1}:`, error);
+            // Continue with the next batch even if this one failed
+        }
+    }
+    
+    return allResults;
 }
 
 // async function getScenario(id: string): Promise<Scenario | null> {
