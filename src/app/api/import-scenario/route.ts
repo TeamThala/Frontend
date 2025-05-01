@@ -591,16 +591,16 @@ export async function POST(req:NextRequest){
       console.log(`Final Roth conversion strategy investment IDs: ${directRothConversionInvestmentIds}`);
     }
 
-    // Create RothConv document for backward compatibility
-    let rothConvIds: Types.ObjectId[] = [];
-    if (yml.RothConversionOpt && directRothConversionInvestmentIds.length > 0) {
-      const r = await RothConv.create({
-        name: "Imported Strategy",
-        investmentOrder: directRothConversionInvestmentIds,
-        owner: user._id
-      });
-      rothConvIds = [r._id];
-    }
+    // // Create RothConv document for backward compatibility
+    // let rothConvIds: Types.ObjectId[] = [];
+    // if (yml.RothConversionOpt && directRothConversionInvestmentIds.length > 0) {
+    //   const r = await RothConv.create({
+    //     name: "Imported Strategy",
+    //     investmentOrder: directRothConversionInvestmentIds,
+    //     owner: user._id
+    //   });
+    //   rothConvIds = [r._id];
+    // }
 
     /* 8️⃣  Scenario */
     // First, handle investments and IDs

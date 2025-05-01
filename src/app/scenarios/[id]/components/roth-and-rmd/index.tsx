@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,6 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 import { Scenario } from "@/types/scenario";
 import { Investment } from "@/types/investment";
@@ -34,6 +39,8 @@ interface Props {
   handleNext: () => void;
 }
 
+type SectionType = "roth" | "rmd";
+
 export default function RothAndRMD({
   scenario,
   canEdit,
@@ -50,7 +57,7 @@ export default function RothAndRMD({
   const [endYear, setEndYear] = useState(new Date().getFullYear() + 5);
   const [rmdOrder, setRmdOrder] = useState<string[]>([]);
   const [rothOrder, setRothOrder] = useState<string[]>([]);
-  const [section, setSection] = useState<"roth" | "rmd">("roth");
+  const [section, setSection] = useState<SectionType>("roth");
 
   /* ---------------------------------------------------------- */
   /*  load / refresh from props                                 */
@@ -103,11 +110,7 @@ export default function RothAndRMD({
   /* ---------------------------------------------------------- */
   /*  move / add / remove                                       */
   /* ---------------------------------------------------------- */
-  const move = (
-    id: string,
-    dir: "up" | "down",
-    type: "rmd" | "roth"
-  ) => {
+  const move = (id: string, dir: "up" | "down", type: "rmd" | "roth") => {
     const list = type === "rmd" ? [...rmdOrder] : [...rothOrder];
     const idx = list.indexOf(id);
     if (idx < 0) return;
@@ -118,7 +121,12 @@ export default function RothAndRMD({
     if (dir === "down" && idx < list.length - 1) {
       [list[idx], list[idx + 1]] = [list[idx + 1], list[idx]];
     }
-    type === "rmd" ? setRmdOrder(list) : setRothOrder(list);
+    
+    if (type === "rmd") {
+      setRmdOrder(list);
+    } else {
+      setRothOrder(list);
+    }
   };
 
   const add = (id: string, type: "rmd" | "roth") => {
@@ -172,7 +180,7 @@ export default function RothAndRMD({
                 ? "border-b-2 border-purple-600 text-purple-600"
                 : "text-gray-400"
             }`}
-            onClick={() => setSection(s as any)}
+            onClick={() => setSection(s === "roth" ? "roth" : "rmd")}
           >
             {s === "roth" ? "Roth Conversion" : "Required Minimum Distributions"}
           </button>
@@ -253,10 +261,15 @@ export default function RothAndRMD({
       {/* ------------------------------------------------------ */}
       {/*       RMD TAB                                          */}
       {/* ------------------------------------------------------ */}
-      {section === "rmd" && (
+      {section === "rmd" ? (
         <div className="space-y-6">
           <div className="mb-4">
-            <h3 className="font-semibold text-lg">Required Minimum Distributions (RMDs)</h3>
+            <div className="flex justify-between items-start">
+              <h3 className="font-semibold text-lg">
+                Required Minimum Distributions (RMDs)
+              </h3>
+              <RmdInfoPanel />
+            </div>
             <p className="text-zinc-400 mt-1">
               RMDs will start in {rmdStart} (age&nbsp;73). Define the order in which
               investments should be withdrawn.
@@ -282,7 +295,7 @@ export default function RothAndRMD({
             />
           )}
         </div>
-      )}
+      ) : null}
 
       {!canEdit && (
         <p className="text-sm text-yellow-400 bg-zinc-800 p-2 rounded">
@@ -440,5 +453,47 @@ const AddDropdown = ({ label, eligible, onAdd, disabled }: DropProps) => (
         first.
       </p>
     )}
+  </div>
+);
+
+const RmdInfoPanel = () => (
+  <div className="flex items-start space-x-2">
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <button 
+          type="button"
+          aria-label="RMD Information"
+          className="inline-flex items-center text-zinc-400 hover:text-zinc-300"
+        >
+          <Info className="h-5 w-5" />
+          <span className="ml-2 text-base">About RMDs</span>
+        </button>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-[500px] bg-white border border-zinc-200 p-6">
+        <div className="space-y-4">
+          <h4 className="font-semibold text-purple-600 text-lg">
+            Required Minimum Distributions (RMDs)
+          </h4>
+          <ul className="space-y-3 text-base text-zinc-900">
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Required by IRS starting at age 73 (SECURE 2.0 Act)</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Based on December 31 balance of previous year</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Assets are transferred in-kind from pre-tax to non-retirement accounts</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-3">•</span>
+              <span>Uses IRS Uniform Life Table (Table III) for calculations</span>
+            </li>
+          </ul>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   </div>
 );
