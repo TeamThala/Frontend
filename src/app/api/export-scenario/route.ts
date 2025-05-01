@@ -4,6 +4,8 @@ import Scenario from "@/models/Scenario";
 import * as yaml from "js-yaml";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "@/types/utils";
 import { AssetAllocationFixed, AssetAllocationGlidePath } from "@/types/event";
+import RothConversionStrategy from "@/models/RothConversionStrategy";
+import { Types } from "mongoose";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +35,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Scenario not found" }, { status: 404 });
     }
 
-
-    const investmentTypesMap = new Map();
-    const investmentIdMap = new Map();
+    // Enhanced mapping functions for investments
+    const investmentTypesMap = new Map<string, any>();
+    const investmentIdMap = new Map<string, string>();
+    
+    // Helper function to create multiple variants of investment ID for more robust mapping
+    const stashIdVariants = (humanId: string, investment: any) => {
+      if (!humanId || !investment || !investment._id) return;
+      
+      const id = investment._id.toString();
+      const norm = humanId.toLowerCase().replace(/[^\w]+/g, "").trim();
+      
+      investmentIdMap.set(humanId, id);
+      investmentIdMap.set(norm, id);
+      investmentIdMap.set(humanId.replace(/\s+/g, ""), id);
+      
+      if (humanId.includes("S&P")) {
+        investmentIdMap.set(humanId.replace(/S&P/g, "SP"), id);
+      }
+    };
 
     const investmentsYaml = scenario.investments.map((inv) => {
       if (!inv || !inv.investmentType) {
@@ -60,8 +78,10 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      // Store both ID-to-Object mapping and reverse lookup
       if (inv._id) {
         investmentIdMap.set(inv._id.toString(), id);
+        stashIdVariants(id, inv);
       }
 
       return {
@@ -185,9 +205,155 @@ export async function GET(request: NextRequest) {
       return out;
     }).filter(Boolean); // Filter out any null values
 
-    // changes
+    // Helper function to get investment names from IDs with more robust error handling
+    const getInvestmentIdsWithFallback = async (strategy: any[], strategyName: string): Promise<string[]> => {
+      console.log(`Processing ${strategyName} strategy`);
+      
+      // If no strategy exists, return empty array
+      if (!strategy || !Array.isArray(strategy) || strategy.length === 0) {
+        console.log(`No ${strategyName} strategy found, returning empty array`);
+        return [];
+      }
+      
+      // Process all items in the strategy array
+      const result: string[] = [];
+      
+      for (const item of strategy) {
+        if (!item) continue;
+        
+        // Handle direct investment references
+        if (typeof item === 'object' && item._id) {
+          // Investment object reference
+          const id = investmentIdMap.get(item._id.toString());
+          if (id) {
+            result.push(id);
+            console.log(`Added investment ${id} to ${strategyName} from direct reference`);
+          } else {
+            console.log(`Warning: Could not find investment ID mapping for ${strategyName} item: ${item._id}`);
+          }
+        } else if (typeof item === 'string') {
+          // String ID reference
+          const id = investmentIdMap.get(item);
+          if (id) {
+            result.push(id);
+            console.log(`Added investment ${id} to ${strategyName} from string ID`);
+          } else {
+            console.log(`Warning: Could not find investment ID mapping for ${strategyName} string ID: ${item}`);
+          }
+        }
+      }
+      
+      // Special handling for S&P 500 pre-tax in RothConversionStrategy
+      if (strategyName === 'RothConversionStrategy' && result.length === 0) {
+        console.log('No Roth conversion mappings found, checking for S&P 500 pre-tax investments');
+        
+        // Look for any investment that might be an S&P 500 pre-tax account
+        for (const [key, value] of Object.entries(investmentIdMap)) {
+          if ((typeof key === 'string' && key.includes('S&P') && key.includes('pre-tax')) || 
+              (typeof value === 'string' && value.includes('S&P') && value.includes('pre-tax'))) {
+            const investmentId = typeof value === 'string' ? value : key;
+            result.push(investmentId);
+            console.log(`Added S&P 500 pre-tax investment to ${strategyName} as fallback: ${investmentId}`);
+          }
+        }
+      }
+      
+      return result;
+    };
 
-    // changes
+    // Process Roth conversion strategy with enhanced error handling
+    let rothConversionStrategy: string[] = [];
+    if (scenario.rothConversion && scenario.rothConversion.rothConversion) {
+      // First try to get from RothConversionStrategy collection references
+      if (scenario.RothConversionStrategy && Array.isArray(scenario.RothConversionStrategy)) {
+        console.log('Fetching Roth conversion from RothConversionStrategy collection');
+        
+        for (const strategyRef of scenario.RothConversionStrategy) {
+          try {
+            // If this is already populated as an object with investmentOrder
+            if (strategyRef.investmentOrder) {
+              const investments = await getInvestmentIdsWithFallback(
+                strategyRef.investmentOrder, 
+                'RothConversionStrategy.investmentOrder'
+              );
+              rothConversionStrategy = [...rothConversionStrategy, ...investments];
+            } else {
+              // If it's just an ID reference, fetch the document
+              const strategyDoc = await RothConversionStrategy.findById(strategyRef).exec();
+              if (strategyDoc && strategyDoc.investmentOrder) {
+                const investments = await getInvestmentIdsWithFallback(
+                  strategyDoc.investmentOrder,
+                  'RothConversionStrategy.investmentOrder (from lookup)'
+                );
+                rothConversionStrategy = [...rothConversionStrategy, ...investments];
+              }
+            }
+          } catch (error) {
+            console.error('Error processing Roth conversion strategy:', error);
+          }
+        }
+      }
+      
+      // If still empty, try direct investment references 
+      if (rothConversionStrategy.length === 0) {
+        console.log('No RothConversionStrategy found in collection, trying direct investment references');
+        const directInvestments = await getInvestmentIdsWithFallback(
+          scenario.RothConversionStrategy as any[], 
+          'RothConversionStrategy (direct)'
+        );
+        rothConversionStrategy = directInvestments;
+      }
+      
+      // If still empty, fallback to all pre-tax accounts as last resort
+      if (rothConversionStrategy.length === 0) {
+        console.log('No Roth conversion strategy found, using fallback to all pre-tax investments');
+        
+        // Find all pre-tax investments
+        for (const inv of scenario.investments) {
+          if (inv && inv.taxStatus === 'pre-tax') {
+            const id = investmentIdMap.get(inv._id.toString());
+            if (id) {
+              rothConversionStrategy.push(id);
+              console.log(`Added ${id} to RothConversionStrategy fallback`);
+            }
+          }
+        }
+      }
+    }
+
+    // Process RMD strategy similarly
+    let rmdStrategy: string[] = [];
+    if (scenario.RMDStrategy && Array.isArray(scenario.RMDStrategy)) {
+      rmdStrategy = await getInvestmentIdsWithFallback(scenario.RMDStrategy as any[], 'RMDStrategy');
+      
+      // If empty, fallback to all pre-tax accounts
+      if (rmdStrategy.length === 0) {
+        console.log('No RMD strategy found, using fallback to all pre-tax investments');
+        
+        // Find all pre-tax investments
+        for (const inv of scenario.investments) {
+          if (inv && inv.taxStatus === 'pre-tax') {
+            const id = investmentIdMap.get(inv._id.toString());
+            if (id) {
+              rmdStrategy.push(id);
+              console.log(`Added ${id} to RMDStrategy fallback`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Process spending strategy
+    const spendingStrategy = scenario.spendingStrategy?.map((id) => {
+      if (typeof id === 'string') return scenario.eventSeries.find((e) => e._id.toString() === id)?.name;
+      return scenario.eventSeries.find((e) => e._id.equals(id))?.name;
+    }).filter(Boolean) as string[];
+    
+    // Process expense withdrawal strategy
+    const expenseWithdrawalStrategy = scenario.expenseWithdrawalStrategy?.map((id) => {
+      if (typeof id === 'string') return investmentIdMap.get(id);
+      return investmentIdMap.get(id.toString());
+    }).filter(Boolean) as string[];
 
     const yamlData: Record<string, string | number | boolean | null | unknown[] | Record<string, unknown>> = {
       name: scenario.name,
@@ -204,42 +370,18 @@ export async function GET(request: NextRequest) {
       inflationAssumption: serializeDistribution(scenario.inflationRate),
       // Include afterTaxContributionLimit 
       afterTaxContributionLimit: 7000, 
-      spendingStrategy: scenario.spendingStrategy?.map((id) => {
-        if (typeof id === 'string') return scenario.eventSeries.find((e) => e._id.toString() === id)?.name;
-        return scenario.eventSeries.find((e) => e._id.equals(id))?.name;
-      }).filter(Boolean),
-      expenseWithdrawalStrategy: scenario.expenseWithdrawalStrategy?.map((id) => {
-        if (typeof id === 'string') return investmentIdMap.get(id);
-        return investmentIdMap.get(id.toString());
-      }).filter(Boolean),
-      RMDStrategy: scenario.RMDStrategy?.map((id) => {
-        if (typeof id === 'string') return investmentIdMap.get(id);
-        return investmentIdMap.get(id.toString());
-      }).filter(Boolean),
+      spendingStrategy,
+      expenseWithdrawalStrategy,
+      RMDStrategy: rmdStrategy,
+      RothConversionOpt: scenario.rothConversion?.rothConversion || false,
+      RothConversionStart: scenario.rothConversion?.rothConversion ? 
+          scenario.rothConversion.RothConversionStartYear : null,
+      RothConversionEnd: scenario.rothConversion?.rothConversion ? 
+          scenario.rothConversion.RothConversionEndYear : null,
+      RothConversionStrategy: rothConversionStrategy,
+      financialGoal: scenario.financialGoal,
+      residenceState: scenario.residenceState,
     };
-
-    // Explicitly add Roth conversion properties as direct fields
-    yamlData.RothConversionOpt = scenario.rothConversion?.rothConversion || false;
-    yamlData.RothConversionStart = scenario.rothConversion?.rothConversion ? 
-        scenario.rothConversion.RothConversionStartYear : null;
-    yamlData.RothConversionEnd = scenario.rothConversion?.rothConversion ? 
-        scenario.rothConversion.RothConversionEndYear : null;
-    
-    // Add Roth conversion strategy
-    yamlData.RothConversionStrategy = [];
-    if (scenario.rothConversion?.rothConversion && scenario.RothConversionStrategy) {
-      yamlData.RothConversionStrategy = scenario.RothConversionStrategy.flatMap((r) => {
-        if (!r || !r.investmentOrder) return [];
-        return r.investmentOrder.map((id) => {
-          if (typeof id === 'string') return investmentIdMap.get(id);
-          return investmentIdMap.get(id.toString());
-        }).filter(Boolean);
-      });
-    }
-    
-    // Add remaining fields
-    yamlData.financialGoal = scenario.financialGoal;
-    yamlData.residenceState = scenario.residenceState;
 
     // Log Roth conversion details for debugging
     console.log('Roth Conversion details:');
