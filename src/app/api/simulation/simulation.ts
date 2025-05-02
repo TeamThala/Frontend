@@ -15,12 +15,13 @@ import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
 import { payDiscExpenses } from './payDiscExpenses';
-import { SimulationResult } from '@/types/simulationResult';
+import { SimulationResult, YearlyResult } from '@/types/simulationResult';
 
 
 export async function simulation(scenario: Scenario){
     let success: boolean = true;
     let finalReturn: SimulationResult | null = null;
+    const yearlyResults: YearlyResult[] = [];
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
     const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
     const currentYear = new Date().getFullYear();
@@ -91,13 +92,17 @@ export async function simulation(scenario: Scenario){
     const taxData = await getTaxData(scenario.residenceState, scenario.owner.id);
     let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
 
+    let inflation: number = 0;
+    let curYearIncome: number = 0;
+    let curYearSS: number = 0; // Social Security income for the current year
+
     // Simulation loop
     log.push("=====================SIMULATION STARTED=====================");
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         // log.push(incomeEvents[0])
         // Inflation assumption calculation for this year
-        const inflation = getInflationRate(scenario.inflationRate);
+        inflation = getInflationRate(scenario.inflationRate);
         log.push(`Inflation rate for age ${age} parsed as ${inflation}`);
 
         // update retirement account contributions annual limits
@@ -123,8 +128,8 @@ export async function simulation(scenario: Scenario){
             log.push("Error: Could not update income events.");
             return null;
         }
-        let curYearIncome = incomeResults.curYearIncome;
-        const curYearSS = incomeResults.curYearSS;
+        curYearIncome = incomeResults.curYearIncome;
+        curYearSS = incomeResults.curYearSS;
         log.push(`Income for current year ${year}: ${curYearIncome}`);
         log.push(`Social Security for current year ${year}: ${curYearSS}`);
         
@@ -286,6 +291,18 @@ export async function simulation(scenario: Scenario){
         year++;
         updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
+
+        const yearlyResult: YearlyResult = {
+            year: year,
+            investments: scenario.investments,
+            inflation: inflation,
+            eventSeries: scenario.eventSeries,
+            curYearIncome: curYearIncome,
+            curYearEarlyWithdrawals: curYearEarlyWithdrawals,
+            curYearSS: curYearSS,
+            curYearGains: curYearGains
+        };
+        yearlyResults.push(yearlyResult); // Add yearly result to array
         
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
@@ -318,9 +335,10 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        finalReturn = exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, success, log);
+        
     }
     log.push("=====================SIMULATION FINISHED=====================");
+    finalReturn = exportResultsToJson(yearlyResults, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, success, log);
     saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
     return finalReturn;
 }
