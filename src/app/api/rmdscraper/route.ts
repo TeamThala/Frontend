@@ -5,7 +5,6 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import path from 'path';
 import RMDTable from '@/models/RMDTable';
-import clientPromise from '@/lib/db';
 import type { RmdTableDocument } from '@/models/RMDTable';
 
 interface RmdTable {

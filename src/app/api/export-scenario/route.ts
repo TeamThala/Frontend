@@ -5,9 +5,42 @@ import * as yaml from "js-yaml";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "@/types/utils";
 import { AssetAllocationFixed, AssetAllocationGlidePath } from "@/types/event";
 import RothConversionStrategy from "@/models/RothConversionStrategy";
-import { Types } from "mongoose";
+import { Investment } from "@/types/investment";
 
 export const dynamic = "force-dynamic";
+
+// Define TypeScript interface for the event output data structure
+interface YamlEventOutput {
+  name: string;
+  description?: string;
+  type: string;
+  start?: Record<string, unknown>;
+  duration?: Record<string, unknown>;
+  initialAmount?: number;
+  changeAmtOrPct?: string;
+  changeDistribution?: Record<string, unknown>;
+  inflationAdjusted?: boolean;
+  userFraction?: number;
+  socialSecurity?: boolean;
+  wage?: boolean;
+  discretionary?: boolean;
+  assetAllocation?: Record<string, number>;
+  assetAllocation2?: Record<string, number>;
+  glidePath?: boolean;
+  maxCash?: number;
+}
+
+// Interface for investment type in YAML export
+interface YamlInvestmentType {
+  name: string;
+  description: string;
+  returnAmtOrPct: string;
+  returnDistribution: Record<string, unknown>;
+  expenseRatio: number;
+  incomeAmtOrPct: string;
+  incomeDistribution: Record<string, unknown>;
+  taxability: boolean;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,11 +69,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Enhanced mapping functions for investments
-    const investmentTypesMap = new Map<string, any>();
+    const investmentTypesMap = new Map<string, YamlInvestmentType>();
     const investmentIdMap = new Map<string, string>();
     
     // Helper function to create multiple variants of investment ID for more robust mapping
-    const stashIdVariants = (humanId: string, investment: any) => {
+    const stashIdVariants = (humanId: string, investment: Investment) => {
       if (!humanId || !investment || !investment._id) return;
       
       const id = investment._id.toString();
@@ -206,7 +239,7 @@ export async function GET(request: NextRequest) {
     }).filter(Boolean); // Filter out any null values
 
     // Helper function to get investment names from IDs with more robust error handling
-    const getInvestmentIdsWithFallback = async (strategy: any[], strategyName: string): Promise<string[]> => {
+    const getInvestmentIdsWithFallback = async (strategy: (string | Investment)[], strategyName: string): Promise<string[]> => {
       console.log(`Processing ${strategyName} strategy`);
       
       // If no strategy exists, return empty array
@@ -298,7 +331,7 @@ export async function GET(request: NextRequest) {
       if (rothConversionStrategy.length === 0) {
         console.log('No RothConversionStrategy found in collection, trying direct investment references');
         const directInvestments = await getInvestmentIdsWithFallback(
-          scenario.RothConversionStrategy as any[], 
+          scenario.RothConversionStrategy as (string | Investment)[], 
           'RothConversionStrategy (direct)'
         );
         rothConversionStrategy = directInvestments;
@@ -324,7 +357,7 @@ export async function GET(request: NextRequest) {
     // Process RMD strategy similarly
     let rmdStrategy: string[] = [];
     if (scenario.RMDStrategy && Array.isArray(scenario.RMDStrategy)) {
-      rmdStrategy = await getInvestmentIdsWithFallback(scenario.RMDStrategy as any[], 'RMDStrategy');
+      rmdStrategy = await getInvestmentIdsWithFallback(scenario.RMDStrategy as (string | Investment)[], 'RMDStrategy');
       
       // If empty, fallback to all pre-tax accounts
       if (rmdStrategy.length === 0) {
@@ -458,27 +491,6 @@ export async function GET(request: NextRequest) {
     console.error("Export error:", error);
     return NextResponse.json({ success: false, error: "Failed to export scenario" }, { status: 500 });
   }
-}
-
-// Define TypeScript interface for the event output data structure
-interface YamlEventOutput {
-  name: string;
-  description?: string;
-  type: string;
-  start?: Record<string, unknown>;
-  duration?: Record<string, unknown>;
-  initialAmount?: number;
-  changeAmtOrPct?: string;
-  changeDistribution?: Record<string, unknown>;
-  inflationAdjusted?: boolean;
-  userFraction?: number;
-  socialSecurity?: boolean;
-  wage?: boolean;
-  discretionary?: boolean;
-  assetAllocation?: Record<string, number>;
-  assetAllocation2?: Record<string, number>;
-  glidePath?: boolean;
-  maxCash?: number;
 }
 
 function serializeDistribution(dist: FixedValues | NormalDistributionValues | UniformDistributionValues | Record<string, unknown>, isYear = false): Record<string, unknown> {
