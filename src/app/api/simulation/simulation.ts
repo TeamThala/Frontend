@@ -100,6 +100,7 @@ export async function simulation(scenario: Scenario){
 
     // Simulation loop
     log.push("=====================SIMULATION STARTED=====================");
+    log.push(`Financial Goal: ${scenario.financialGoal}`);
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         // log.push(incomeEvents[0])
@@ -275,19 +276,6 @@ export async function simulation(scenario: Scenario){
         // Run rebalance events scheduled for the current year
         runRebalanceEvents(rebalanceEvents, year, currentYear, log);
 
-        // Check if financial goal is met
-        let netWorth = 0;
-        for (let i=0; i<scenario.investments.length; i++){
-            const investment = scenario.investments[i];
-            netWorth += investment.value; // Add up all investments
-        }
-        log.push(`Net worth for year ${year} is ${netWorth}`);
-        if (netWorth < scenario.financialGoal){
-            console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
-            success = false;
-            break;
-        }
-
 
 
         // End of loop calculations
@@ -305,7 +293,21 @@ export async function simulation(scenario: Scenario){
             curYearSS: curYearSS,
             curYearGains: curYearGains
         };
+        log.push(`Yearly result being added for year ${year}: ${JSON.stringify(yearlyResult)}`);
         yearlyResults.push(yearlyResult); // Add yearly result to array
+
+        // Check if financial goal is met
+        let netWorth = 0;
+        for (let i=0; i<scenario.investments.length; i++){
+            const investment = scenario.investments[i];
+            netWorth += investment.value; // Add up all investments
+        }
+        log.push(`Net worth for year ${year} is ${netWorth}`);
+        if (netWorth < scenario.financialGoal){
+            log.push(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
+            success = false;
+            break;
+        }
         
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
