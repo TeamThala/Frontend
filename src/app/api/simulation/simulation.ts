@@ -16,6 +16,8 @@ import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
 import { payDiscExpenses } from './payDiscExpenses';
 import { SimulationResult, YearlyResult } from '@/types/simulationResult';
+import { runRebalanceEvents } from './runRebalanceEvents';
+// import { runInvestmentEvent } from './runInvestmentEvent';
 
 
 export async function simulation(scenario: Scenario){
@@ -68,13 +70,13 @@ export async function simulation(scenario: Scenario){
         return null;
     }
     log.push(`Initialized events: ${eventArrays}`);
-    let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[];//,  rebalanceEvents:Event[];
+    let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[],  rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
         incomeEvents = eventArrays[0];
         expenseEvents = eventArrays[1];
         investmentEvents = eventArrays[2];
-        // rebalanceEvents = eventArrays[3];
+        rebalanceEvents = eventArrays[3];
     }
     else {
         log.push("Error: No events found.");
@@ -265,12 +267,13 @@ export async function simulation(scenario: Scenario){
         // Pay discretionary expenses in spending strategy
         payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         // Run invest event scheduled for the current year
-        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
+        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
         // if (runInvestResult === null){
         //     console.log("Error: Could not run investment event.");
         //     return null;
         // }
-        // TODO: Run rebalance events scheduled for the current year
+        // Run rebalance events scheduled for the current year
+        runRebalanceEvents(rebalanceEvents, year, currentYear, log);
 
         // Check if financial goal is met
         let netWorth = 0;
