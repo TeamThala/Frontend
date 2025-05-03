@@ -23,7 +23,7 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
             netWorth -= eventType.amount; // deduct from net worth
-            if (withinDuration && netWorth > 0){ // only pay if within duration and net worth is positive
+            if (withinDuration && netWorth > financialGoal){
                 log.push(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
                 totalPayments += eventType.amount;
             }
