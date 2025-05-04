@@ -62,7 +62,8 @@ export const renderEventForm = (
       
       {event.eventType.type === "income" && renderIncomeEventDetails(event, index, canEdit, handlers)}
       {event.eventType.type === "expense" && renderExpenseEventDetails(event, index, canEdit, handlers)}
-      {event.eventType.type === "investment" && renderInvestmentEventDetails(event, index, canEdit, handlers, scenarioInvestments as any)}
+      {/* Render investment and rebalance event details using the same component */}
+      {(event.eventType.type === "investment" || event.eventType.type === "rebalance") && renderInvestmentEventDetails(event, index, canEdit, handlers, scenarioInvestments as any)}
       {/* {event.eventType.type === "rebalance" && renderRebalanceEventDetails(event, index, canEdit, handlers)} */}
     </div>
   );
