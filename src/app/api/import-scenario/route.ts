@@ -168,6 +168,17 @@ interface YamlScenario {
   customStateTaxYaml?: string;
 }
 
+// Interface to be used for startYear fields
+interface StartYear {
+  type: string;
+  year?: number | {
+    mean?: number; stdDev?: number; min?: number; max?: number; valueType?: string;
+  };
+  eventTime?: "start" | "end";
+  eventId?: Types.ObjectId | null;
+  event?: Types.ObjectId | null; // Backwards compatibility
+}
+
 /* ────────────────────────────────
    POST handler
    ──────────────────────────────── */
@@ -259,15 +270,6 @@ export async function POST(req: NextRequest) {
     /* 5️⃣  Events */
     for (const ev of yml.eventSeries ?? []) {
       /* 5a  startYear */
-      interface StartYear {
-        type: string;
-        year?: number | {
-          mean?: number; stdDev?: number; min?: number; max?: number; valueType: string;
-        };
-        eventTime?: "start" | "end";
-        event?: Types.ObjectId | null;
-      }
-
       let start: StartYear = { type: "fixed" };
       switch (ev.start.type) {
         case "fixed":
@@ -290,7 +292,7 @@ export async function POST(req: NextRequest) {
           start = {
             type: "event",
             eventTime: ev.start.type === "startWith" ? "start" : "end",
-            event: null
+            eventId: null
           };
           depTracker.set(ev.name, ev.start.eventSeries ?? "salary");
           break;
@@ -412,14 +414,14 @@ export async function POST(req: NextRequest) {
         (await Event.findOne({ name: { $regex: new RegExp(`^${parentName}$`, "i") } }));
 
       if (childEvt && parentEvt) {
-        (childEvt.startYear as any).event = parentEvt._id;
+        (childEvt.startYear as StartYear).eventId = parentEvt._id;
         await childEvt.save();
       } else {
         console.warn(`Could not resolve dependency '${child}' → '${parentName}'`);
       }
     }
 
-    /* 7️⃣  Strategies -------------------------------------------------- */
+    /* 7️⃣  Strategies */
     const normalizeKey = (s: string) => s.toLowerCase().replace(/[^\w]+/g, "").trim();
     const toIds = (arr: string[] | undefined, map: Map<string, Types.ObjectId>) =>
       (arr ?? []).map(s => map.get(s) || map.get(normalizeKey(s))).filter(Boolean) as Types.ObjectId[];
@@ -481,7 +483,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    /* 8️⃣  Scenario ---------------------------------------------------- */
+    /* 8️⃣  Scenario */
     const uniqueInvestmentIds = getUniqueInvestmentIds(investMap);
 
     let finalRothConv: Types.ObjectId[] | Types.ObjectId[] = [];

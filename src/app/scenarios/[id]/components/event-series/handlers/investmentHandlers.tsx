@@ -1,5 +1,16 @@
 import { Dispatch, SetStateAction } from "react";
 import { Scenario } from "@/types/scenario";
+import { AssetAllocationFixed, AssetAllocationGlidePath, InvestmentEvent } from "@/types/event";
+import { Investment } from "@/types/investment";
+
+// Combined type for working with both allocation types
+interface CombinedAssetAllocation {
+  type: "fixed" | "glidePath";
+  investments: Investment[] | null;
+  percentages?: number[];
+  initialPercentages?: number[];
+  finalPercentages?: number[];
+}
 
 // Handle allocation type change (fixed vs glidePath) for investments
 export const handleInvestmentAllocationTypeChange = (
@@ -15,26 +26,28 @@ export const handleInvestmentAllocationTypeChange = (
     if (event.eventType.type !== "investment") return prev;
 
     // grab the existing allocation (whether it came in as array or object)
-    let alloc: any;
+    let alloc: CombinedAssetAllocation;
     if (Array.isArray(event.eventType.assetAllocation)) {
-      alloc = { ...event.eventType.assetAllocation[0] };
+      alloc = { ...event.eventType.assetAllocation[0] } as CombinedAssetAllocation;
     } else {
-      alloc = { ...event.eventType.assetAllocation };
+      alloc = { ...event.eventType.assetAllocation } as CombinedAssetAllocation;
     }
 
     // pull out whatever might already be there
     const {
-      investments    = null,
-      percentages    = [] as number[],
+      investments = null,
+      percentages = [] as number[],
       initialPercentages,
       finalPercentages
-    } = alloc as any;
+    } = alloc;
 
     // build a new allocation object, preserving any existing glidePath arrays
-    const newAlloc: any = { investments };
+    const newAlloc: CombinedAssetAllocation = { 
+      type: type,
+      investments 
+    };
 
     if (type === "fixed") {
-      newAlloc.type = "fixed";
       // seed the fixed percentages from whichever you have
       newAlloc.percentages = percentages.length
         ? [...percentages]
@@ -46,7 +59,6 @@ export const handleInvestmentAllocationTypeChange = (
       if (initialPercentages) newAlloc.initialPercentages = [...initialPercentages];
       if (finalPercentages)   newAlloc.finalPercentages   = [...finalPercentages];
     } else {
-      newAlloc.type = "glidePath";
       // if you just came from fixed, percentages will be non-empty
       if (percentages.length) {
         newAlloc.initialPercentages = [...percentages];
@@ -63,11 +75,8 @@ export const handleInvestmentAllocationTypeChange = (
     // put it back on the event
     event.eventType = {
       ...event.eventType,
-      assetAllocation: {
-        ...newAlloc,
-        percentages
-      }
-    } as any;  // `as any` silences TS about our extra fields
+      assetAllocation: newAlloc
+    } as InvestmentEvent;
 
     events[index] = event;
     return { ...prev, eventSeries: events };
@@ -90,11 +99,11 @@ export const handleInvestmentPercentageChange = (
     if (event.eventType.type !== "investment") return prev;
     
     // Handle assetAllocation as either object or array
-    let assetAllocation: any;
+    let assetAllocation: AssetAllocationFixed;
     if (Array.isArray(event.eventType.assetAllocation)) {
-      assetAllocation = { ...event.eventType.assetAllocation[0] };
+      assetAllocation = { ...(event.eventType.assetAllocation[0] as AssetAllocationFixed) };
     } else {
-      assetAllocation = { ...event.eventType.assetAllocation };
+      assetAllocation = { ...(event.eventType.assetAllocation as AssetAllocationFixed) };
     }
     
     if (assetAllocation.type === "fixed") {
@@ -139,11 +148,11 @@ export const handleInvestmentGlidePathPercentageChange = (
     if (event.eventType.type !== "investment") return prev;
     
     // Handle assetAllocation as either object or array
-    let assetAllocation: any;
+    let assetAllocation: AssetAllocationGlidePath;
     if (Array.isArray(event.eventType.assetAllocation)) {
-      assetAllocation = { ...event.eventType.assetAllocation[0] };
+      assetAllocation = { ...(event.eventType.assetAllocation[0] as AssetAllocationGlidePath) };
     } else {
-      assetAllocation = { ...event.eventType.assetAllocation };
+      assetAllocation = { ...(event.eventType.assetAllocation as AssetAllocationGlidePath) };
     }
     
     if (assetAllocation.type === "glidePath") {
