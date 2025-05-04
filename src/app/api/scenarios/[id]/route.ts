@@ -706,95 +706,132 @@
 //   await scenario.save();
 //   return NextResponse.json({ success: true, message: 'Scenario updated successfully' });
 // }
-import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import dbConnect from '@/lib/dbConnect';
 
-import '@/models/Investment';
-import '@/models/Event';
-import '@/models/User';
-import '@/models/InvestmentType';
+// new chanhed version
+import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import dbConnect from "@/lib/dbConnect";
 
-import Scenario from '@/models/Scenario';
-import Event from '@/models/Event';
-import InvestmentType from '@/models/InvestmentType';
-import Investment from '@/models/Investment';
-import User from '@/models/User';
-import { FixedYear, UniformYear, NormalYear, EventYear } from '@/types/event';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { CoupleScenario } from '@/types/scenario';
+import "@/models/Investment";
+import "@/models/Event";
+import "@/models/User";
+import "@/models/InvestmentType";
+
+import Scenario from "@/models/Scenario";
+import Event from "@/models/Event";
+import InvestmentType from "@/models/InvestmentType";
+import Investment from "@/models/Investment";
+import User from "@/models/User";
+import {
+  FixedYear,
+  UniformYear,
+  NormalYear,
+  EventYear,
+  InvestmentEvent,
+  RebalanceEvent,
+} from "@/types/event";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { CoupleScenario } from "@/types/scenario";
 
 /* ────────────────────────────────
    Helper / aux types
    ──────────────────────────────── */
 type DbStartYear =
-  | { type: 'fixed'  ; year: number }
-  | { type: 'uniform'; year: { min: number; max: number } }
-  | { type: 'normal' ; year: { mean: number; stdDev: number } }
-  | { type: 'event'  ; eventTime: 'start' | 'end'; eventId: mongoose.Types.ObjectId };
+  | { type: "fixed"; year: number }
+  | { type: "uniform"; year: { min: number; max: number } }
+  | { type: "normal"; year: { mean: number; stdDev: number } }
+  | {
+      type: "event";
+      eventTime: "start" | "end";
+      eventId?: mongoose.Types.ObjectId;
+    };
 
 type DbDuration =
-  | { type: 'fixed'  ; valueType: 'amount'; value: number }
-  | { type: 'uniform'; valueType: 'amount'; year: { min: number; max: number } }
-  | { type: 'normal' ; valueType: 'amount'; year: { mean: number; stdDev: number } };
+  | { type: "fixed"; valueType: "amount"; value: number }
+  | {
+      type: "uniform";
+      valueType: "amount";
+      year: { min: number; max: number };
+    }
+  | {
+      type: "normal";
+      valueType: "amount";
+      year: { mean: number; stdDev: number };
+    };
 
 type StateTaxFileEntry = [stateCode: string, fileId: string];
 
 type ScenarioUpdateBody = CoupleScenario & {
-  /**  Array form matches how we store it on the `User` model  */
   stateTaxFiles?: StateTaxFileEntry[];
 };
 
 /* ────────────────────────────────
-   Normalisers
+   Utilities
    ──────────────────────────────── */
+const isMongoId = (v: unknown): v is string =>
+  typeof v === "string" && mongoose.Types.ObjectId.isValid(v);
+
 function normalizeStartYear(
   raw: FixedYear | UniformYear | NormalYear | EventYear,
 ): DbStartYear {
   switch (raw.type) {
-    case 'fixed':
-      return { type: 'fixed', year: raw.year };
-    case 'uniform':
-      return { type: 'uniform', year: { min: raw.year.min, max: raw.year.max } };
-    case 'normal':
-      return { type: 'normal', year: { mean: raw.year.mean, stdDev: raw.year.stdDev } };
-    case 'event':
+    case "fixed":
+      return { type: "fixed", year: raw.year };
+    case "uniform":
+      return { type: "uniform", year: { min: raw.year.min, max: raw.year.max } };
+    case "normal":
       return {
-        type: 'event',
+        type: "normal",
+        year: { mean: raw.year.mean, stdDev: raw.year.stdDev },
+      };
+    case "event":
+      return {
+        type: "event",
         eventTime: raw.eventTime,
-        eventId: new mongoose.Types.ObjectId(raw.eventId),
+        ...(isMongoId(raw.eventId)
+          ? { eventId: new mongoose.Types.ObjectId(raw.eventId) }
+          : {}),
       };
   }
 }
 
 function normalizeDuration(raw: FixedYear | UniformYear | NormalYear): DbDuration {
   switch (raw.type) {
-    case 'fixed':
-      return { type: 'fixed', valueType: 'amount', value: raw.year };
-    case 'uniform':
+    case "fixed":
+      return { type: "fixed", valueType: "amount", value: raw.year };
+    case "uniform":
       return {
-        type: 'uniform',
-        valueType: 'amount',
+        type: "uniform",
+        valueType: "amount",
         year: { min: raw.year.min, max: raw.year.max },
       };
-    case 'normal':
+    case "normal":
       return {
-        type: 'normal',
-        valueType: 'amount',
+        type: "normal",
+        valueType: "amount",
         year: { mean: raw.year.mean, stdDev: raw.year.stdDev },
       };
   }
 }
 
+/**
+ * Convert a heterogeneous list of investment references to pure ObjectIds.
+ * Accepts raw strings, ObjectIds, or any object that carries an `_id` or `id` field.
+ */
 function extractInvestmentIds(
-  items: Array<{ _id?: string | mongoose.Types.ObjectId }>,
+  items: Array<string | mongoose.Types.ObjectId | { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId }> | null,
 ): mongoose.Types.ObjectId[] {
+  if (!items) return [];
   return items
-    .map(({ _id }) => _id)
-    .filter((id): id is string | mongoose.Types.ObjectId => Boolean(id))
-    .filter(id => mongoose.Types.ObjectId.isValid(String(id)))
-    .map(id => new mongoose.Types.ObjectId(String(id)));
+    .map(ref => {
+      if (!ref) return null;
+      if (ref instanceof mongoose.Types.ObjectId) return ref;
+      if (typeof ref === "string" && mongoose.Types.ObjectId.isValid(ref)) return new mongoose.Types.ObjectId(ref);
+      const candidate = (ref as { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId })._id ?? (ref as { id?: string | mongoose.Types.ObjectId }).id;
+      return candidate && mongoose.Types.ObjectId.isValid(String(candidate)) ? new mongoose.Types.ObjectId(String(candidate)) : null;
+    })
+    .filter((id): id is mongoose.Types.ObjectId => Boolean(id));
 }
 
 /* ────────────────────────────────
@@ -808,35 +845,54 @@ export async function GET(
   const scenarioId = (await params).id;
 
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
-    return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "Invalid scenario ID" },
+      { status: 400 },
+    );
   }
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
-    return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Authentication required" },
+      { status: 401 },
+    );
   }
 
   const scenario = await Scenario.findById(scenarioId)
-    .populate({ path: 'investments', populate: { path: 'investmentType' } })
-    .populate('eventSeries')
-    .populate('spendingStrategy')
-    .populate('expenseWithdrawalStrategy');
+    .populate({ path: "investments", populate: { path: "investmentType" } })
+    .populate("eventSeries")
+    .populate("spendingStrategy")
+    .populate("expenseWithdrawalStrategy");
 
   if (!scenario) {
-    return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "Scenario not found" },
+      { status: 404 },
+    );
   }
 
   const user = await User.findOne({ email: session.user.email });
   if (!user) {
-    return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: "User not found" },
+      { status: 404 },
+    );
   }
 
-  const isOwner   = scenario.owner.toString() === user._id.toString();
-  const canEdit   = user.readWriteScenarios.some(id => id.toString() === scenarioId);
-  const canView   = scenario.viewPermissions.some(id => id.toString() === user._id.toString());
+  const isOwner = scenario.owner.toString() === user._id.toString();
+  const canEdit = user.readWriteScenarios.some(
+    (id) => id.toString() === scenarioId,
+  );
+  const canView = scenario.viewPermissions.some(
+    (id) => id.toString() === user._id.toString(),
+  );
 
   if (!isOwner && !canEdit && !canView) {
-    return NextResponse.json({ success: false, error: 'No permission' }, { status: 403 });
+    return NextResponse.json(
+      { success: false, error: "No permission" },
+      { status: 403 },
+    );
   }
 
   const stateTaxFiles = Object.fromEntries(user.stateTaxFiles ?? []);
@@ -862,12 +918,18 @@ export async function PUT(
   const scenarioId = (await params).id;
 
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
-    return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "Invalid scenario ID" },
+      { status: 400 },
+    );
   }
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
-    return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: "Authentication required" },
+      { status: 401 },
+    );
   }
 
   const [scenario, user] = await Promise.all([
@@ -875,40 +937,50 @@ export async function PUT(
     User.findOne({ email: session.user.email }),
   ]);
 
-  if (!scenario) return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
-  if (!user)      return NextResponse.json({ success: false, error: 'User not found'     }, { status: 404 });
+  if (!scenario)
+    return NextResponse.json(
+      { success: false, error: "Scenario not found" },
+      { status: 404 },
+    );
+  if (!user)
+    return NextResponse.json(
+      { success: false, error: "User not found" },
+      { status: 404 },
+    );
 
   const body: ScenarioUpdateBody = await req.json();
 
-  /* 1 — general info */
-  scenario.name               = body.name;
-  scenario.description        = body.description;
-  scenario.financialGoal      = body.financialGoal;
-  scenario.residenceState     = body.residenceState;
-  scenario.inflationRate      = body.inflationRate;
-  scenario.ownerBirthYear     = body.ownerBirthYear;
-  scenario.ownerLifeExpectancy= body.ownerLifeExpectancy;
-  scenario.type               = body.type;
-  if (body.type === 'couple') {
-    scenario.spouseBirthYear       = body.spouseBirthYear;
-    scenario.spouseLifeExpectancy  = body.spouseLifeExpectancy;
+  /* 1 — general info */
+  scenario.name = body.name;
+  scenario.description = body.description;
+  scenario.financialGoal = body.financialGoal;
+  scenario.residenceState = body.residenceState;
+  scenario.inflationRate = body.inflationRate;
+  scenario.ownerBirthYear = body.ownerBirthYear;
+  scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
+  scenario.type = body.type;
+  if (body.type === "couple") {
+    scenario.spouseBirthYear = body.spouseBirthYear;
+    scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
   }
 
-  /* 2 — investments (deduped) */
+  /* 2 — investments (deduped) */
   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
   for (const inv of body.investments) {
     let invTypeId: mongoose.Types.ObjectId;
 
-    /* 2‑a  InvestmentType */
-    if (inv.investmentType._id && mongoose.Types.ObjectId.isValid(inv.investmentType._id)) {
+    /* 2‑a InvestmentType */
+    if (inv.investmentType._id && isMongoId(inv.investmentType._id)) {
       const existingType = await InvestmentType.findById(inv.investmentType._id);
       if (existingType) {
-        existingType.name                = inv.investmentType.name;
-        existingType.description         = inv.investmentType.description;
-        existingType.expectedAnnualReturn= inv.investmentType.expectedAnnualReturn;
-        existingType.expectedAnnualIncome= inv.investmentType.expectedAnnualIncome;
-        existingType.taxability          = inv.investmentType.taxability;
-        existingType.expenseRatio        = inv.investmentType.expenseRatio;
+        existingType.name = inv.investmentType.name;
+        existingType.description = inv.investmentType.description;
+        existingType.expectedAnnualReturn =
+          inv.investmentType.expectedAnnualReturn;
+        existingType.expectedAnnualIncome =
+          inv.investmentType.expectedAnnualIncome;
+        existingType.taxability = inv.investmentType.taxability;
+        existingType.expenseRatio = inv.investmentType.expenseRatio;
         await existingType.save();
         invTypeId = existingType._id;
       } else {
@@ -936,14 +1008,14 @@ export async function PUT(
       )._id;
     }
 
-    /* 2‑b  Investment */
-    if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) {
+    /* 2‑b Investment */
+    if (inv._id && isMongoId(inv._id)) {
       const existingInv = await Investment.findById(inv._id);
       if (existingInv) {
         existingInv.investmentType = invTypeId;
-        existingInv.value          = inv.value;
-        existingInv.purchasePrice  = inv.purchasePrice;
-        existingInv.taxStatus      = inv.taxStatus;
+        existingInv.value = inv.value;
+        existingInv.purchasePrice = inv.purchasePrice;
+        existingInv.taxStatus = inv.taxStatus;
         await existingInv.save();
         updatedInvestmentIds.push(existingInv._id);
         continue;
@@ -962,50 +1034,125 @@ export async function PUT(
   }
   scenario.investments = updatedInvestmentIds;
 
-  /* 3 — events (deduped) */
+  /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
   for (const evt of body.eventSeries) {
-    if (evt._id && mongoose.Types.ObjectId.isValid(evt._id)) {
+    const normaliseAlloc = (alloc: any) => {
+      alloc.investments = extractInvestmentIds(alloc.investments ?? []);
+      if (alloc.type === "fixed") {
+        alloc.percentages = alloc.percentages ?? [];
+      } else {
+        alloc.initialPercentages = alloc.initialPercentages ?? [];
+        alloc.finalPercentages   = alloc.finalPercentages   ?? [];
+      }
+      return alloc;
+    };
+
+    const normalisePd = (pd: any) => {
+      pd.investments = extractInvestmentIds(pd.investments ?? []);
+      if (pd.type === "fixed") {
+        pd.percentages = pd.percentages ?? [];
+      } else {
+        pd.initialPercentages = pd.initialPercentages ?? [];
+        pd.finalPercentages   = pd.finalPercentages   ?? [];
+      }
+      return pd;
+    };
+
+    // ---------- UPDATE path ----------
+    if (evt._id && isMongoId(evt._id)) {
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
 
-      existingEvt.startYear = normalizeStartYear(evt.startYear);
-      existingEvt.duration  = normalizeDuration(evt.duration);
+      existingEvt.startYear   = normalizeStartYear(evt.startYear);
+      existingEvt.duration    = normalizeDuration(evt.duration);
       existingEvt.name        = evt.name;
       existingEvt.description = evt.description;
-      existingEvt.eventType   = { ...existingEvt.eventType, ...evt.eventType };
+
+      switch (evt.eventType.type) {
+        case "investment": {
+          const ie = evt.eventType as InvestmentEvent;
+          const alloc = Array.isArray(ie.assetAllocation) ? ie.assetAllocation[0] : ie.assetAllocation;
+          existingEvt.eventType = { ...ie, assetAllocation: normaliseAlloc(alloc) };
+          break;
+        }
+        case "rebalance": {
+          const re = evt.eventType as RebalanceEvent;
+          if (!re.portfolioDistribution) {
+            existingEvt.eventType = { ...re };
+            break;
+          }
+          const pd = Array.isArray(re.portfolioDistribution) ? re.portfolioDistribution[0] : re.portfolioDistribution;
+          existingEvt.eventType = { ...re, portfolioDistribution: normalisePd(pd) };
+          break;
+        }
+        default:
+          existingEvt.eventType = { ...evt.eventType };
+      }
 
       await existingEvt.save();
       updatedEventIds.push(existingEvt._id);
       continue;
     }
 
+    // ---------- CREATE path ----------
+    const { _id: _discard1, id: _discard2, ...evtWithoutIds } = evt as typeof evt & { _id?: unknown; id?: unknown };
+
+    let eventTypeToSave: typeof evt.eventType;
+    switch (evt.eventType.type) {
+      case "investment": {
+        const ie = evt.eventType as InvestmentEvent;
+        const alloc = Array.isArray(ie.assetAllocation) ? ie.assetAllocation[0] : ie.assetAllocation;
+        eventTypeToSave = { ...ie, assetAllocation: normaliseAlloc(alloc) };
+        break;
+      }
+      case "rebalance": {
+        const re = evt.eventType as RebalanceEvent;
+        if (!re.portfolioDistribution) {
+          eventTypeToSave = { ...re };
+          break;
+        }
+        const pd = Array.isArray(re.portfolioDistribution) ? re.portfolioDistribution[0] : re.portfolioDistribution;
+        eventTypeToSave = { ...re, portfolioDistribution: normalisePd(pd) };
+        break;
+      }
+      default:
+        eventTypeToSave = evt.eventType;
+    }
+
     const newEvt = await new Event({
-      ...evt,
+      ...evtWithoutIds,
       startYear: normalizeStartYear(evt.startYear),
       duration : normalizeDuration(evt.duration),
+      eventType: eventTypeToSave,
     }).save();
 
     updatedEventIds.push(newEvt._id);
   }
   scenario.eventSeries = updatedEventIds;
 
-  /* 4 — spending / expense withdrawal strategies */
+  /* 4 — spending / expense withdrawal strategies */
   scenario.spendingStrategy = extractInvestmentIds(body.spendingStrategy ?? []);
-  scenario.expenseWithdrawalStrategy = extractInvestmentIds(body.expenseWithdrawalStrategy ?? []);
+  scenario.expenseWithdrawalStrategy = extractInvestmentIds(
+    body.expenseWithdrawalStrategy ?? [],
+  );
 
-  /* 5 — RMD & Roth */
-  scenario.RMDStrategy           = extractInvestmentIds(body.RMDStrategy           ?? []);
-  scenario.RothConversionStrategy= extractInvestmentIds(body.RothConversionStrategy?? []);
-  scenario.rothConversion        = body.rothConversion ?? null;
+  /* 5 — RMD & Roth */
+  scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy ?? []);
+  scenario.RothConversionStrategy = extractInvestmentIds(
+    body.RothConversionStrategy ?? [],
+  );
+  scenario.rothConversion = body.rothConversion ?? null;
 
-  /* 6 — state‑tax files (user‑level) */
+  /* 6 — state‑tax files (user‑level) */
   if (body.stateTaxFiles) {
-    // Overwrite: most convenient for caller; change to smarter merge if needed
     user.stateTaxFiles = body.stateTaxFiles;
     await user.save();
   }
 
   await scenario.save();
-  return NextResponse.json({ success: true, message: 'Scenario updated successfully' });
+  return NextResponse.json({
+    success: true,
+    message: "Scenario updated successfully",
+  });
 }
