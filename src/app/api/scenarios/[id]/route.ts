@@ -728,7 +728,7 @@ import {
   NormalYear,
   EventYear,
   InvestmentEvent,
-  RebalanceEvent,
+  RebalanceEvent
 } from "@/types/event";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -833,13 +833,6 @@ function extractInvestmentIds(
     })
     .filter((id): id is mongoose.Types.ObjectId => Boolean(id));
 }
-type AllocationInput = {
-  type: "fixed" | "glidePath";
-  investments?: Array<string | mongoose.Types.ObjectId>;
-  percentages?: number[];
-  initialPercentages?: number[];
-  finalPercentages?: number[];
-};
 
 /* ────────────────────────────────
    GET
@@ -1044,6 +1037,7 @@ export async function PUT(
   /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
   for (const evt of body.eventSeries) {
+    /* eslint-disable */ 
     const normaliseAlloc = (alloc: any) => {
       alloc.investments = extractInvestmentIds(alloc.investments ?? []);
       if (alloc.type === "fixed") {
@@ -1055,7 +1049,6 @@ export async function PUT(
       return alloc;
     };
 
-    // eslint-disable-line
     const normalisePd = (pd: any) => {
       pd.investments = extractInvestmentIds(pd.investments ?? []);
       if (pd.type === "fixed") {

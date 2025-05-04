@@ -239,8 +239,8 @@ export async function GET(request: NextRequest) {
           out.assetAllocation2 = assetMap2;
         }
         out.maxCash =
-          typeof (evt.eventType as any).maxCash === "number"
-            ? (evt.eventType as any).maxCash
+          typeof (evt.eventType).maxCash === "number"
+            ? (evt.eventType).maxCash
             : 0;
       }
 
