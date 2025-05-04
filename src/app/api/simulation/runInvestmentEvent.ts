@@ -40,7 +40,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     }
 
     log.push(`Cash investment found in ${e.name}: ${cashInvestment}`);
-    const excessCash = eType.maxCash - cashInvestment.value; // excess cash in the account
+    const excessCash = Math.max(eType.maxCash - cashInvestment.value, 0); // excess cash in the account
     log.push(`Excess cash in the account: ${excessCash}`);
     log.push(`Cash investment value before withdrawal: ${cashInvestment.value}`);
 
