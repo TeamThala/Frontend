@@ -773,7 +773,7 @@ const isMongoId = (v: unknown): v is string =>
   typeof v === "string" && mongoose.Types.ObjectId.isValid(v);
 
 function normalizeStartYear(
-  raw: FixedYear | UniformYear | NormalYear | EventYear,
+  raw: FixedYear | UniformYear | NormalYear | EventYear
 ): DbStartYear {
   switch (raw.type) {
     case "fixed":
@@ -815,21 +815,26 @@ function normalizeDuration(raw: FixedYear | UniformYear | NormalYear): DbDuratio
   }
 }
 
-/**
- * Convert a heterogeneous list of investment references to pure ObjectIds.
- * Accepts raw strings, ObjectIds, or any object that carries an `_id` or `id` field.
- */
 function extractInvestmentIds(
-  items: Array<string | mongoose.Types.ObjectId | { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId }> | null,
+  items: Array<
+    | string
+    | mongoose.Types.ObjectId
+    | { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId }
+  > | null
 ): mongoose.Types.ObjectId[] {
   if (!items) return [];
   return items
-    .map(ref => {
+    .map((ref) => {
       if (!ref) return null;
       if (ref instanceof mongoose.Types.ObjectId) return ref;
-      if (typeof ref === "string" && mongoose.Types.ObjectId.isValid(ref)) return new mongoose.Types.ObjectId(ref);
-      const candidate = (ref as { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId })._id ?? (ref as { id?: string | mongoose.Types.ObjectId }).id;
-      return candidate && mongoose.Types.ObjectId.isValid(String(candidate)) ? new mongoose.Types.ObjectId(String(candidate)) : null;
+      if (typeof ref === "string" && mongoose.Types.ObjectId.isValid(ref))
+        return new mongoose.Types.ObjectId(ref);
+      const candidate =
+        (ref as { _id?: string | mongoose.Types.ObjectId })._id ??
+        (ref as { id?: string | mongoose.Types.ObjectId }).id;
+      return candidate && mongoose.Types.ObjectId.isValid(String(candidate))
+        ? new mongoose.Types.ObjectId(String(candidate))
+        : null;
     })
     .filter((id): id is mongoose.Types.ObjectId => Boolean(id));
 }
@@ -839,7 +844,7 @@ function extractInvestmentIds(
    ──────────────────────────────── */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
   const scenarioId = (await params).id;
@@ -847,7 +852,7 @@ export async function GET(
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json(
       { success: false, error: "Invalid scenario ID" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -855,7 +860,7 @@ export async function GET(
   if (!session?.user?.email) {
     return NextResponse.json(
       { success: false, error: "Authentication required" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 
@@ -868,7 +873,7 @@ export async function GET(
   if (!scenario) {
     return NextResponse.json(
       { success: false, error: "Scenario not found" },
-      { status: 404 },
+      { status: 404 }
     );
   }
 
@@ -876,22 +881,20 @@ export async function GET(
   if (!user) {
     return NextResponse.json(
       { success: false, error: "User not found" },
-      { status: 404 },
+      { status: 404 }
     );
   }
 
   const isOwner = scenario.owner.toString() === user._id.toString();
-  const canEdit = user.readWriteScenarios.some(
-    (id) => id.toString() === scenarioId,
-  );
+  const canEdit = user.readWriteScenarios.some((id) => id.toString() === scenarioId);
   const canView = scenario.viewPermissions.some(
-    (id) => id.toString() === user._id.toString(),
+    (id) => id.toString() === user._id.toString()
   );
 
   if (!isOwner && !canEdit && !canView) {
     return NextResponse.json(
       { success: false, error: "No permission" },
-      { status: 403 },
+      { status: 403 }
     );
   }
 
@@ -912,7 +915,7 @@ export async function GET(
    ──────────────────────────────── */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
   const scenarioId = (await params).id;
@@ -920,7 +923,7 @@ export async function PUT(
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json(
       { success: false, error: "Invalid scenario ID" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -928,7 +931,7 @@ export async function PUT(
   if (!session?.user?.email) {
     return NextResponse.json(
       { success: false, error: "Authentication required" },
-      { status: 401 },
+      { status: 401 }
     );
   }
 
@@ -940,17 +943,17 @@ export async function PUT(
   if (!scenario)
     return NextResponse.json(
       { success: false, error: "Scenario not found" },
-      { status: 404 },
+      { status: 404 }
     );
   if (!user)
     return NextResponse.json(
       { success: false, error: "User not found" },
-      { status: 404 },
+      { status: 404 }
     );
 
   const body: ScenarioUpdateBody = await req.json();
 
-  /* 1 — general info */
+  /* 1 — general info */
   scenario.name = body.name;
   scenario.description = body.description;
   scenario.financialGoal = body.financialGoal;
@@ -964,12 +967,12 @@ export async function PUT(
     scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
   }
 
-  /* 2 — investments (deduped) */
+  /* 2 — investments (deduped) */
   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
   for (const inv of body.investments) {
     let invTypeId: mongoose.Types.ObjectId;
 
-    /* 2‑a InvestmentType */
+    /* 2-a InvestmentType */
     if (inv.investmentType._id && isMongoId(inv.investmentType._id)) {
       const existingType = await InvestmentType.findById(inv.investmentType._id);
       if (existingType) {
@@ -1008,7 +1011,7 @@ export async function PUT(
       )._id;
     }
 
-    /* 2‑b Investment */
+    /* 2-b Investment */
     if (inv._id && isMongoId(inv._id)) {
       const existingInv = await Investment.findById(inv._id);
       if (existingInv) {
@@ -1029,22 +1032,21 @@ export async function PUT(
           purchasePrice: inv.purchasePrice,
           taxStatus: inv.taxStatus,
         }).save()
-      )._id,
+      )._id
     );
   }
   scenario.investments = updatedInvestmentIds;
 
-  /* 3 — events (deduped) */
+  /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
   for (const evt of body.eventSeries) {
-    /* eslint-disable */ 
     const normaliseAlloc = (alloc: any) => {
       alloc.investments = extractInvestmentIds(alloc.investments ?? []);
       if (alloc.type === "fixed") {
         alloc.percentages = alloc.percentages ?? [];
       } else {
         alloc.initialPercentages = alloc.initialPercentages ?? [];
-        alloc.finalPercentages   = alloc.finalPercentages   ?? [];
+        alloc.finalPercentages = alloc.finalPercentages ?? [];
       }
       return alloc;
     };
@@ -1055,7 +1057,7 @@ export async function PUT(
         pd.percentages = pd.percentages ?? [];
       } else {
         pd.initialPercentages = pd.initialPercentages ?? [];
-        pd.finalPercentages   = pd.finalPercentages   ?? [];
+        pd.finalPercentages = pd.finalPercentages ?? [];
       }
       return pd;
     };
@@ -1065,87 +1067,97 @@ export async function PUT(
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
 
-      existingEvt.startYear   = normalizeStartYear(evt.startYear);
-      existingEvt.duration    = normalizeDuration(evt.duration);
-      existingEvt.name        = evt.name;
+      existingEvt.startYear = normalizeStartYear(evt.startYear);
+      existingEvt.duration = normalizeDuration(evt.duration);
+      existingEvt.name = evt.name;
       existingEvt.description = evt.description;
 
-      switch (evt.eventType.type) {
-        case "investment": {
-          const ie = evt.eventType as InvestmentEvent;
-          const alloc = Array.isArray(ie.assetAllocation) ? ie.assetAllocation[0] : ie.assetAllocation;
-          existingEvt.eventType = { ...ie, assetAllocation: normaliseAlloc(alloc) };
-          break;
-        }
-        case "rebalance": {
-          const re = evt.eventType as RebalanceEvent;
-          if (!re.portfolioDistribution) {
-            existingEvt.eventType = { ...re };
-            break;
-          }
-          const pd = Array.isArray(re.portfolioDistribution) ? re.portfolioDistribution[0] : re.portfolioDistribution;
-          existingEvt.eventType = { ...re, portfolioDistribution: normalisePd(pd) };
-          break;
-        }
-        default:
-          existingEvt.eventType = { ...evt.eventType };
+      let dbEventType: any;
+      if (evt.eventType.type === "investment") {
+        const ie = evt.eventType as InvestmentEvent;
+        const { _id, id, ...allocRaw } = Array.isArray(ie.assetAllocation)
+          ? ie.assetAllocation[0]
+          : ie.assetAllocation;
+        dbEventType = {
+          type: "investment",
+          inflationAdjustment: ie.inflationAdjustment,
+          maxCash: ie.maxCash,
+          assetAllocation: [normaliseAlloc(allocRaw)],
+        };
+      } else if (evt.eventType.type === "rebalance") {
+        const re = evt.eventType as RebalanceEvent;
+        const pdRaw = Array.isArray(re.portfolioDistribution)
+          ? re.portfolioDistribution[0]
+          : re.portfolioDistribution;
+        const { _id, id, ...pdStripped } = pdRaw;
+        dbEventType = {
+          type: "rebalance",
+          portfolioDistribution: [normalisePd(pdStripped)],
+        };
+      } else {
+        dbEventType = { ...evt.eventType };
       }
 
+      existingEvt.eventType = dbEventType;
       await existingEvt.save();
       updatedEventIds.push(existingEvt._id);
       continue;
     }
 
     // ---------- CREATE path ----------
-    const { ...evtWithoutIds } = evt as typeof evt & { _id?: unknown; id?: unknown };
+    const { _id: _drop1, id: _drop2, ...evtWithoutIds } = evt as any;
 
-    let eventTypeToSave: typeof evt.eventType;
-    switch (evt.eventType.type) {
-      case "investment": {
-        const ie = evt.eventType as InvestmentEvent;
-        const alloc = Array.isArray(ie.assetAllocation) ? ie.assetAllocation[0] : ie.assetAllocation;
-        eventTypeToSave = { ...ie, assetAllocation: normaliseAlloc(alloc) };
-        break;
-      }
-      case "rebalance": {
-        const re = evt.eventType as RebalanceEvent;
-        if (!re.portfolioDistribution) {
-          eventTypeToSave = { ...re };
-          break;
-        }
-        const pd = Array.isArray(re.portfolioDistribution) ? re.portfolioDistribution[0] : re.portfolioDistribution;
-        eventTypeToSave = { ...re, portfolioDistribution: normalisePd(pd) };
-        break;
-      }
-      default:
-        eventTypeToSave = evt.eventType;
+    let dbEventType: any;
+    if (evt.eventType.type === "investment") {
+      const ie = evt.eventType as InvestmentEvent;
+      const { _id, id, ...allocRaw } = Array.isArray(ie.assetAllocation)
+        ? ie.assetAllocation[0]
+        : ie.assetAllocation;
+      dbEventType = {
+        type: "investment",
+        inflationAdjustment: ie.inflationAdjustment,
+        maxCash: ie.maxCash,
+        assetAllocation: [normaliseAlloc(allocRaw)],
+      };
+    } else if (evt.eventType.type === "rebalance") {
+      const re = evt.eventType as RebalanceEvent;
+      const pdRaw = Array.isArray(re.portfolioDistribution)
+        ? re.portfolioDistribution[0]
+        : re.portfolioDistribution;
+      const { _id, id, ...pdStripped } = pdRaw;
+      dbEventType = {
+        type: "rebalance",
+        portfolioDistribution: [normalisePd(pdStripped)],
+      };
+    } else {
+      dbEventType = { ...evt.eventType };
     }
 
     const newEvt = await new Event({
       ...evtWithoutIds,
       startYear: normalizeStartYear(evt.startYear),
-      duration : normalizeDuration(evt.duration),
-      eventType: eventTypeToSave,
+      duration: normalizeDuration(evt.duration),
+      eventType: dbEventType,
     }).save();
 
     updatedEventIds.push(newEvt._id);
   }
   scenario.eventSeries = updatedEventIds;
 
-  /* 4 — spending / expense withdrawal strategies */
+  /* 4 — spending / expense withdrawal strategies */
   scenario.spendingStrategy = extractInvestmentIds(body.spendingStrategy ?? []);
   scenario.expenseWithdrawalStrategy = extractInvestmentIds(
-    body.expenseWithdrawalStrategy ?? [],
+    body.expenseWithdrawalStrategy ?? []
   );
 
-  /* 5 — RMD & Roth */
+  /* 5 — RMD & Roth */
   scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy ?? []);
   scenario.RothConversionStrategy = extractInvestmentIds(
-    body.RothConversionStrategy ?? [],
+    body.RothConversionStrategy ?? []
   );
   scenario.rothConversion = body.rothConversion ?? null;
 
-  /* 6 — state‑tax files (user‑level) */
+  /* 6 — state-tax files (user-level) */
   if (body.stateTaxFiles) {
     user.stateTaxFiles = body.stateTaxFiles;
     await user.save();
