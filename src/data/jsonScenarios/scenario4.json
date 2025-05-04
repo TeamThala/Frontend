@@ -1,8 +1,8 @@
 {
-    "id": "scenario2",
-    "name": "Test Scenario 2",
-    "description": "Random values if possible. Inflation is included.",
-    "financialGoal": 70500,
+    "id": "scenario3",
+    "name": "Test Scenario 4",
+    "description": "Same as 3 but with rebalancing that is tied to another event's end (Mortgage, whose duration is now variable_.",
+    "financialGoal": 10000,
     "investments": [
         {
             "id": "cashInvestment",
@@ -51,13 +51,63 @@
             },
             "taxStatus": "non-retirement",
             "purchasePrice": 5000
+        },
+        {
+            "id": "investment2",
+            "value": 100000,
+            "investmentType": {
+                "id": "investmenttype1",
+                "name": "Variable amounts investment",
+                "description": "Normal annual % return, normal annual amount income",
+                "expectedAnnualReturn": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 100,
+                    "stdDev": 1
+                },
+                "expenseRatio": 0,
+                "expectedAnnualIncome": {
+                    "type": "normal",
+                    "valueType": "amount",
+                    "mean": 1000,
+                    "stdDev": 50
+                },
+                "taxability": true
+            },
+            "taxStatus": "pre-tax",
+            "purchasePrice": 5000
+        },
+        {
+            "id": "investment3",
+            "value": 10000,
+            "investmentType": {
+                "id": "investmenttype1",
+                "name": "Variable amounts investment",
+                "description": "Normal annual % return, normal annual amount income",
+                "expectedAnnualReturn": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 100,
+                    "stdDev": 1
+                },
+                "expenseRatio": 0,
+                "expectedAnnualIncome": {
+                    "type": "normal",
+                    "valueType": "amount",
+                    "mean": 1000,
+                    "stdDev": 50
+                },
+                "taxability": true
+            },
+            "taxStatus": "after-tax",
+            "purchasePrice": 5000
         }
     ],
     "eventSeries":[
         {
-            "id": "cashAndInvest1",
-            "name": "Cash Only Event + Investment Event 1",
-            "description": "Default cash event and investment event 1. Fixed allocation ratio.",
+            "id": "cashAndInvest2",
+            "name": "Cash Only Event + Investment Event 2",
+            "description": "Default cash event and investment event 1. Fixed allocation ratio. Has investments to support Roth conversion.",
             "startYear": {
                 "type": "fixed",
                 "year": 2025
@@ -92,7 +142,8 @@
                                 },
                                 "taxability": true
                             },
-                            "taxStatus": "non-retirement"
+                            "taxStatus": "non-retirement",
+                            "purchasePrice": 0
                         },
                         {
                             "id": "investment1",
@@ -118,9 +169,59 @@
                             },
                             "taxStatus": "non-retirement",
                             "purchasePrice": 5000
+                        },
+                        {
+                            "id": "investment2",
+                            "value": 100000,
+                            "investmentType": {
+                                "id": "investmenttype1",
+                                "name": "Variable amounts investment",
+                                "description": "Normal annual % return, normal annual amount income",
+                                "expectedAnnualReturn": {
+                                    "type": "normal",
+                                    "valueType": "percentage",
+                                    "mean": 100,
+                                    "stdDev": 1
+                                },
+                                "expenseRatio": 0,
+                                "expectedAnnualIncome": {
+                                    "type": "normal",
+                                    "valueType": "amount",
+                                    "mean": 1000,
+                                    "stdDev": 50
+                                },
+                                "taxability": true
+                            },
+                            "taxStatus": "pre-tax",
+                            "purchasePrice": 5000
+                        },
+                        {
+                            "id": "investment3",
+                            "value": 10000,
+                            "investmentType": {
+                                "id": "investmenttype1",
+                                "name": "Variable amounts investment",
+                                "description": "Normal annual % return, normal annual amount income",
+                                "expectedAnnualReturn": {
+                                    "type": "normal",
+                                    "valueType": "percentage",
+                                    "mean": 100,
+                                    "stdDev": 1
+                                },
+                                "expenseRatio": 0,
+                                "expectedAnnualIncome": {
+                                    "type": "normal",
+                                    "valueType": "amount",
+                                    "mean": 1000,
+                                    "stdDev": 50
+                                },
+                                "taxability": true
+                            },
+                            "taxStatus": "after-tax",
+                            "purchasePrice": 5000
                         }
                     ],
-                    "percentages": [50,50]
+                    "percentages": [25, 25, 25, 25]
                 },
                 "maxCash": 999999999
             }
@@ -135,7 +236,7 @@
             },
             "duration": {
                 "type": "fixed",
-                "year": 30
+                "year": 5
             },
             "eventType": {
                 "discretionary": false,
@@ -197,6 +298,83 @@
                     "valueType": "percentage",
                     "value": 100
                 }    
+            }
+        },
+        {
+            "id": "rebalanceEvent1",
+            "name": "Rebalance Event 1",
+            "description": "Dummy rebalance event linked to another event's end",
+            "startYear": {
+                "type": "event",
+                "eventTime": "end",
+                "eventId": "mortgageExpense"
+            },
+            "duration": {
+                "type": "uniform",
+                "year": {
+                    "type": "uniform",
+                    "valueType": "amount",
+                    "min": 1,
+                    "max": 4
+                }
+            },
+            "eventType": {
+                "type": "rebalance",
+                "portfolioDistribution": {
+                    "type": "glidePath",
+                    "investments": [
+                        {
+                            "id": "cashInvestment",
+                            "value": 10000,
+                            "investmentType": {
+                                "id": "cash",
+                                "name": "Cash Account",
+                                "description": "Default cash investment",
+                                "expectedAnnualReturn": {
+                                    "type": "fixed",
+                                    "valueType": "percentage",
+                                    "value": 100
+                                },
+                                "expenseRatio": 0,
+                                "expectedAnnualIncome": {
+                                    "type": "fixed",
+                                    "valueType": "amount",
+                                    "value": 0
+                                },
+                                "taxability": true
+                            },
+                            "taxStatus": "non-retirement",
+                            "purchasePrice": 0
+                        },
+                        {
+                            "id": "investment2",
+                            "value": 100000,
+                            "investmentType": {
+                                "id": "investmenttype1",
+                                "name": "Variable amounts investment",
+                                "description": "Normal annual % return, normal annual amount income",
+                                "expectedAnnualReturn": {
+                                    "type": "normal",
+                                    "valueType": "percentage",
+                                    "mean": 100,
+                                    "stdDev": 1
+                                },
+                                "expenseRatio": 0,
+                                "expectedAnnualIncome": {
+                                    "type": "normal",
+                                    "valueType": "amount",
+                                    "mean": 1000,
+                                    "stdDev": 50
+                                },
+                                "taxability": true
+                            },
+                            "taxStatus": "pre-tax",
+                            "purchasePrice": 5000
+                        }
+                    ],
+                    "initialPercentages": [25, 75],
+                    "finalPercentages": [75, 25]
+                }
             }
         }
     ],

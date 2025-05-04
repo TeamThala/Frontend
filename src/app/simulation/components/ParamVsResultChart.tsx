@@ -18,16 +18,19 @@ export default function ParamVsResultChart({
   yLabel?: string;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ d: ParamVsResultPoint; xPos: number; yPos: number } | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 500 });
 
-  // AI tool (ChatGPT) was used to assist with generating 
-  // chart code, sample data, and visualization design. 
-  // All content was reviewed and revised by the author.
-  // It was used to first generate chart in observablehq.com
-  // and then converted to React code.
-  useEffect(() => {
+  // Function to draw the chart
+  const drawChart = () => {
+    if (!svgRef.current || !containerRef.current || data.length === 0) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    setDimensions({ width: containerWidth, height: 500 });
+    
     const svg = d3.select(svgRef.current);
-    const width = window.innerWidth - 100;
+    const width = containerWidth;
     const height = 500;
     const margin = { top: 20, right: 30, bottom: 50, left: 70 };
 
@@ -111,7 +114,23 @@ export default function ParamVsResultChart({
         }
       })
       .on("mouseleave", () => setHover(null));
+  };
 
+  // Effect to draw chart when data changes or on resize
+  useEffect(() => {
+    drawChart();
+    
+    // Add resize event listener
+    const handleResize = () => {
+      drawChart();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [data]);
 
   return (
@@ -124,24 +143,24 @@ export default function ParamVsResultChart({
       <CardHeader>
         <CardTitle className="text-lg">{yLabel || "Final Probability of Success"}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 relative">
-        <svg ref={svgRef} height={500} className="w-full"></svg>
+      <CardContent className="p-0 relative" ref={containerRef}>
+        <svg ref={svgRef} width="100%" height={dimensions.height}></svg>
 
         {/* Crosshair Lines */}
         {hover && (
-          <svg className="absolute top-0 left-0 pointer-events-none" width="100%" height="500">
+          <svg className="absolute top-0 left-0 pointer-events-none" width="100%" height={dimensions.height}>
             <line
               x1={hover.xPos}
               x2={hover.xPos}
               y1={0}
-              y2={500}
+              y2={dimensions.height}
               stroke="#7F56D9"
               strokeWidth={1}
               strokeDasharray="4"
             />
             <line
               x1={0}
-              x2={window.innerWidth}
+              x2={dimensions.width}
               y1={hover.yPos}
               y2={hover.yPos}
               stroke="#7F56D9"
@@ -158,8 +177,7 @@ export default function ParamVsResultChart({
             style={{
               left: `${hover.xPos}px`,
               top: "50px",
-              transform:
-                hover.xPos > window.innerWidth - 220 ? "translateX(-100%)" : "translateX(-50%)",
+              transform: hover.xPos > dimensions.width - 220 ? "translateX(-100%)" : "translateX(-50%)",
             }}
           >
             <p>{parameterName}: {hover.d.parameterValue}</p>

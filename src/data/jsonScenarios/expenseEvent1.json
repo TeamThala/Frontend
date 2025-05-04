@@ -6,7 +6,10 @@
         "type": "fixed",
         "year": 2025
     },
-    "duration": 30,
+    "duration": {
+        "type": "fixed",
+        "value": 30
+    },
     "eventType": {
         "discretionary": false,
         "type": "expense",
