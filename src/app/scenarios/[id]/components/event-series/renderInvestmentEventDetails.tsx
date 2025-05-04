@@ -21,7 +21,7 @@ export const renderInvestmentEventDetails = (
   event: Event, 
   index: number, 
   canEdit: boolean, 
-  handlers: EventHandlers,
+  handlers: EventHandlers & { setCanProceed?: (canProceed: boolean) => void },
   scenarioInvestments: Investment[] = [] // Add scenario investments parameter with type
 ) => {
   if (event.eventType.type !== "investment") return null;
@@ -58,6 +58,16 @@ export const renderInvestmentEventDetails = (
     return percentages ? percentages.reduce((sum, current) => sum + (current || 0), 0) : 0;
   };
   
+  // Function to convert decimal percentages to display percentages (0.2 → 20)
+  const toDisplayPercentage = (value: number) => {
+    return value * 100;
+  };
+
+  // Function to convert display percentages back to decimal (20 → 0.2)
+  const toStoredPercentage = (value: number) => {
+    return value / 100;
+  };
+  
   // Handle naming differences between type definition and actual data
   const percentages = allocationType === "fixed" 
     ? (Array.isArray(assetAllocationData.percentages) ? assetAllocationData.percentages : [])
@@ -74,20 +84,45 @@ export const renderInvestmentEventDetails = (
     : [];
   
   const totalFixed = allocationType === "fixed" 
-    ? calculateTotal(percentages)
+    ? calculateTotal(percentages) * 100
     : 0;
     
   const totalInitial = allocationType === "glidePath"
-    ? calculateTotal(initialPercentages)
+    ? calculateTotal(initialPercentages) * 100
     : 0;
     
   const totalFinal = allocationType === "glidePath"
-    ? calculateTotal(finalPercentages)
+    ? calculateTotal(finalPercentages) * 100
     : 0;
   
   const isValidTotal = (total: number) => {
     // Allow for minor floating point errors (99.9-100.1 is acceptable)
     return Math.abs(total - 100) <= 0.1;
+  };
+
+  // Check if the allocations are valid
+  const isValid = allocationType === "fixed" 
+    ? isValidTotal(totalFixed)
+    : isValidTotal(totalInitial) && isValidTotal(totalFinal);
+  
+  // Update parent component about validation status
+  React.useEffect(() => {
+    if (handlers.setCanProceed) {
+      handlers.setCanProceed(isValid);
+    }
+  }, [isValid, handlers]);
+
+  // Add warning message when allocation isn't 100%
+  const renderWarningMessage = () => {
+    if (isValid) return null;
+    
+    return (
+      <div className="mt-4 p-3 bg-red-500/10 border border-red-500 rounded-md">
+        <p className="text-red-500 font-medium">
+          ⚠️ Total allocation must equal exactly 100% before you can proceed.
+        </p>
+      </div>
+    );
   };
 
   // Function to get full investment details from scenario investments
@@ -146,19 +181,19 @@ export const renderInvestmentEventDetails = (
                     type="number"
                     value={
                       allocationType === "fixed"
-                        ? percentages[investmentIndex] || 0
+                        ? toDisplayPercentage(percentages[investmentIndex] || 0)
                         : isInitial
-                          ? initialPercentages[investmentIndex] || 0
-                          : finalPercentages[investmentIndex] || 0
+                          ? toDisplayPercentage(initialPercentages[investmentIndex] || 0)
+                          : toDisplayPercentage(finalPercentages[investmentIndex] || 0)
                     }
                     onChange={(e) => {
                       if (allocationType === "fixed") {
-                        handlers.handleInvestmentPercentageChange(investmentIndex, e.target.value, index);
+                        handlers.handleInvestmentPercentageChange(investmentIndex, String(toStoredPercentage(parseFloat(e.target.value))), index);
                       } else {
                         handlers.handleInvestmentGlidePathPercentageChange(
                           investmentIndex,
                           isInitial ? "initial" : "final",
-                          e.target.value,
+                          String(toStoredPercentage(parseFloat(e.target.value))),
                           index
                         );
                       }
@@ -166,7 +201,7 @@ export const renderInvestmentEventDetails = (
                     disabled={!canEdit}
                     min="0"
                     max="100"
-                    step="0.1"
+                    step="1"
                     className="w-20"
                   />
                   <span className="text-sm">%</span>
@@ -261,7 +296,7 @@ export const renderInvestmentEventDetails = (
             
             {!isValidTotal(totalFixed) && (
               <p className="text-sm text-red-500">
-                Percentages must add up to 100%.
+                Percentages must add up to 100% to proceed.
               </p>
             )}
           </div>
@@ -294,7 +329,7 @@ export const renderInvestmentEventDetails = (
               
               {!isValidTotal(totalInitial) && (
                 <p className="text-sm text-red-500">
-                  Initial percentages must add up to 100%.
+                  Initial percentages must add up to 100% to proceed.
                 </p>
               )}
             </div>
@@ -324,13 +359,15 @@ export const renderInvestmentEventDetails = (
               
               {!isValidTotal(totalFinal) && (
                 <p className="text-sm text-red-500">
-                  Final percentages must add up to 100%.
+                  Final percentages must add up to 100% to proceed.
                 </p>
               )}
             </div>
           </div>
         )}
       </div>
+      
+      {renderWarningMessage()}
     </div>
   );
 }; 
