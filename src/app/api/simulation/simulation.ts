@@ -5,7 +5,7 @@ import { getTaxData } from '@/lib/taxData';
 // import client from '@/lib/db';
 import { SingleScenario } from '@/types/scenario';
 import { getInflationRate } from './inflation';
-import { updateIncomeEvents } from './updateIncomeEvents';
+import { findCashInvestment, updateIncomeEvents } from './updateIncomeEvents';
 import { updateInvestmentEvent } from './updateInvestmentEvent';
 import { payNondiscExpenses } from './payNondiscExpenses';
 import { updateTaxBrackets } from './taxInflation';
@@ -274,11 +274,20 @@ export async function simulation(scenario: Scenario){
             return null;
         }
         // Run rebalance events scheduled for the current year
+        const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+        if (cashInvestment === null){
+            log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+            return null;
+        }
+        log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
         runRebalanceEvents(rebalanceEvents, year, currentYear, log);
+        log.push(`Cash investment value after rebalance: ${cashInvestment.value}`);
 
 
 
         // End of loop calculations
+        log.push(`End of year ${year} calculations...`);
+        log.push(`Cash investment value: ${cashInvestment.value}`);
         year++;
         updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
@@ -294,6 +303,7 @@ export async function simulation(scenario: Scenario){
             curYearGains: curYearGains
         };
         log.push(`Yearly result being added for year ${year}: ${JSON.stringify(yearlyResult)}`);
+        log.push(`Cash investment value: ${cashInvestment.value}`);
         yearlyResults.push(yearlyResult); // Add yearly result to array
 
         // Check if financial goal is met
