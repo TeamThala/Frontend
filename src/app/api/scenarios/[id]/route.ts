@@ -909,7 +909,7 @@ export async function GET(
     stateTaxFiles,
   });
 }
-
+/* eslint-disable */
 /* ────────────────────────────────
    PUT
    ──────────────────────────────── */
@@ -1084,12 +1084,14 @@ export async function PUT(
           maxCash: ie.maxCash,
           assetAllocation: [normaliseAlloc(allocRaw)],
         };
+        console.log(id,_id);
       } else if (evt.eventType.type === "rebalance") {
         const re = evt.eventType as RebalanceEvent;
         const pdRaw = Array.isArray(re.portfolioDistribution)
           ? re.portfolioDistribution[0]
           : re.portfolioDistribution;
         const { _id, id, ...pdStripped } = pdRaw;
+        console.log(id,_id);
         dbEventType = {
           type: "rebalance",
           portfolioDistribution: [normalisePd(pdStripped)],
@@ -1119,12 +1121,14 @@ export async function PUT(
         maxCash: ie.maxCash,
         assetAllocation: [normaliseAlloc(allocRaw)],
       };
+      console.log(id,_id);
     } else if (evt.eventType.type === "rebalance") {
       const re = evt.eventType as RebalanceEvent;
       const pdRaw = Array.isArray(re.portfolioDistribution)
         ? re.portfolioDistribution[0]
         : re.portfolioDistribution;
       const { _id, id, ...pdStripped } = pdRaw;
+      console.log(id,_id);
       dbEventType = {
         type: "rebalance",
         portfolioDistribution: [normalisePd(pdStripped)],
