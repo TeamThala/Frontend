@@ -78,14 +78,36 @@ function normalizeStartYear(raw: YearInput): YearOutput {
 
 interface InvestmentLike {
   _id?: string | mongoose.Types.ObjectId;
+  id?: string;
 }
 
 function extractInvestmentIds(investments: InvestmentLike[]): mongoose.Types.ObjectId[] {
+  if (!Array.isArray(investments)) return [];
+  
   return investments
     .map(inv => {
       if (!inv) return null;
-      if (typeof inv === "string" || inv instanceof mongoose.Types.ObjectId) return inv;
-      if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) return new mongoose.Types.ObjectId(inv._id);
+      
+      // If it's already a string or ObjectId, use that
+      if (typeof inv === "string") {
+        return mongoose.Types.ObjectId.isValid(inv) ? new mongoose.Types.ObjectId(inv) : null;
+      }
+      
+      if (inv instanceof mongoose.Types.ObjectId) return inv;
+      
+      // Check for _id (MongoDB convention)
+      if (inv._id) {
+        if (inv._id instanceof mongoose.Types.ObjectId) return inv._id;
+        if (typeof inv._id === "string" && mongoose.Types.ObjectId.isValid(inv._id)) {
+          return new mongoose.Types.ObjectId(inv._id);
+        }
+      }
+      
+      // Check for id (client-side convention)
+      if (inv.id && typeof inv.id === "string" && mongoose.Types.ObjectId.isValid(inv.id)) {
+        return new mongoose.Types.ObjectId(inv.id);
+      }
+      
       return null;
     })
     .filter((id): id is mongoose.Types.ObjectId => id !== null);
@@ -226,6 +248,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // 2. Investments
+    // Store existing investment IDs for later cleanup
+    const existingInvestmentIds = scenario.investments.map(id => id.toString());
+    const updatedInvestmentIds = new Set<string>();
+    
+    // Clear the investments array and rebuild it
+    scenario.investments = [];
+    
     for (const inv of body.investments) {
       let invTypeId: mongoose.Types.ObjectId;
       if (inv.investmentType._id && mongoose.Types.ObjectId.isValid(inv.investmentType._id)) {
@@ -272,6 +301,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           existingInv.purchasePrice = inv.purchasePrice;
           existingInv.taxStatus = inv.taxStatus;
           await existingInv.save();
+          scenario.investments.push(existingInv._id);
+          updatedInvestmentIds.add(existingInv._id.toString());
         }
       } else {
         const newInv = new Investment({
@@ -282,14 +313,54 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         });
         await newInv.save();
         scenario.investments.push(newInv._id);
+        updatedInvestmentIds.add(newInv._id.toString());
+      }
+    }
+    
+    // Delete investments that are no longer referenced
+    for (const investmentId of existingInvestmentIds) {
+      if (!updatedInvestmentIds.has(investmentId)) {
+        // Check if the investment is used in any event before deleting
+        let isUsedInEvents = false;
+        
+        // Check all events to see if this investment is referenced
+        for (const eventId of scenario.eventSeries) {
+          const event = await Event.findById(eventId);
+          if (!event || event.eventType.type !== "investment") continue;
+          
+          const assetAllocation = Array.isArray(event.eventType.assetAllocation) 
+            ? event.eventType.assetAllocation[0] 
+            : event.eventType.assetAllocation;
+            
+          if (assetAllocation.investments && assetAllocation.investments.some(
+            id => id && id.toString() === investmentId
+          )) {
+            isUsedInEvents = true;
+            break;
+          }
+        }
+        
+        if (!isUsedInEvents) {
+          await Investment.findByIdAndDelete(investmentId);
+        }
       }
     }
 
     // 3. Events
+    // Store existing event IDs for later cleanup
+    const existingEventIds = scenario.eventSeries.map(id => id.toString());
+    const updatedEventIds = new Set<string>();
+    
+    // Clear the event series and rebuild it
+    scenario.eventSeries = [];
+    
     for (const evt of body.eventSeries) {
       if (evt._id && mongoose.Types.ObjectId.isValid(evt._id)) {
         const existingEvt = await Event.findById(evt._id);
         if (!existingEvt) continue;
+
+        // Add to updated IDs list
+        updatedEventIds.add(evt._id.toString());
 
         // normalize
         existingEvt.startYear = normalizeStartYear(evt.startYear);
@@ -299,16 +370,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         switch (et.type) {
           case "investment": {
             const alloc = Array.isArray(et.assetAllocation) ? et.assetAllocation[0] : et.assetAllocation;
-            if (alloc.type === "fixed") {
-              alloc.percentages = alloc.percentages || [];
-            } else {
-              alloc.initialPercentages = alloc.initialPercentages || [];
-              alloc.finalPercentages   = alloc.finalPercentages   || [];
-            }
-            alloc.investments = extractInvestmentIds(alloc.investments);
-            existingEvt.eventType.assetAllocation = alloc;
+            // Make a clean copy to avoid reference issues
+            const cleanAlloc = {
+              type: alloc.type,
+              investments: [],
+              percentages: alloc.type === "fixed" ? [...(alloc.percentages || [])] : undefined,
+              initialPercentages: alloc.type === "glidePath" ? [...(alloc.initialPercentages || [])] : undefined,
+              finalPercentages: alloc.type === "glidePath" ? [...(alloc.finalPercentages || [])] : undefined
+            };
+            
+            // Extract investment IDs properly
+            cleanAlloc.investments = extractInvestmentIds(alloc.investments);
+            
+            existingEvt.eventType.assetAllocation = cleanAlloc;
             existingEvt.eventType.inflationAdjustment = et.inflationAdjustment;
-            existingEvt.eventType.maxCash             = et.maxCash;
+            existingEvt.eventType.maxCash = et.maxCash;
             break;
           }
           case "rebalance": {
@@ -348,6 +424,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         existingEvt.name        = evt.name;
         existingEvt.description = evt.description;
         await existingEvt.save();
+        
+        // Add to the cleaned eventSeries array
+        scenario.eventSeries.push(existingEvt._id);
+        updatedEventIds.add(existingEvt._id.toString());
 
       } else {
         const data: EventData = { ...evt };
@@ -358,15 +438,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           const a = Array.isArray(evt.eventType.assetAllocation)
             ? evt.eventType.assetAllocation[0]
             : evt.eventType.assetAllocation;
-          if (a.type === "fixed") {
-            a.percentages = a.percentages || [];
-          } else {
-            a.initialPercentages = a.initialPercentages || [];
-            a.finalPercentages   = a.finalPercentages   || [];
-          }
-          a.investments = extractInvestmentIds(a.investments);
-          data.eventType = { ...evt.eventType, assetAllocation: a };
-
+          
+          // Create a clean allocation object to avoid reference issues
+          const cleanAlloc = {
+            type: a.type,
+            investments: [],
+            percentages: a.type === "fixed" ? [...(a.percentages || [])] : undefined,
+            initialPercentages: a.type === "glidePath" ? [...(a.initialPercentages || [])] : undefined,
+            finalPercentages: a.type === "glidePath" ? [...(a.finalPercentages || [])] : undefined
+          };
+          
+          // Extract investment IDs properly
+          cleanAlloc.investments = extractInvestmentIds(a.investments);
+          
+          data.eventType = { ...evt.eventType, assetAllocation: cleanAlloc };
         } else if (evt.eventType.type === "rebalance") {
           const p = Array.isArray(evt.eventType.portfolioDistribution)
             ? evt.eventType.portfolioDistribution[0]
@@ -392,6 +477,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const newEvt = new Event(dataWithoutIds);
         await newEvt.save();
         scenario.eventSeries.push(newEvt._id);
+        updatedEventIds.add(newEvt._id.toString());
+      }
+    }
+
+    // Delete events that are no longer referenced in the scenario
+    for (const eventId of existingEventIds) {
+      if (!updatedEventIds.has(eventId)) {
+        await Event.findByIdAndDelete(eventId);
       }
     }
 
