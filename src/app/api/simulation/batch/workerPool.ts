@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Worker } from 'worker_threads';
 import path from 'path';
 import os from 'os';
@@ -28,6 +29,7 @@ interface WorkerMessage {
  */
 export class WorkerPool {
   private workers: Map<number, Worker> = new Map();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   private taskQueue: { scenario: Scenario; simulationId: number; resolve: Function; reject: Function }[] = [];
   private activeWorkers = 0;
 
@@ -60,6 +62,14 @@ export class WorkerPool {
               // If result has data but no yearlyResults, use data as yearlyResults
               result.yearlyResults = result.data;
             }
+            
+            // Check if the result has investment data
+            if (result.yearlyResults && 
+                Array.isArray(result.yearlyResults) && 
+                result.yearlyResults.length > 0 &&
+                result.yearlyResults[result.yearlyResults.length - 1].investments) {
+            }
+            
             results[index] = result;
             completed++;
           } else {
@@ -101,18 +111,23 @@ export class WorkerPool {
   /**
    * Run a single worker with the given scenario
    */
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   private runWorker(scenario: Scenario, simulationId: number, resolve: Function, reject: Function) {
     // Increment active workers count
     this.activeWorkers++;
 
     try {
+      
       // Resolve the worker file path - use .cjs file for CommonJS
       const workerPath = path.resolve(process.cwd(), 'src/app/api/simulation/batch/simulationWorker.cjs');
 
+      // Deep clone the scenario to ensure isolation
+      const scenarioClone = JSON.parse(JSON.stringify(scenario));
+      
       // Create a new worker
       const worker = new Worker(workerPath, {
         workerData: { 
-          scenario: JSON.parse(JSON.stringify(scenario)),
+          scenario: scenarioClone,
           simulationId
         }
       });
@@ -124,9 +139,14 @@ export class WorkerPool {
       worker.on('message', async (message: WorkerMessage) => {
         if (message.type === 'ready') {
           // Worker is ready to run simulation
+          
           // Run the simulation in the main thread to avoid module loading issues
           try {
-            const result = await simulation(message.scenario!);
+            // Create another deep clone to ensure isolation for simulation
+            const simulationScenario = JSON.parse(JSON.stringify(message.scenario!));
+            
+            
+            const result = await simulation(simulationScenario);
             
             // Send result back to worker
             worker.postMessage({ 
@@ -151,9 +171,16 @@ export class WorkerPool {
               processedResult.yearlyResults = processedResult.data;
             }
             
+            // DEBUG: Check final result from worker
+            if (processedResult.yearlyResults && 
+                Array.isArray(processedResult.yearlyResults) && 
+                processedResult.yearlyResults.length > 0) {
+              
+              }
+            
             resolve(processedResult);
           } else {
-            console.error('Worker error:', message.error);
+            console.error(`Worker #${simulationId} error:`, message.error);
             resolve(null); // Resolve with null instead of rejecting to continue batch processing
           }
 

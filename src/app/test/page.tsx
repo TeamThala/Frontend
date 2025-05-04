@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { calculateSuccessProbability } from "./calculateProbabilityOverTime";
+import { calculateSuccessProbability } from "../simulation/functions/calculateProbabilityOverTime";
 import { SimulationResult } from "@/types/simulationResult";
 
 export default function TestPage() {

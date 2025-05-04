@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { parentPort, workerData } = require('worker_threads');
 
 // This is a simple worker that communicates with the main thread to run simulations
@@ -18,6 +19,13 @@ async function runWorkerTask() {
     // The main thread will run the simulation and send back the result
     parentPort.on('message', (message) => {
       if (message.type === 'result') {
+        // DEBUG: Check result received from main thread
+        if (message.result && 
+            message.result.yearlyResults && 
+            Array.isArray(message.result.yearlyResults) && 
+            message.result.yearlyResults.length > 0) {
+        }
+        
         // Forward the simulation result back to the main thread as our final result
         parentPort.postMessage({ 
           type: 'complete',
@@ -30,6 +38,7 @@ async function runWorkerTask() {
         process.exit(0);
       }
       else if (message.type === 'error') {
+        
         // Forward the error back to the main thread
         parentPort.postMessage({ 
           type: 'complete',
@@ -44,7 +53,6 @@ async function runWorkerTask() {
     });
 
   } catch (error) {
-    console.error('Worker error:', error);
     // Handle any errors and send them back to the main thread
     parentPort.postMessage({ 
       type: 'complete',
@@ -58,7 +66,6 @@ async function runWorkerTask() {
 
 // Start the worker
 runWorkerTask().catch(err => {
-  console.error('Unhandled worker error:', err);
   parentPort.postMessage({ 
     type: 'complete',
     success: false, 

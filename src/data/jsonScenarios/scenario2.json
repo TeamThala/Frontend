@@ -2,7 +2,7 @@
     "id": "scenario2",
     "name": "Test Scenario 2",
     "description": "Random values if possible. Inflation is included.",
-    "financialGoal": 7000,
+    "financialGoal": 70500,
     "investments": [
         {
             "id": "cashInvestment",
