@@ -32,26 +32,30 @@ export function runRebalanceEvents(rebalanceEvents: Event[], year: number, simSt
                 // find target values based on asset allocation based on net value
                 const targetInvestmentValues: number[] = [];
                 if (eventType.portfolioDistribution.type === "fixed"){
+                    log.push(`Rebalance is Fixed`);
                     for (let i=0; i<eventType.portfolioDistribution.percentages.length; i++){
-                        const targetRatio = eventType.portfolioDistribution.percentages[i];
+                        const targetRatio = eventType.portfolioDistribution.percentages[i]/100;
                         if (targetRatio === undefined || targetRatio === null){
                             log.push(`Error: Target ratio ${targetRatio} is undefined or null in iteration ${i}`);
                             return null;
                         }
                         const targetValue = netValue * targetRatio; // target value of investment
+                        log.push(`Target value of investment ${i} is ${targetValue} (net value: ${netValue}, target ratio: ${targetRatio})`);
                         targetInvestmentValues.push(targetValue);
                     }
             
                 }
                 else{ // glidePath
-                    const elapseRatio = eventDuration.year !== 0 ? (year - simStartYear) / eventDuration.year : 0; // percentage of how much current event has elapsed until end
+                    const elapseRatio = eventDuration.year !== 0 ? (year - eventStartYear.year) / eventDuration.year : 0; // percentage of how much current event has elapsed until end
+                    log.push(`Rebalance is GlidePath with elapse ratio: ${elapseRatio}`);
                     for (let i=0; i<investments.length; i++){
                         if (eventType.portfolioDistribution.initialPercentages[i] === undefined || eventType.portfolioDistribution.finalPercentages[i] === undefined){
                             log.push(`Error: Target ratio ${eventType.portfolioDistribution.initialPercentages[i]} or ${eventType.portfolioDistribution.finalPercentages[i]} is undefined`);
                             return null;
                         }
-                        const targetRatio = eventType.portfolioDistribution.initialPercentages[i] + (eventType.portfolioDistribution.finalPercentages[i] - eventType.portfolioDistribution.initialPercentages[i]) * elapseRatio; // target ratio of investment
+                        const targetRatio = (eventType.portfolioDistribution.initialPercentages[i] + (eventType.portfolioDistribution.finalPercentages[i] - eventType.portfolioDistribution.initialPercentages[i]) * elapseRatio)/100; // target ratio of investment
                         const targetValue = netValue * targetRatio; // target value of investment
+                        log.push(`Target value of investment ${i} is ${targetValue} (net value: ${netValue}, target ratio: ${targetRatio})`);
                         targetInvestmentValues.push(targetValue);
                     }
             

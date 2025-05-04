@@ -1,5 +1,5 @@
 import { Scenario } from '@/types/scenario';
-import { Event, FixedYear, EventYear, InvestmentEvent } from '@/types/event';
+import { Event, FixedYear, EventYear, InvestmentEvent, RebalanceEvent } from '@/types/event';
 import { randomNormal } from 'd3-random';
 import { getTaxData } from '@/lib/taxData';
 // import client from '@/lib/db';
@@ -84,6 +84,7 @@ export async function simulation(scenario: Scenario){
     }
     // Initialize investment related fields to use unified objects
     initializeInvestmentEvents(investmentEvents, scenario, log);
+    initializeRebalanceEvents(rebalanceEvents, scenario, log);
     initializeStrategy(scenario.RMDStrategy, scenario, log);
     initializeStrategy(scenario.RothConversionStrategy, scenario, log);
     initializeStrategy(scenario.expenseWithdrawalStrategy, scenario, log);
@@ -287,7 +288,6 @@ export async function simulation(scenario: Scenario){
 
         // End of loop calculations
         log.push(`End of year ${year} calculations...`);
-        log.push(`Cash investment value: ${cashInvestment.value}`);
         year++;
         updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
         standardDeductions *= inflation; // Update standard deductions for next year
@@ -491,6 +491,31 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
         const investments = investmentType.assetAllocation.investments;
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+            return null;
+        }
+        for (let j=0; j<investments.length; j++){
+            const investment = investments[j];
+            const investmentId = investment.id;
+            const investmentInField = scenario.investments.find(i => i.id === investmentId);
+            if (investmentInField){
+                investments[j] = investmentInField; // replace with reference to investment object in scenario.investments
+            }
+            else{
+                log.push(`Error: Could not find investment with id ${investmentId}`);
+                return null;
+            }
+        }
+    }
+}
+
+function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario, log: string[]){
+    // replaces investments in all investment events with references to investment objects in scenario.investments
+    for (let i=0; i<rebalanceEvents.length; i++){
+        const rebalanceEvent = rebalanceEvents[i];
+        const rebalanceType = rebalanceEvent.eventType as RebalanceEvent;
+        const investments = rebalanceType.portfolioDistribution.investments;
+        if (investments === null){
+            log.push(`Error: Could not find the investments nested inside ${rebalanceEvent.id}, ${rebalanceEvent.name}`);
             return null;
         }
         for (let j=0; j<investments.length; j++){
