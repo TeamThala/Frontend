@@ -63,7 +63,10 @@ export const handleInvestmentAllocationTypeChange = (
     // put it back on the event
     event.eventType = {
       ...event.eventType,
-      assetAllocation: [newAlloc]
+      assetAllocation: {
+        ...newAlloc,
+        percentages
+      }
     } as any;  // `as any` silences TS about our extra fields
 
     events[index] = event;
@@ -103,10 +106,10 @@ export const handleInvestmentPercentageChange = (
       
       event.eventType = {
         ...event.eventType,
-        assetAllocation: [{
+        assetAllocation: {
           ...assetAllocation,
           percentages
-        }]
+        }
       };
     }
     
@@ -153,10 +156,10 @@ export const handleInvestmentGlidePathPercentageChange = (
         
         event.eventType = {
           ...event.eventType,
-          assetAllocation: [{
+          assetAllocation: {
             ...assetAllocation,
             initialPercentages
-          }]
+          }
         };
       } else {
         const finalPercentages = [...assetAllocation.finalPercentages];
@@ -164,10 +167,10 @@ export const handleInvestmentGlidePathPercentageChange = (
         
         event.eventType = {
           ...event.eventType,
-          assetAllocation: [{
+          assetAllocation: {
             ...assetAllocation,
             finalPercentages
-          }]
+          }
         };
       }
     }

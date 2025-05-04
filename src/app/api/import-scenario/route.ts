@@ -57,7 +57,7 @@ function stashIdVariants(
   humanId: string,
   mongoId: Types.ObjectId,
   map: Map<string, Types.ObjectId>
-) {
+):void {
   const norm = humanId.toLowerCase().replace(/[^\w]+/g, "").trim();
   map.set(humanId, mongoId);
   map.set(norm, mongoId);
@@ -493,9 +493,10 @@ export async function POST(req: NextRequest) {
           owner: user._id
         });
         finalRothConv = [rc._id];
-      } catch (e) {
+      } catch (_e) {
         console.warn("Could not create RothConversionStrategy doc, storing direct IDs");
         finalRothConv = directRothIds;
+        console.log(_e);
       }
     }
 
