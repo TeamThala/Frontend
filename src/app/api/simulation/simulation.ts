@@ -17,7 +17,7 @@ import { exportResultsToJson, saveLogToFile } from './exportResults';
 import { payDiscExpenses } from './payDiscExpenses';
 import { SimulationResult, YearlyResult } from '@/types/simulationResult';
 import { runRebalanceEvents } from './runRebalanceEvents';
-// import { runInvestmentEvent } from './runInvestmentEvent';
+import { runInvestmentEvent } from './runInvestmentEvent';
 
 
 export async function simulation(scenario: Scenario){
@@ -268,11 +268,11 @@ export async function simulation(scenario: Scenario){
         // Pay discretionary expenses in spending strategy
         payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         // Run invest event scheduled for the current year
-        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
-        // if (runInvestResult === null){
-        //     console.log("Error: Could not run investment event.");
-        //     return null;
-        // }
+        const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
+        if (runInvestResult === null){
+            console.log("Error: Could not run investment event.");
+            return null;
+        }
         // Run rebalance events scheduled for the current year
         runRebalanceEvents(rebalanceEvents, year, currentYear, log);
 
@@ -285,9 +285,9 @@ export async function simulation(scenario: Scenario){
 
         const yearlyResult: YearlyResult = {
             year: year,
-            investments: scenario.investments,
+            investments: JSON.parse(JSON.stringify(scenario.investments)), // Deep copy to decouple from original reference
             inflation: inflation,
-            eventSeries: scenario.eventSeries,
+            eventSeries: JSON.parse(JSON.stringify(scenario.eventSeries)), // Deep copy to decouple from original reference
             curYearIncome: curYearIncome,
             curYearEarlyWithdrawals: curYearEarlyWithdrawals,
             curYearSS: curYearSS,
