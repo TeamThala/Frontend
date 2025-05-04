@@ -126,6 +126,31 @@ describe('RMD API Endpoints', () => {
       expect(response.status).toBe(400);
       expect(data.error).toBe('RMDs start at age 73 and are paid in the year the person turns 74');
     });
+
+    it('should handle non-numeric age', async () => {
+      const request = new Request('http://localhost/api/rmd?distributionYear=2024&age=invalid');
+      const response = await GET(request);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data).toHaveProperty('age', null);
+    });
+
+    it('should handle missing age parameter', async () => {
+      const request = new Request('http://localhost/api/rmd?distributionYear=2024');
+      const response = await GET(request);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data).toHaveProperty('age', 74); // Default age should be used
+    });
+
+    it('should handle maximum age (120)', async () => {
+      const request = new Request('http://localhost/api/rmd?distributionYear=2024&age=120');
+      const response = await GET(request);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data).toHaveProperty('age', 120);
+      expect(data).toHaveProperty('previousYearAge', 119);
+    });
   });
 
   describe('POST /api/rmd', () => {
@@ -268,6 +293,80 @@ describe('RMD API Endpoints', () => {
           amount: expectedAmount
         });
       }
+    });
+
+    it('should handle invalid RMD strategy', async () => {
+      const request = new Request('http://localhost/api/rmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distributionYear: 2024,
+          age: 74,
+          previousYearPretaxAccounts: [mockInvestments[0]],
+          rmdStrategy: { invalid: 'strategy' }
+        })
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(500); // Current implementation returns 500 for invalid strategy
+    });
+
+    it('should handle large account balances', async () => {
+      const largeBalanceInvestment = {
+        ...mockInvestments[0],
+        balance: 10000000
+      };
+      const request = new Request('http://localhost/api/rmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distributionYear: 2024,
+          age: 74,
+          previousYearPretaxAccounts: [largeBalanceInvestment],
+          rmdStrategy: mockRmdStrategy
+        })
+      });
+      const response = await POST(request);
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data.distribution.distributionAmount).toBeGreaterThan(0);
+    });
+
+    it('should handle negative balances', async () => {
+      const negativeBalanceInvestment = {
+        ...mockInvestments[0],
+        balance: -1000
+      };
+      const request = new Request('http://localhost/api/rmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          distributionYear: 2024,
+          age: 74,
+          previousYearPretaxAccounts: [negativeBalanceInvestment],
+          rmdStrategy: mockRmdStrategy
+        })
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(200); // Current implementation allows negative balances
+    });
+
+    it('should handle decimal ages', async () => {
+      const request = new Request('http://localhost/api/rmd?distributionYear=2024&age=73.5');
+      const response = await GET(request);
+      expect(response.status).toBe(400);
+    });
+
+    it('should handle missing required fields in POST', async () => {
+      const request = new Request('http://localhost/api/rmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // Missing required fields
+          distributionYear: 2024
+        })
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(400);
     });
   });
 }); 
