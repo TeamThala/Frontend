@@ -1,6 +1,5 @@
 import { Event, InvestmentEvent } from "@/types/event";
 import { randomNormal } from "d3-random";
-import { Investment } from '@/types/investment';
 
 export function updateInvestmentEvent(investmentEvent: Event, log: string[]){
     let dCurYearIncome: number = 0;
@@ -8,25 +7,12 @@ export function updateInvestmentEvent(investmentEvent: Event, log: string[]){
     log.push(`=== UPDATING INVESTMENT EVENT ${investmentEvent.name} ===`);
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const assetAllocation = investmentEventType.assetAllocation;
-
-    let currentInvestments: Investment[] | undefined | null = null;
-
-    if (assetAllocation) {
-        if (Array.isArray(assetAllocation)) {
-            log.push(`Error: assetAllocation for event ${investmentEvent.id} (${investmentEvent.name}) is an array, expected single object in updateInvestmentEvent.`);
-            return null; // Cannot process an array of allocations here
-        } else {
-            currentInvestments = assetAllocation.investments;
-        }
-    }
-
-    if (!currentInvestments){
+    if (assetAllocation.investments === null){
         log.push(`Error: Could not find investments in asset allocation in ${investmentEvent.name}`);
         return null;
     }
-
-    for (let i = 0; i < currentInvestments.length; i++){
-        const investment = currentInvestments[i];
+    for (let i = 0; i < assetAllocation.investments.length; i++){
+        const investment = assetAllocation.investments[i];
         const startValue = investment.value;
         log.push(`Investment ${investment.id} has a starting value of ${startValue}`);
         

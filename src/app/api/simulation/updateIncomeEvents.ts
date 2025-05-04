@@ -5,20 +5,8 @@ import { randomNormal } from "d3-random";
 export function findCashInvestment(investmentEvent: Event, log: string[]): Investment | null {
     // Find the cash investment in the investment event
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
-    const assetAllocation = investmentEventType.assetAllocation;
-
-    let nestedInvestments: Investment[] | undefined | null = null;
-
-    if (assetAllocation) {
-        if (Array.isArray(assetAllocation)) {
-            log.push(`Error: assetAllocation for event ${investmentEvent.id} (${investmentEvent.name}) is an array, expected single object in findCashInvestment.`);
-            return null; // Cannot find cash in an array of allocations
-        } else {
-            nestedInvestments = assetAllocation.investments;
-        }
-    }
-
-    if (!nestedInvestments){
+    const nestedInvestments = investmentEventType.assetAllocation.investments;
+    if (nestedInvestments === null){
         log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
         return null;
     }

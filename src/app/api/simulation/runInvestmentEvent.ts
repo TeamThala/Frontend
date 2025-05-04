@@ -1,4 +1,4 @@
-import { Event, InvestmentEvent, AssetAllocationFixed, AssetAllocationGlidePath } from "@/types/event";
+import { Event, InvestmentEvent } from "@/types/event";
 import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { FixedYear } from "@/types/event";
@@ -6,18 +6,11 @@ import { FixedYear } from "@/types/event";
 export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number, log: string[]){ // e = currentInvestmentEvent, l = contributionsLimit
     log.push(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
     const eType = e.eventType as InvestmentEvent;
-    
-    // Handle asset allocation as either array or single object
-    const allocation = Array.isArray(eType.assetAllocation) 
-        ? eType.assetAllocation[0] 
-        : eType.assetAllocation;
-    
-    if (!allocation || allocation.investments === null){
+    if (eType.assetAllocation.investments === null){
         log.push(`Error: Could not find investments in asset allocation in ${e.name}`);
         return null;
     }
-    
-    const investments: Investment[] = allocation.investments;
+    const investments: Investment[] = eType.assetAllocation.investments;
 
     log.push(`Investments: ${investments}`);
 
@@ -55,10 +48,9 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     log.push(`Cash investment value after withdrawal: ${cashInvestment.value}`);
     const targetInvestmentValues: number[] = [];
 
-    if (allocation.type === "fixed"){
-        const fixedAllocation = allocation as AssetAllocationFixed;
-        for (let i=0; i<fixedAllocation.percentages.length; i++){
-            const targetRatio = fixedAllocation.percentages[i];
+    if (eType.assetAllocation.type === "fixed"){
+        for (let i=0; i<eType.assetAllocation.percentages.length; i++){
+            const targetRatio = eType.assetAllocation.percentages[i];
             if (targetRatio === undefined || targetRatio === null){
                 console.log(`Error: Target ratio ${targetRatio} is undefined or null in iteration ${i}`);
                 return null;
@@ -66,20 +58,21 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             const targetValue = (investmentNetValue + excessCash) * targetRatio; // target value of investment
             targetInvestmentValues.push(targetValue);
         }
+
     }
     else{ // glidePath
-        const glidePathAllocation = allocation as AssetAllocationGlidePath;
         const eDuration = e.duration as FixedYear;
         const elapseRatio = eDuration.year !== 0 ? (year - simStartYear) / eDuration.year : 0; // percentage of how much current event has elapsed until end
         for (let i=0; i<investments.length; i++){
-            if (glidePathAllocation.initialPercentages[i] === undefined || glidePathAllocation.finalPercentages[i] === undefined){
-                console.log(`Error: Target ratio ${glidePathAllocation.initialPercentages[i]} or ${glidePathAllocation.finalPercentages[i]} is undefined`);
+            if (eType.assetAllocation.initialPercentages[i] === undefined || eType.assetAllocation.finalPercentages[i] === undefined){
+                console.log(`Error: Target ratio ${eType.assetAllocation.initialPercentages[i]} or ${eType.assetAllocation.finalPercentages[i]} is undefined`);
                 return null;
             }
-            const targetRatio = glidePathAllocation.initialPercentages[i] + (glidePathAllocation.finalPercentages[i] - glidePathAllocation.initialPercentages[i]) * elapseRatio; // target ratio of investment
+            const targetRatio = eType.assetAllocation.initialPercentages[i] + (eType.assetAllocation.finalPercentages[i] - eType.assetAllocation.initialPercentages[i]) * elapseRatio; // target ratio of investment
             const targetValue = (investmentNetValue + excessCash) * targetRatio; // target value of investment
             targetInvestmentValues.push(targetValue);
         }
+
     }
     log.push(`Target investment values: ${targetInvestmentValues}`);
 

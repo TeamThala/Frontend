@@ -104,7 +104,13 @@ export const renderInvestmentEventDetails = (
   const isValid = allocationType === "fixed" 
     ? isValidTotal(totalFixed)
     : isValidTotal(totalInitial) && isValidTotal(totalFinal);
-
+  
+  // Update parent component about validation status
+  React.useEffect(() => {
+    if (handlers.setCanProceed) {
+      handlers.setCanProceed(isValid);
+    }
+  }, [isValid, handlers]);
 
   // Add warning message when allocation isn't 100%
   const renderWarningMessage = () => {

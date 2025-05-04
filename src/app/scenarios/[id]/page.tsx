@@ -37,7 +37,7 @@ export default function ScenarioPage() {
   ];
 
   // Function to fetch scenario data from the server
-  const fetchScenarioData = useCallback(async () => {
+  const fetchScenarioData =useCallback(async () => {
     try {
       const id = params.id as string;
       const response = await fetch(`/api/scenarios/${id}`);
@@ -75,7 +75,53 @@ export default function ScenarioPage() {
     }
   },[params.id]);
 
-  const saveCurrentStepData = useCallback(async (updatedScenario: Scenario) => {
+  useEffect(() => {
+    // Ensure the page has a black background
+    if (document) {
+      document.body.classList.add("bg-black");
+    }
+    
+    fetchScenarioData();
+    
+    // Cleanup function
+    return () => {
+      if (document) {
+        document.body.classList.remove("bg-black");
+      }
+    };
+  },[fetchScenarioData]);
+
+  const handleStepClick = async (step: number) => {
+    if (step <= currentStep) {
+      // If navigating back to General Info (step 0), refresh the data to get latest tax files
+      if (step === 0) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
+      setCurrentStep(step);
+    }
+  };
+
+  const handleNext = async () => {
+    if (currentStep < steps.length - 1) {
+      // Move to next step
+      setCurrentStep(currentStep + 1);
+      console.log("updatedScenario", scenario);
+    }
+  };
+
+  const handlePrevious = async () => {
+    if (currentStep > 0) {
+      // If going back to General Info (step 0), refresh the data
+      if (currentStep === 1) {
+        setLoading(true);
+        await fetchScenarioData();
+      }
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const saveCurrentStepData = async (updatedScenario: Scenario) => {
     // Will implement saving logic for each step
     try {
       const response = await fetch(`/api/scenarios/${params.id}`, {
@@ -93,60 +139,7 @@ export default function ScenarioPage() {
     } catch (error) {
       console.error('Error saving step data:', error);
     }
-  }, [params.id]);
-
-  // Memoize the handlers to prevent re-renders
-  const handleUpdateScenario = useCallback((updatedScenario: Scenario) => {
-    setScenario(updatedScenario);
-    if (canEdit) {
-      saveCurrentStepData(updatedScenario);
-    }
-  }, [canEdit, saveCurrentStepData]);
-
-  const handleNext = useCallback(() => {
-    if (currentStep < steps.length - 1) {
-      // Move to next step
-      setCurrentStep(currentStep + 1);
-    }
-  }, [currentStep, steps.length]);
-
-  const handlePrevious = useCallback(async () => {
-    if (currentStep > 0) {
-      // If going back to General Info (step 0), refresh the data
-      if (currentStep === 1) {
-        setLoading(true);
-        await fetchScenarioData();
-      }
-      setCurrentStep(currentStep - 1);
-    }
-  }, [currentStep, fetchScenarioData]);
-
-  const handleStepClick = useCallback(async (step: number) => {
-    if (step <= currentStep) {
-      // If navigating back to General Info (step 0), refresh the data to get latest tax files
-      if (step === 0) {
-        setLoading(true);
-        await fetchScenarioData();
-      }
-      setCurrentStep(step);
-    }
-  }, [currentStep, fetchScenarioData]);
-
-  useEffect(() => {
-    // Ensure the page has a black background
-    if (document) {
-      document.body.classList.add("bg-black");
-    }
-    
-    fetchScenarioData();
-    
-    // Cleanup function
-    return () => {
-      if (document) {
-        document.body.classList.remove("bg-black");
-      }
-    };
-  },[fetchScenarioData]);
+  };
 
   // If loading, show skeleton
   if (loading) {
@@ -191,7 +184,12 @@ export default function ScenarioPage() {
             scenario={scenario} 
             canEdit={canEdit}
             stateTaxFiles={stateTaxFiles}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
           />
         )}
@@ -199,7 +197,12 @@ export default function ScenarioPage() {
           <Investments 
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
             handlePrevious={handlePrevious}
           />
@@ -208,7 +211,12 @@ export default function ScenarioPage() {
           <EventSeries   
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
             handlePrevious={handlePrevious}
           />
@@ -217,7 +225,12 @@ export default function ScenarioPage() {
           <SpendingStrategy 
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
             handlePrevious={handlePrevious}
           />
@@ -226,7 +239,12 @@ export default function ScenarioPage() {
           <ExpenseWithdrawalStrategy 
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
             handlePrevious={handlePrevious}
           />
@@ -235,7 +253,12 @@ export default function ScenarioPage() {
           <RothAndRMD 
             scenario={scenario} 
             canEdit={canEdit}
-            onUpdate={handleUpdateScenario}
+            onUpdate={(updatedScenario) => {
+              setScenario(updatedScenario);
+              if (canEdit) {
+                saveCurrentStepData(updatedScenario);
+              }
+            }}
             handleNext={handleNext}
             handlePrevious={handlePrevious}
           />
