@@ -909,6 +909,7 @@ export async function GET(
     stateTaxFiles,
   });
 }
+
 /* eslint-disable */
 /* ────────────────────────────────
    PUT
@@ -1039,30 +1040,32 @@ export async function PUT(
 
   /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
+
+  const normaliseAlloc = (alloc: any) => {
+    alloc.investments = extractInvestmentIds(alloc.investments ?? []);
+    if (alloc.type === "fixed") {
+      alloc.percentages = alloc.percentages ?? [];
+    } else {
+      alloc.initialPercentages = alloc.initialPercentages ?? [];
+      alloc.finalPercentages = alloc.finalPercentages ?? [];
+    }
+    return alloc;
+  };
+
+  // now safe: only call normalisePd when we actually have a pd object
+  const normalisePd = (pd: any) => {
+    pd.investments = extractInvestmentIds(pd.investments ?? []);
+    if (pd.type === "fixed") {
+      pd.percentages = pd.percentages ?? [];
+    } else {
+      pd.initialPercentages = pd.initialPercentages ?? [];
+      pd.finalPercentages = pd.finalPercentages ?? [];
+    }
+    return pd;
+  };
+
   for (const evt of body.eventSeries) {
-    const normaliseAlloc = (alloc: any) => {
-      alloc.investments = extractInvestmentIds(alloc.investments ?? []);
-      if (alloc.type === "fixed") {
-        alloc.percentages = alloc.percentages ?? [];
-      } else {
-        alloc.initialPercentages = alloc.initialPercentages ?? [];
-        alloc.finalPercentages = alloc.finalPercentages ?? [];
-      }
-      return alloc;
-    };
-
-    const normalisePd = (pd: any) => {
-      pd.investments = extractInvestmentIds(pd.investments ?? []);
-      if (pd.type === "fixed") {
-        pd.percentages = pd.percentages ?? [];
-      } else {
-        pd.initialPercentages = pd.initialPercentages ?? [];
-        pd.finalPercentages = pd.finalPercentages ?? [];
-      }
-      return pd;
-    };
-
-    // ---------- UPDATE path ----------
+    // ── UPDATE path ─────────────────────────────────────
     if (evt._id && isMongoId(evt._id)) {
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
@@ -1075,7 +1078,7 @@ export async function PUT(
       let dbEventType: any;
       if (evt.eventType.type === "investment") {
         const ie = evt.eventType as InvestmentEvent;
-        const { _id, id, ...allocRaw } = Array.isArray(ie.assetAllocation)
+        const allocRaw = Array.isArray(ie.assetAllocation)
           ? ie.assetAllocation[0]
           : ie.assetAllocation;
         dbEventType = {
@@ -1084,18 +1087,23 @@ export async function PUT(
           maxCash: ie.maxCash,
           assetAllocation: [normaliseAlloc(allocRaw)],
         };
-        console.log(id,_id);
+
       } else if (evt.eventType.type === "rebalance") {
         const re = evt.eventType as RebalanceEvent;
-        const pdRaw = Array.isArray(re.portfolioDistribution)
-          ? re.portfolioDistribution[0]
-          : re.portfolioDistribution;
-        const { _id, id, ...pdStripped } = pdRaw;
-        console.log(id,_id);
-        dbEventType = {
-          type: "rebalance",
-          portfolioDistribution: [normalisePd(pdStripped)],
-        };
+        // ←————— guard here
+        if (!re.portfolioDistribution) {
+          dbEventType = { ...re };
+        } else {
+          const rawPd = Array.isArray(re.portfolioDistribution)
+            ? re.portfolioDistribution[0]
+            : re.portfolioDistribution;
+          const { _id, id, ...pdFields } = rawPd;
+          dbEventType = {
+            type: "rebalance",
+            portfolioDistribution: [normalisePd(pdFields)],
+          };
+        }
+
       } else {
         dbEventType = { ...evt.eventType };
       }
@@ -1106,13 +1114,13 @@ export async function PUT(
       continue;
     }
 
-    // ---------- CREATE path ----------
+    // ── CREATE path ─────────────────────────────────────
     const { _id: _drop1, id: _drop2, ...evtWithoutIds } = evt as any;
 
     let dbEventType: any;
     if (evt.eventType.type === "investment") {
       const ie = evt.eventType as InvestmentEvent;
-      const { _id, id, ...allocRaw } = Array.isArray(ie.assetAllocation)
+      const allocRaw = Array.isArray(ie.assetAllocation)
         ? ie.assetAllocation[0]
         : ie.assetAllocation;
       dbEventType = {
@@ -1121,18 +1129,23 @@ export async function PUT(
         maxCash: ie.maxCash,
         assetAllocation: [normaliseAlloc(allocRaw)],
       };
-      console.log(id,_id);
+
     } else if (evt.eventType.type === "rebalance") {
       const re = evt.eventType as RebalanceEvent;
-      const pdRaw = Array.isArray(re.portfolioDistribution)
-        ? re.portfolioDistribution[0]
-        : re.portfolioDistribution;
-      const { _id, id, ...pdStripped } = pdRaw;
-      console.log(id,_id);
-      dbEventType = {
-        type: "rebalance",
-        portfolioDistribution: [normalisePd(pdStripped)],
-      };
+      // ←————— same guard here
+      if (!re.portfolioDistribution) {
+        dbEventType = { ...re };
+      } else {
+        const rawPd = Array.isArray(re.portfolioDistribution)
+          ? re.portfolioDistribution[0]
+          : re.portfolioDistribution;
+        const { _id, id, ...pdFields } = rawPd;
+        dbEventType = {
+          type: "rebalance",
+          portfolioDistribution: [normalisePd(pdFields)],
+        };
+      }
+
     } else {
       dbEventType = { ...evt.eventType };
     }
@@ -1146,6 +1159,7 @@ export async function PUT(
 
     updatedEventIds.push(newEvt._id);
   }
+
   scenario.eventSeries = updatedEventIds;
 
   /* 4 — spending / expense withdrawal strategies */
