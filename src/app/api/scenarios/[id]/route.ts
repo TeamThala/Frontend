@@ -455,6 +455,257 @@
 //   }
 // }
 
+// import { NextRequest, NextResponse } from 'next/server';
+// import mongoose from 'mongoose';
+// import dbConnect from '@/lib/dbConnect';
+
+// import '@/models/Investment';
+// import '@/models/Event';
+// import '@/models/User';
+// import '@/models/InvestmentType';
+
+// import Scenario from '@/models/Scenario';
+// import Event from '@/models/Event';
+// import InvestmentType from '@/models/InvestmentType';
+// import Investment from '@/models/Investment';
+// import User from '@/models/User';
+// import { FixedYear, UniformYear, NormalYear, EventYear } from '@/types/event';
+// import { getServerSession } from 'next-auth/next';
+// import { authOptions } from '@/lib/auth';
+// import { CoupleScenario } from '@/types/scenario';
+
+
+// /* ────────────────────────────────
+//    DB‑specific helper types
+//    ──────────────────────────────── */
+//    type DbStartYear =
+//    | { type: 'fixed'; year: number }
+//    | { type: 'uniform'; year: { min: number; max: number } }
+//    | { type: 'normal'; year: { mean: number; stdDev: number } }
+//    | { type: 'event'; eventTime: 'start' | 'end'; eventId: mongoose.Types.ObjectId };
+ 
+//  type DbDuration =
+//    | { type: 'fixed'; valueType: 'amount'; value: number }
+//    | { type: 'uniform'; valueType: 'amount'; year: { min: number; max: number } }
+//    | { type: 'normal'; valueType: 'amount'; year: { mean: number; stdDev: number } };
+
+  
+// // Helpers to normalize input
+// function normalizeStartYear(
+//   raw: FixedYear | UniformYear | NormalYear | EventYear,
+// ): DbStartYear {
+//   switch (raw.type) {
+//     case 'fixed':
+//       return { type: 'fixed', year: raw.year };
+//     case 'uniform':
+//       return { type: 'uniform', year: { min: raw.year.min, max: raw.year.max } };
+//     case 'normal':
+//       return { type: 'normal', year: { mean: raw.year.mean, stdDev: raw.year.stdDev } };
+//     case 'event':
+//       return {
+//         type: 'event',
+//         eventTime: raw.eventTime,
+//         eventId: new mongoose.Types.ObjectId(raw.eventId),
+//       };
+//   }
+// }
+
+// function normalizeDuration(raw: FixedYear | UniformYear | NormalYear): DbDuration {
+//   switch (raw.type) {
+//     case 'fixed':
+//       return { type: 'fixed', valueType: 'amount', value: raw.year };
+//     case 'uniform':
+//       return {
+//         type: 'uniform',
+//         valueType: 'amount',
+//         year: { min: raw.year.min, max: raw.year.max },
+//       };
+//     case 'normal':
+//       return {
+//         type: 'normal',
+//         valueType: 'amount',
+//         year: { mean: raw.year.mean, stdDev: raw.year.stdDev },
+//       };
+//   }
+// }
+
+
+// function extractInvestmentIds(items: Array<{ _id?: string | mongoose.Types.ObjectId }>): mongoose.Types.ObjectId[] {
+//   return items
+//     .map(inv => inv._id)
+//     .filter(id => mongoose.Types.ObjectId.isValid(String(id)))
+//     .map(id => new mongoose.Types.ObjectId(String(id)));
+// }
+
+// export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+//   await dbConnect();
+//   const scenarioId = (await params).id;
+//   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
+//     return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
+//   }
+//   const session = await getServerSession(authOptions);
+//   if (!session?.user?.email) {
+//     return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+//   }
+//   const scenario = await Scenario.findById(scenarioId)
+//     .populate({ path: 'investments', populate: { path: 'investmentType' } })
+//     .populate('eventSeries')
+//     .populate('spendingStrategy')
+//     .populate('expenseWithdrawalStrategy');
+//   if (!scenario) {
+//     return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
+//   }
+//   const user = await User.findOne({ email: session.user.email });
+//   const isOwner = user && scenario.owner.toString() === user._id.toString();
+//   const canEdit = user?.readWriteScenarios.some(id => id.toString() === scenarioId) ?? false;
+//   const canView = scenario.viewPermissions.some(id => user?._id.toString() === id.toString());
+//   if (!isOwner && !canEdit && !canView) {
+//     return NextResponse.json({ success: false, error: 'No permission' }, { status: 403 });
+//   }
+//   return NextResponse.json({ success: true, scenario, isOwner, hasEditPermission: canEdit, hasViewPermission: canView });
+// }
+
+// export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+//   await dbConnect();
+//   const scenarioId = (await params).id;
+//   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
+//     return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
+//   }
+//   const session = await getServerSession(authOptions);
+//   if (!session?.user?.email) {
+//     return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
+//   }
+//   const scenario = await Scenario.findById(scenarioId);
+//   if (!scenario) {
+//     return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
+//   }
+//   const body: CoupleScenario = await req.json();
+
+//   // 1. General Info
+//   scenario.name = body.name;
+//   scenario.description = body.description;
+//   scenario.financialGoal = body.financialGoal;
+//   scenario.residenceState = body.residenceState;
+//   scenario.inflationRate = body.inflationRate;
+//   scenario.ownerBirthYear = body.ownerBirthYear;
+//   scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
+//   scenario.type = body.type;
+//   if (body.type === 'couple') {
+//     scenario.spouseBirthYear = body.spouseBirthYear;
+//     scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
+//   }
+
+//   // 2. Investments - reset and repopulate to prevent duplicates
+//   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
+//   for (const inv of body.investments) {
+//     let invTypeId: mongoose.Types.ObjectId;
+//     // find or create investmentType
+//     if (inv.investmentType._id && mongoose.Types.ObjectId.isValid(inv.investmentType._id)) {
+//       const existingType = await InvestmentType.findById(inv.investmentType._id);
+//       if (existingType) {
+//         existingType.name = inv.investmentType.name;
+//         existingType.description = inv.investmentType.description;
+//         existingType.expectedAnnualReturn = inv.investmentType.expectedAnnualReturn;
+//         existingType.expectedAnnualIncome = inv.investmentType.expectedAnnualIncome;
+//         existingType.taxability = inv.investmentType.taxability;
+//         existingType.expenseRatio = inv.investmentType.expenseRatio;
+//         await existingType.save();
+//         invTypeId = existingType._id;
+//       } else {
+//         const newType = await new InvestmentType({
+//           name: inv.investmentType.name,
+//           description: inv.investmentType.description,
+//           expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
+//           expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
+//           taxability: inv.investmentType.taxability,
+//           expenseRatio: inv.investmentType.expenseRatio
+//         }).save();
+//         invTypeId = newType._id;
+//       }
+//     } else {
+//       const newType = await new InvestmentType({
+//         name: inv.investmentType.name,
+//         description: inv.investmentType.description,
+//         expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
+//         expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
+//         taxability: inv.investmentType.taxability,
+//         expenseRatio: inv.investmentType.expenseRatio
+//       }).save();
+//       invTypeId = newType._id;
+//     }
+//     // update or create investment
+//     if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) {
+//       const existingInv = await Investment.findById(inv._id);
+//       if (existingInv) {
+//         existingInv.investmentType = invTypeId;
+//         existingInv.value = inv.value;
+//         existingInv.purchasePrice = inv.purchasePrice;
+//         existingInv.taxStatus = inv.taxStatus;
+//         await existingInv.save();
+//         updatedInvestmentIds.push(existingInv._id);
+//         continue;
+//       }
+//     }
+//     const newInv = await new Investment({
+//       investmentType: invTypeId,
+//       value: inv.value,
+//       purchasePrice: inv.purchasePrice,
+//       taxStatus: inv.taxStatus
+//     }).save();
+//     updatedInvestmentIds.push(newInv._id);
+//   }
+//   scenario.investments = updatedInvestmentIds;
+
+//   // 3. Events - reset and repopulate to prevent duplicates
+//   const updatedEventIds: mongoose.Types.ObjectId[] = [];
+//   for (const evt of body.eventSeries) {
+//     if (evt._id && mongoose.Types.ObjectId.isValid(evt._id)) {
+//       const existingEvt = await Event.findById(evt._id);
+//       if (!existingEvt) continue;
+//       existingEvt.startYear = normalizeStartYear(evt.startYear);
+//       existingEvt.duration  = normalizeDuration(evt.duration);
+//       Object.assign(existingEvt, { name: evt.name, description: evt.description });
+//       // update eventType fields generically
+//       existingEvt.eventType = Object.assign(existingEvt.eventType, evt.eventType);
+//       await existingEvt.save();
+//       updatedEventIds.push(existingEvt._id);
+//       continue;
+//     }
+//     // new event
+//     const data = {
+//       ...evt,
+//       startYear: normalizeStartYear(evt.startYear),
+//       duration : normalizeDuration(evt.duration),
+//     };
+//     const newEvt = await new Event(data).save();
+//     updatedEventIds.push(newEvt._id);
+//   }
+//   scenario.eventSeries = updatedEventIds;
+
+//   // 4. Spending strategy
+//   scenario.spendingStrategy = [];
+//   for (const e of body.spendingStrategy || []) {
+//     if (e._id && mongoose.Types.ObjectId.isValid(e._id)) {
+//       scenario.spendingStrategy.push(new mongoose.Types.ObjectId(e._id));
+//     }
+//   }
+
+//   // 5. Expense withdrawal strategy
+//   scenario.expenseWithdrawalStrategy = [];
+//   for (const inv of body.expenseWithdrawalStrategy || []) {
+//     if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) {
+//       scenario.expenseWithdrawalStrategy.push(new mongoose.Types.ObjectId(inv._id));
+//     }
+//   }
+
+//   // 6. RMD and Roth strategies
+//   scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy || []);
+//   scenario.RothConversionStrategy = extractInvestmentIds(body.RothConversionStrategy || []);
+//   scenario.rothConversion = body.rothConversion || null;
+
+//   await scenario.save();
+//   return NextResponse.json({ success: true, message: 'Scenario updated successfully' });
+// }
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/dbConnect';
@@ -474,196 +725,286 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CoupleScenario } from '@/types/scenario';
 
-// Helpers to normalize input
-function normalizeStartYear(raw: FixedYear | UniformYear | NormalYear | EventYear) {
+/* ────────────────────────────────
+   Helper / aux types
+   ──────────────────────────────── */
+type DbStartYear =
+  | { type: 'fixed'  ; year: number }
+  | { type: 'uniform'; year: { min: number; max: number } }
+  | { type: 'normal' ; year: { mean: number; stdDev: number } }
+  | { type: 'event'  ; eventTime: 'start' | 'end'; eventId: mongoose.Types.ObjectId };
+
+type DbDuration =
+  | { type: 'fixed'  ; valueType: 'amount'; value: number }
+  | { type: 'uniform'; valueType: 'amount'; year: { min: number; max: number } }
+  | { type: 'normal' ; valueType: 'amount'; year: { mean: number; stdDev: number } };
+
+type StateTaxFileEntry = [stateCode: string, fileId: string];
+
+type ScenarioUpdateBody = CoupleScenario & {
+  /**  Array form matches how we store it on the `User` model  */
+  stateTaxFiles?: StateTaxFileEntry[];
+};
+
+/* ────────────────────────────────
+   Normalisers
+   ──────────────────────────────── */
+function normalizeStartYear(
+  raw: FixedYear | UniformYear | NormalYear | EventYear,
+): DbStartYear {
   switch (raw.type) {
-    case 'fixed': return { type: 'fixed', year: raw.year };
-    case 'uniform': return { type: 'uniform', year: { min: raw.year.min, max: raw.year.max } };
-    case 'normal': return { type: 'normal', year: { mean: raw.year.mean, stdDev: raw.year.stdDev } };
-    case 'event': return { type: 'event', eventTime: raw.eventTime, eventId: new mongoose.Types.ObjectId(raw.eventId) };
+    case 'fixed':
+      return { type: 'fixed', year: raw.year };
+    case 'uniform':
+      return { type: 'uniform', year: { min: raw.year.min, max: raw.year.max } };
+    case 'normal':
+      return { type: 'normal', year: { mean: raw.year.mean, stdDev: raw.year.stdDev } };
+    case 'event':
+      return {
+        type: 'event',
+        eventTime: raw.eventTime,
+        eventId: new mongoose.Types.ObjectId(raw.eventId),
+      };
   }
 }
 
-function normalizeDuration(raw: FixedYear | UniformYear | NormalYear) {
+function normalizeDuration(raw: FixedYear | UniformYear | NormalYear): DbDuration {
   switch (raw.type) {
-    case 'fixed': return { type: 'fixed', valueType: 'amount', value: raw.year };
-    case 'uniform': return { type: 'uniform', valueType: 'amount', year: { min: raw.year.min, max: raw.year.max, valueType: 'amount' } };
-    case 'normal': return { type: 'normal', valueType: 'amount', year: { mean: raw.year.mean, stdDev: raw.year.stdDev, valueType: 'amount' } };
+    case 'fixed':
+      return { type: 'fixed', valueType: 'amount', value: raw.year };
+    case 'uniform':
+      return {
+        type: 'uniform',
+        valueType: 'amount',
+        year: { min: raw.year.min, max: raw.year.max },
+      };
+    case 'normal':
+      return {
+        type: 'normal',
+        valueType: 'amount',
+        year: { mean: raw.year.mean, stdDev: raw.year.stdDev },
+      };
   }
 }
 
-function extractInvestmentIds(items: Array<{ _id?: string | mongoose.Types.ObjectId }>): mongoose.Types.ObjectId[] {
+function extractInvestmentIds(
+  items: Array<{ _id?: string | mongoose.Types.ObjectId }>,
+): mongoose.Types.ObjectId[] {
   return items
-    .map(inv => inv._id)
+    .map(({ _id }) => _id)
+    .filter((id): id is string | mongoose.Types.ObjectId => Boolean(id))
     .filter(id => mongoose.Types.ObjectId.isValid(String(id)))
     .map(id => new mongoose.Types.ObjectId(String(id)));
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+/* ────────────────────────────────
+   GET
+   ──────────────────────────────── */
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await dbConnect();
   const scenarioId = (await params).id;
+
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
   }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
   }
+
   const scenario = await Scenario.findById(scenarioId)
     .populate({ path: 'investments', populate: { path: 'investmentType' } })
     .populate('eventSeries')
     .populate('spendingStrategy')
     .populate('expenseWithdrawalStrategy');
+
   if (!scenario) {
     return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
   }
+
   const user = await User.findOne({ email: session.user.email });
-  const isOwner = user && scenario.owner.toString() === user._id.toString();
-  const canEdit = user?.readWriteScenarios.some(id => id.toString() === scenarioId) ?? false;
-  const canView = scenario.viewPermissions.some(id => user?._id.toString() === id.toString());
+  if (!user) {
+    return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+  }
+
+  const isOwner   = scenario.owner.toString() === user._id.toString();
+  const canEdit   = user.readWriteScenarios.some(id => id.toString() === scenarioId);
+  const canView   = scenario.viewPermissions.some(id => id.toString() === user._id.toString());
+
   if (!isOwner && !canEdit && !canView) {
     return NextResponse.json({ success: false, error: 'No permission' }, { status: 403 });
   }
-  return NextResponse.json({ success: true, scenario, isOwner, hasEditPermission: canEdit, hasViewPermission: canView });
+
+  const stateTaxFiles = Object.fromEntries(user.stateTaxFiles ?? []);
+
+  return NextResponse.json({
+    success: true,
+    scenario,
+    isOwner,
+    hasEditPermission: canEdit,
+    hasViewPermission: canView,
+    stateTaxFiles,
+  });
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+/* ────────────────────────────────
+   PUT
+   ──────────────────────────────── */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   await dbConnect();
   const scenarioId = (await params).id;
+
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json({ success: false, error: 'Invalid scenario ID' }, { status: 400 });
   }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ success: false, error: 'Authentication required' }, { status: 401 });
   }
-  const scenario = await Scenario.findById(scenarioId);
-  if (!scenario) {
-    return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
-  }
-  const body: CoupleScenario = await req.json();
 
-  // 1. General Info
-  scenario.name = body.name;
-  scenario.description = body.description;
-  scenario.financialGoal = body.financialGoal;
-  scenario.residenceState = body.residenceState;
-  scenario.inflationRate = body.inflationRate;
-  scenario.ownerBirthYear = body.ownerBirthYear;
-  scenario.ownerLifeExpectancy = body.ownerLifeExpectancy;
-  scenario.type = body.type;
+  const [scenario, user] = await Promise.all([
+    Scenario.findById(scenarioId),
+    User.findOne({ email: session.user.email }),
+  ]);
+
+  if (!scenario) return NextResponse.json({ success: false, error: 'Scenario not found' }, { status: 404 });
+  if (!user)      return NextResponse.json({ success: false, error: 'User not found'     }, { status: 404 });
+
+  const body: ScenarioUpdateBody = await req.json();
+
+  /* 1 — general info */
+  scenario.name               = body.name;
+  scenario.description        = body.description;
+  scenario.financialGoal      = body.financialGoal;
+  scenario.residenceState     = body.residenceState;
+  scenario.inflationRate      = body.inflationRate;
+  scenario.ownerBirthYear     = body.ownerBirthYear;
+  scenario.ownerLifeExpectancy= body.ownerLifeExpectancy;
+  scenario.type               = body.type;
   if (body.type === 'couple') {
-    scenario.spouseBirthYear = body.spouseBirthYear;
-    scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
+    scenario.spouseBirthYear       = body.spouseBirthYear;
+    scenario.spouseLifeExpectancy  = body.spouseLifeExpectancy;
   }
 
-  // 2. Investments - reset and repopulate to prevent duplicates
+  /* 2 — investments (deduped) */
   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
   for (const inv of body.investments) {
     let invTypeId: mongoose.Types.ObjectId;
-    // find or create investmentType
+
+    /* 2‑a  InvestmentType */
     if (inv.investmentType._id && mongoose.Types.ObjectId.isValid(inv.investmentType._id)) {
       const existingType = await InvestmentType.findById(inv.investmentType._id);
       if (existingType) {
-        existingType.name = inv.investmentType.name;
-        existingType.description = inv.investmentType.description;
-        existingType.expectedAnnualReturn = inv.investmentType.expectedAnnualReturn;
-        existingType.expectedAnnualIncome = inv.investmentType.expectedAnnualIncome;
-        existingType.taxability = inv.investmentType.taxability;
-        existingType.expenseRatio = inv.investmentType.expenseRatio;
+        existingType.name                = inv.investmentType.name;
+        existingType.description         = inv.investmentType.description;
+        existingType.expectedAnnualReturn= inv.investmentType.expectedAnnualReturn;
+        existingType.expectedAnnualIncome= inv.investmentType.expectedAnnualIncome;
+        existingType.taxability          = inv.investmentType.taxability;
+        existingType.expenseRatio        = inv.investmentType.expenseRatio;
         await existingType.save();
         invTypeId = existingType._id;
       } else {
-        const newType = await new InvestmentType({
+        invTypeId = (
+          await new InvestmentType({
+            name: inv.investmentType.name,
+            description: inv.investmentType.description,
+            expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
+            expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
+            taxability: inv.investmentType.taxability,
+            expenseRatio: inv.investmentType.expenseRatio,
+          }).save()
+        )._id;
+      }
+    } else {
+      invTypeId = (
+        await new InvestmentType({
           name: inv.investmentType.name,
           description: inv.investmentType.description,
           expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
           expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
           taxability: inv.investmentType.taxability,
-          expenseRatio: inv.investmentType.expenseRatio
-        }).save();
-        invTypeId = newType._id;
-      }
-    } else {
-      const newType = await new InvestmentType({
-        name: inv.investmentType.name,
-        description: inv.investmentType.description,
-        expectedAnnualReturn: inv.investmentType.expectedAnnualReturn,
-        expectedAnnualIncome: inv.investmentType.expectedAnnualIncome,
-        taxability: inv.investmentType.taxability,
-        expenseRatio: inv.investmentType.expenseRatio
-      }).save();
-      invTypeId = newType._id;
+          expenseRatio: inv.investmentType.expenseRatio,
+        }).save()
+      )._id;
     }
-    // update or create investment
+
+    /* 2‑b  Investment */
     if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) {
       const existingInv = await Investment.findById(inv._id);
       if (existingInv) {
         existingInv.investmentType = invTypeId;
-        existingInv.value = inv.value;
-        existingInv.purchasePrice = inv.purchasePrice;
-        existingInv.taxStatus = inv.taxStatus;
+        existingInv.value          = inv.value;
+        existingInv.purchasePrice  = inv.purchasePrice;
+        existingInv.taxStatus      = inv.taxStatus;
         await existingInv.save();
         updatedInvestmentIds.push(existingInv._id);
         continue;
       }
     }
-    const newInv = await new Investment({
-      investmentType: invTypeId,
-      value: inv.value,
-      purchasePrice: inv.purchasePrice,
-      taxStatus: inv.taxStatus
-    }).save();
-    updatedInvestmentIds.push(newInv._id);
+    updatedInvestmentIds.push(
+      (
+        await new Investment({
+          investmentType: invTypeId,
+          value: inv.value,
+          purchasePrice: inv.purchasePrice,
+          taxStatus: inv.taxStatus,
+        }).save()
+      )._id,
+    );
   }
   scenario.investments = updatedInvestmentIds;
 
-  // 3. Events - reset and repopulate to prevent duplicates
+  /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
   for (const evt of body.eventSeries) {
     if (evt._id && mongoose.Types.ObjectId.isValid(evt._id)) {
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
+
       existingEvt.startYear = normalizeStartYear(evt.startYear);
-      existingEvt.duration = normalizeDuration(evt.duration as any);
-      Object.assign(existingEvt, { name: evt.name, description: evt.description });
-      // update eventType fields generically
-      existingEvt.eventType = Object.assign(existingEvt.eventType, evt.eventType);
+      existingEvt.duration  = normalizeDuration(evt.duration);
+      existingEvt.name        = evt.name;
+      existingEvt.description = evt.description;
+      existingEvt.eventType   = { ...existingEvt.eventType, ...evt.eventType };
+
       await existingEvt.save();
       updatedEventIds.push(existingEvt._id);
       continue;
     }
-    // new event
-    const data = {
+
+    const newEvt = await new Event({
       ...evt,
       startYear: normalizeStartYear(evt.startYear),
-      duration: normalizeDuration(evt.duration as any)
-    };
-    const newEvt = await new Event(data as any).save();
+      duration : normalizeDuration(evt.duration),
+    }).save();
+
     updatedEventIds.push(newEvt._id);
   }
   scenario.eventSeries = updatedEventIds;
 
-  // 4. Spending strategy
-  scenario.spendingStrategy = [];
-  for (const e of body.spendingStrategy || []) {
-    if (e._id && mongoose.Types.ObjectId.isValid(e._id)) {
-      scenario.spendingStrategy.push(new mongoose.Types.ObjectId(e._id));
-    }
-  }
+  /* 4 — spending / expense withdrawal strategies */
+  scenario.spendingStrategy = extractInvestmentIds(body.spendingStrategy ?? []);
+  scenario.expenseWithdrawalStrategy = extractInvestmentIds(body.expenseWithdrawalStrategy ?? []);
 
-  // 5. Expense withdrawal strategy
-  scenario.expenseWithdrawalStrategy = [];
-  for (const inv of body.expenseWithdrawalStrategy || []) {
-    if (inv._id && mongoose.Types.ObjectId.isValid(inv._id)) {
-      scenario.expenseWithdrawalStrategy.push(new mongoose.Types.ObjectId(inv._id));
-    }
-  }
+  /* 5 — RMD & Roth */
+  scenario.RMDStrategy           = extractInvestmentIds(body.RMDStrategy           ?? []);
+  scenario.RothConversionStrategy= extractInvestmentIds(body.RothConversionStrategy?? []);
+  scenario.rothConversion        = body.rothConversion ?? null;
 
-  // 6. RMD and Roth strategies
-  scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy || []);
-  scenario.RothConversionStrategy = extractInvestmentIds(body.RothConversionStrategy || []);
-  scenario.rothConversion = body.rothConversion || null;
+  /* 6 — state‑tax files (user‑level) */
+  if (body.stateTaxFiles) {
+    // Overwrite: most convenient for caller; change to smarter merge if needed
+    user.stateTaxFiles = body.stateTaxFiles;
+    await user.save();
+  }
 
   await scenario.save();
   return NextResponse.json({ success: true, message: 'Scenario updated successfully' });
