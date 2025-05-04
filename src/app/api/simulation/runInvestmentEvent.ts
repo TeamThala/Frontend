@@ -159,6 +159,5 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             }
         }
     }
-    log.push(`Investment values after investment: ${investmentValues}`);
     return 0
 }
