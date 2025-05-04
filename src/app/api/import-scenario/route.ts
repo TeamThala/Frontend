@@ -412,7 +412,7 @@ export async function POST(req: NextRequest) {
         (await Event.findOne({ name: { $regex: new RegExp(`^${parentName}$`, "i") } }));
 
       if (childEvt && parentEvt) {
-        (childEvt.startYear as any).event = parentEvt._id;
+        (childEvt.startYear as { event: Types.ObjectId }).event = parentEvt._id;
         await childEvt.save();
       } else {
         console.warn(`Could not resolve dependency '${child}' → '${parentName}'`);
@@ -484,7 +484,7 @@ export async function POST(req: NextRequest) {
     /* 8️⃣  Scenario ---------------------------------------------------- */
     const uniqueInvestmentIds = getUniqueInvestmentIds(investMap);
 
-    let finalRothConv: Types.ObjectId[] | Types.ObjectId[] = [];
+    let finalRothConv: Types.ObjectId[] = [];
     if (yml.RothConversionOpt && directRothIds.length) {
       try {
         const rc = await RothConv.create({
@@ -493,9 +493,10 @@ export async function POST(req: NextRequest) {
           owner: user._id
         });
         finalRothConv = [rc._id];
-      } catch (e) {
+      } catch (error) {
         console.warn("Could not create RothConversionStrategy doc, storing direct IDs");
         finalRothConv = directRothIds;
+        console.log(error);
       }
     }
 

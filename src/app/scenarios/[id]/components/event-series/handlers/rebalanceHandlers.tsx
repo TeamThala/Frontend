@@ -66,7 +66,18 @@ export const handlePercentageChange = (
     
     const portfolioDistribution = { ...event.eventType.portfolioDistribution };
     
+    // Check if portfolioDistribution is an array, which is not expected here
+    if (Array.isArray(portfolioDistribution)) {
+      console.error("Error: portfolioDistribution is an array in handlePercentageChange. Event index:", eventIndex);
+      return prev; // Cannot handle array of distributions here
+    }
+    
     if (portfolioDistribution.type === "fixed") {
+      // Ensure percentages array exists and is an array
+      if (!Array.isArray(portfolioDistribution.percentages)) {
+        console.error("Error: percentages is not an array in fixed portfolioDistribution. Event index:", eventIndex);
+        return prev; // Cannot handle missing or invalid percentages
+      }
       const percentages = [...portfolioDistribution.percentages];
       const numValue = parseFloat(value);
       if (isNaN(numValue)) return prev;
@@ -109,11 +120,22 @@ export const handleGlidePathPercentageChange = (
     
     const portfolioDistribution = { ...event.eventType.portfolioDistribution };
     
+    // Check if portfolioDistribution is an array, which is not expected here
+    if (Array.isArray(portfolioDistribution)) {
+      console.error("Error: portfolioDistribution is an array in handleGlidePathPercentageChange. Event index:", eventIndex);
+      return prev; // Cannot handle array of distributions here
+    }
+    
     if (portfolioDistribution.type === "glidePath") {
       const numValue = parseFloat(value);
       if (isNaN(numValue)) return prev;
       
       if (phase === "initial") {
+        // Ensure initialPercentages array exists and is an array
+        if (!Array.isArray(portfolioDistribution.initialPercentages)) {
+          console.error("Error: initialPercentages is not an array in glidePath portfolioDistribution. Event index:", eventIndex);
+          return prev;
+        }
         const initialPercentages = [...portfolioDistribution.initialPercentages];
         initialPercentages[investmentIndex] = numValue;
         
@@ -124,7 +146,12 @@ export const handleGlidePathPercentageChange = (
             initialPercentages
           }
         };
-      } else {
+      } else { // phase === "final"
+        // Ensure finalPercentages array exists and is an array
+        if (!Array.isArray(portfolioDistribution.finalPercentages)) {
+          console.error("Error: finalPercentages is not an array in glidePath portfolioDistribution. Event index:", eventIndex);
+          return prev;
+        }
         const finalPercentages = [...portfolioDistribution.finalPercentages];
         finalPercentages[investmentIndex] = numValue;
         

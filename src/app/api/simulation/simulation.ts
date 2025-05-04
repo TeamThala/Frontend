@@ -143,9 +143,23 @@ export async function simulation(scenario: Scenario){
             
             // Get previous year's pre-tax accounts
             const investmentEventType = currentInvestmentEvent.eventType as InvestmentEvent;
-            if (investmentEventType.assetAllocation?.investments) {
+            let currentInvestments: Investment[] | undefined | null = null;
+
+            if (investmentEventType.assetAllocation) {
+                if (Array.isArray(investmentEventType.assetAllocation)) {
+                    // Handle the array case - Log error? Use first element? Skip?
+                    log.push(`Warning: assetAllocation for event ${currentInvestmentEvent.id} is an array. RMD logic might not work as expected.`);
+                    // Assign null to prevent errors downstream, effectively skipping RMD for this event if allocation is array
+                    currentInvestments = null;
+                } else {
+                    // It's a single AssetAllocationFixed or AssetAllocationGlidePath
+                    currentInvestments = investmentEventType.assetAllocation.investments;
+                }
+            }
+
+            if (currentInvestments) { // Check if we successfully got investments array
                 //Filter pre-tax accounts with positive balances for RMD calculation
-                const previousYearPretaxAccounts = investmentEventType.assetAllocation.investments
+                const previousYearPretaxAccounts = currentInvestments
                     .filter(inv => inv.taxStatus === "pre-tax" && inv.value > 0)
                     .map(inv => ({
                         id: inv.id,
@@ -190,8 +204,7 @@ export async function simulation(scenario: Scenario){
                         log.push('Processing distributions:');
                         for (const dist of distribution.distributedInvestments) {
                             log.push(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
-                            const sourceInv = investmentEventType.assetAllocation.investments
-                                .find(inv => inv.id === dist.investmentId);
+                            const sourceInv = currentInvestments.find(inv => inv.id === dist.investmentId);
                             
                             if (sourceInv) {
                                 // Reduce the pre-tax investment value
@@ -200,11 +213,10 @@ export async function simulation(scenario: Scenario){
                                 log.push(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
 
                                 // Find or create corresponding non-retirement investment
-                                const targetInv = investmentEventType.assetAllocation.investments
-                                    .find(inv => 
-                                        inv.investmentType.name === sourceInv.investmentType.name && 
-                                        inv.taxStatus === "non-retirement"
-                                    );
+                                const targetInv = currentInvestments.find(inv => 
+                                    inv.investmentType.name === sourceInv.investmentType.name && 
+                                    inv.taxStatus === "non-retirement"
+                                );
 
                                 if (targetInv) {
                                     // Add to existing non-retirement investment
@@ -220,7 +232,7 @@ export async function simulation(scenario: Scenario){
                                         investmentType: sourceInv.investmentType,
                                         purchasePrice: dist.amount  // Set purchase price to distribution amount
                                     };
-                                    investmentEventType.assetAllocation.investments.push(newInv);
+                                    currentInvestments.push(newInv);
                                     log.push(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
                                 }
                             }
@@ -233,7 +245,9 @@ export async function simulation(scenario: Scenario){
                 } else {
                     log.push('Skipping RMD: No pre-tax accounts or RMD strategy available');
                 }
-            }
+            } else {
+                 log.push(`Skipping RMD: No valid investments found in asset allocation for event ${currentInvestmentEvent.id} in year ${year}`);
+            } // End of check for currentInvestments
         }
 
         const investmentResults = updateInvestmentEvent(currentInvestmentEvent, log);
@@ -451,13 +465,27 @@ async function initializeEvents(events: Event[], log: string[]){ // assuming it 
                 expenseEvents.push(event);
             }
             else if (event.eventType.type === "investment"){
+                log.push(`Processing investment event: ${event.name} (${event.id})`);
                 investmentEvents.push(event);
-                const nestedInvestments = event.eventType.assetAllocation.investments;
-                if (nestedInvestments === null){
+                const investmentEventType = event.eventType; // Type is InvestmentEvent
+                let nestedInvestments: Investment[] | undefined | null = null;
+
+                if (investmentEventType.assetAllocation) {
+                    if (Array.isArray(investmentEventType.assetAllocation)) {
+                        // Handling array case during initialization: Log as error and stop.
+                         log.push(`Error: assetAllocation for event ${event.id} (${event.name}) is an array, expected single object.`);
+                         return null; // Propagate error up
+                    } else {
+                        // It's a single AssetAllocationFixed or AssetAllocationGlidePath
+                        nestedInvestments = investmentEventType.assetAllocation.investments;
+                    }
+                }
+
+                // Check if nestedInvestments array exists and is valid
+                if (!nestedInvestments){ // Covers null, undefined
                     log.push(`Error: Could not find the investments nested inside ${event.id}, ${event.name}`);
                     return null;
                 }
-                // cashInvestment = nestedInvestments.find(investment => investment.investmentType.name === "cash") || null;
             }
             else{
                 rebalanceEvents.push(event);
@@ -475,29 +503,57 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
     // replaces investments in all investment events with references to investment objects in scenario.investments
     for (let i=0; i<investmentEvents.length; i++){
         const investmentEvent = investmentEvents[i];
+        log.push(`Initializing investments for event: ${investmentEvent.name} (${investmentEvent.id})`);
         const investmentType = investmentEvent.eventType as InvestmentEvent;
-        const investments = investmentType.assetAllocation.investments;
-        if (investments === null){
-            log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
-            return null;
+        let targetInvestmentsArray: Investment[] | undefined | null = null;
+
+        if (investmentType.assetAllocation) {
+             if (Array.isArray(investmentType.assetAllocation)) {
+                 log.push(`Error: assetAllocation for event ${investmentEvent.id} (${investmentEvent.name}) is an array, expected single object during investment initialization.`);
+                 // Skip this event if it's in an unexpected format
+                 continue;
+             } else {
+                 // It's a single AssetAllocationFixed or AssetAllocationGlidePath
+                 targetInvestmentsArray = investmentType.assetAllocation.investments;
+             }
         }
-        for (let j=0; j<investments.length; j++){
-            const investment = investments[j];
-            const investmentId = investment.id;
-            const investmentInField = scenario.investments.find(i => i.id === investmentId);
-            if (investmentInField){
-                investments[j] = investmentInField; // replace with reference to investment object in scenario.investments
-            }
-            else{
-                log.push(`Error: Could not find investment with id ${investmentId}`);
-                return null;
+
+        if (!targetInvestmentsArray){ // Check if null or undefined
+            log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+             // Skip this event if investments array is missing
+            continue;
+        }
+
+        // Iterate through the array we need to modify
+        for (let j = 0; j < targetInvestmentsArray.length; j++){
+            const investmentRef = targetInvestmentsArray[j]; // This holds the object currently in the array
+            const investmentId = investmentRef.id; // Assuming it has an ID property
+            log.push(`  Looking for scenario investment with ID: ${investmentId}`);
+
+            // Find the full object in scenario.investments
+            const investmentInScenario = scenario.investments.find(inv => inv.id === investmentId);
+
+            if (investmentInScenario){
+                 // Replace the object in the event's array with the reference from the scenario
+                 log.push(`    Found ${investmentInScenario.id}. Replacing reference.`);
+                 targetInvestmentsArray[j] = investmentInScenario;
+             }
+             else{
+                log.push(`Error: Could not find investment with id ${investmentId} in scenario.investments while initializing event ${investmentEvent.id}. Skipping this investment reference.`);
+                // Skip this specific investment reference if not found in scenario
+                continue;
             }
         }
     }
 }
 
 function initializeStrategy(strategy: Investment[], scenario: Scenario, log: string[]){
+    log.push(`Initializing strategy investments...`);
     // replace any Investment[] strategy with references to investment objects in scenario.investments
+    if (!strategy) {
+        log.push("Strategy array is null or undefined. Skipping initialization.");
+        return;
+    }
     for(let i=0; i<strategy.length; i++){
         const investment = strategy[i];
         const investmentId = investment.id;
