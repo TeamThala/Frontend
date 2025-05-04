@@ -833,6 +833,13 @@ function extractInvestmentIds(
     })
     .filter((id): id is mongoose.Types.ObjectId => Boolean(id));
 }
+type AllocationInput = {
+  type: "fixed" | "glidePath";
+  investments?: Array<string | mongoose.Types.ObjectId>;
+  percentages?: number[];
+  initialPercentages?: number[];
+  finalPercentages?: number[];
+};
 
 /* ────────────────────────────────
    GET
@@ -1048,6 +1055,7 @@ export async function PUT(
       return alloc;
     };
 
+    // eslint-disable-line
     const normalisePd = (pd: any) => {
       pd.investments = extractInvestmentIds(pd.investments ?? []);
       if (pd.type === "fixed") {
@@ -1096,7 +1104,7 @@ export async function PUT(
     }
 
     // ---------- CREATE path ----------
-    const { _id: _discard1, id: _discard2, ...evtWithoutIds } = evt as typeof evt & { _id?: unknown; id?: unknown };
+    const { ...evtWithoutIds } = evt as typeof evt & { _id?: unknown; id?: unknown };
 
     let eventTypeToSave: typeof evt.eventType;
     switch (evt.eventType.type) {

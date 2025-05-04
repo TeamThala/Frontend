@@ -175,76 +175,84 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      /* ---------------- allocation → YAML ---------------- */
       if (["investment", "rebalance"].includes(evt.eventType.type)) {
         const assetMap: Record<string, number> = {};
         const assetMap2: Record<string, number> = {};
-        const hasGlidePath = evt.eventType.assetAllocation && Array.isArray(evt.eventType.assetAllocation) && 
-            evt.eventType.assetAllocation.some((alloc: AssetAllocationFixed | AssetAllocationGlidePath) => 
-                alloc && alloc.type === 'glidePath');
 
-        if (evt.eventType.assetAllocation && evt.eventType.assetAllocation.length > 0) {
-          evt.eventType.assetAllocation.forEach((alloc) => {
-            // Check if allocation has valid data
-            if (!alloc) {
-              console.log(`Warning: Invalid asset allocation entry found in event ${evt.name}`);
-              return; // Skip this iteration
+        /* ✨ NEW: treat assetAllocation as an array no matter what */
+        const allAllocs =
+          evt.eventType.assetAllocation == null
+            ? []
+            : Array.isArray(evt.eventType.assetAllocation)
+              ? evt.eventType.assetAllocation
+              : [evt.eventType.assetAllocation];
+
+        const hasGlidePath = allAllocs.some(
+          (alloc: AssetAllocationFixed | AssetAllocationGlidePath) =>
+            alloc && alloc.type === "glidePath",
+        );
+
+        allAllocs.forEach((alloc) => {
+          if (!alloc) return;                        // skip nulls
+
+          /* invest list + matching % arrays */
+          const investments =
+            "investments" in alloc && Array.isArray(alloc.investments)
+              ? alloc.investments
+              : alloc.investment
+                ? [alloc.investment]
+                : [];
+
+          const initialPcts =
+            alloc.type === "glidePath"
+              ? alloc.initialPercentages ?? []
+              : alloc.percentages ?? [];
+
+          const finalPcts =
+            alloc.type === "glidePath"
+              ? alloc.finalPercentages ?? []
+              : [];
+
+          investments.forEach((inv, idx) => {
+            const humanId = inv && investmentIdMap.get(inv.toString());
+            if (!humanId) return;
+
+            /* initial */
+            const firstPct =
+              initialPcts[idx] !== undefined ? initialPcts[idx] : initialPcts[0] ?? 0;
+            assetMap[humanId] = firstPct;
+
+            /* final (only for glidePath) */
+            if (hasGlidePath) {
+              const lastPct =
+                finalPcts[idx] !== undefined ? finalPcts[idx] : finalPcts[0] ?? firstPct;
+              assetMap2[humanId] = lastPct;
             }
-            
-            // Handle both single investment and arrays of investments
-            const investments = alloc.investment ? [alloc.investment] : alloc.investments || [];
-            const initialPercentages = alloc.initialPercentages || alloc.percentages || [];
-            const finalPercentages = alloc.finalPercentages || [];
-
-                
-            // Process each investment with its corresponding percentage
-            investments.forEach((investment, index) => {
-              if (!investment) return;
-              
-              // Get the investment ID from the map
-              const id = investmentIdMap.get(investment.toString());
-              if (id) {
-                // Use the percentage at the matching index, or default to the first one
-                const initialPct = initialPercentages[index] !== undefined ? 
-                    initialPercentages[index] : 
-                    (initialPercentages[0] || 0);
-                    
-                assetMap[id] = initialPct;
-                
-                if (hasGlidePath) {
-                  const finalPct = finalPercentages[index] !== undefined ? 
-                      finalPercentages[index] : 
-                      (finalPercentages[0] || initialPct);
-                      
-                  assetMap2[id] = finalPct;
-                }
-              }
-            });
           });
-        }
-        // No default entries - just use what's actually in the scenario data
+        });
 
+        /* write out */
         out.assetAllocation = assetMap;
-        out.glidePath = hasGlidePath;
         if (hasGlidePath) {
+          out.glidePath = true;
           out.assetAllocation2 = assetMap2;
         }
-
-        
-
-        out.maxCash = typeof evt.eventType.maxCash === "number" ? evt.eventType.maxCash : 0;
-
+        out.maxCash =
+          typeof (evt.eventType as any).maxCash === "number"
+            ? (evt.eventType as any).maxCash
+            : 0;
       }
+
 
       return out;
     }).filter(Boolean); // Filter out any null values
 
     // Helper function to get investment names from IDs with more robust error handling
     const getInvestmentIdsWithFallback = async (strategy: (string | Investment)[], strategyName: string): Promise<string[]> => {
-      console.log(`Processing ${strategyName} strategy`);
       
       // If no strategy exists, return empty array
       if (!strategy || !Array.isArray(strategy) || strategy.length === 0) {
-        console.log(`No ${strategyName} strategy found, returning empty array`);
         return [];
       }
       
@@ -260,25 +268,20 @@ export async function GET(request: NextRequest) {
           const id = investmentIdMap.get(item._id.toString());
           if (id) {
             result.push(id);
-            console.log(`Added investment ${id} to ${strategyName} from direct reference`);
           } else {
-            console.log(`Warning: Could not find investment ID mapping for ${strategyName} item: ${item._id}`);
           }
         } else if (typeof item === 'string') {
           // String ID reference
           const id = investmentIdMap.get(item);
           if (id) {
             result.push(id);
-            console.log(`Added investment ${id} to ${strategyName} from string ID`);
           } else {
-            console.log(`Warning: Could not find investment ID mapping for ${strategyName} string ID: ${item}`);
           }
         }
       }
       
       // Special handling for S&P 500 pre-tax in RothConversionStrategy
       if (strategyName === 'RothConversionStrategy' && result.length === 0) {
-        console.log('No Roth conversion mappings found, checking for S&P 500 pre-tax investments');
         
         // Look for any investment that might be an S&P 500 pre-tax account
         for (const [key, value] of Object.entries(investmentIdMap)) {
@@ -286,7 +289,6 @@ export async function GET(request: NextRequest) {
               (typeof value === 'string' && value.includes('S&P') && value.includes('pre-tax'))) {
             const investmentId = typeof value === 'string' ? value : key;
             result.push(investmentId);
-            console.log(`Added S&P 500 pre-tax investment to ${strategyName} as fallback: ${investmentId}`);
           }
         }
       }
@@ -299,7 +301,6 @@ export async function GET(request: NextRequest) {
     if (scenario.rothConversion && scenario.rothConversion.rothConversion) {
       // First try to get from RothConversionStrategy collection references
       if (scenario.RothConversionStrategy && Array.isArray(scenario.RothConversionStrategy)) {
-        console.log('Fetching Roth conversion from RothConversionStrategy collection');
         
         for (const strategyRef of scenario.RothConversionStrategy) {
           try {
@@ -329,7 +330,6 @@ export async function GET(request: NextRequest) {
       
       // If still empty, try direct investment references 
       if (rothConversionStrategy.length === 0) {
-        console.log('No RothConversionStrategy found in collection, trying direct investment references');
         const directInvestments = await getInvestmentIdsWithFallback(
           scenario.RothConversionStrategy as (string | Investment)[], 
           'RothConversionStrategy (direct)'
@@ -339,7 +339,6 @@ export async function GET(request: NextRequest) {
       
       // If still empty, fallback to all pre-tax accounts as last resort
       if (rothConversionStrategy.length === 0) {
-        console.log('No Roth conversion strategy found, using fallback to all pre-tax investments');
         
         // Find all pre-tax investments
         for (const inv of scenario.investments) {
@@ -347,7 +346,6 @@ export async function GET(request: NextRequest) {
             const id = investmentIdMap.get(inv._id.toString());
             if (id) {
               rothConversionStrategy.push(id);
-              console.log(`Added ${id} to RothConversionStrategy fallback`);
             }
           }
         }
@@ -361,7 +359,6 @@ export async function GET(request: NextRequest) {
       
       // If empty, fallback to all pre-tax accounts
       if (rmdStrategy.length === 0) {
-        console.log('No RMD strategy found, using fallback to all pre-tax investments');
         
         // Find all pre-tax investments
         for (const inv of scenario.investments) {
@@ -369,7 +366,6 @@ export async function GET(request: NextRequest) {
             const id = investmentIdMap.get(inv._id.toString());
             if (id) {
               rmdStrategy.push(id);
-              console.log(`Added ${id} to RMDStrategy fallback`);
             }
           }
         }
@@ -416,14 +412,6 @@ export async function GET(request: NextRequest) {
       residenceState: scenario.residenceState,
     };
 
-    // Log Roth conversion details for debugging
-    console.log('Roth Conversion details:');
-    console.log('  rothConversion from DB:', JSON.stringify(scenario.rothConversion));
-    console.log('  Values going into YAML:');
-    console.log('  RothConversionOpt:', yamlData.RothConversionOpt);
-    console.log('  RothConversionStart:', yamlData.RothConversionStart);
-    console.log('  RothConversionEnd:', yamlData.RothConversionEnd);
-    console.log('  RothConversionStrategy:', JSON.stringify(yamlData.RothConversionStrategy));
 
     // Generate the YAML string
     const yamlStr = yaml.dump(yamlData, { 
@@ -432,12 +420,6 @@ export async function GET(request: NextRequest) {
       noRefs: true
     });
 
-    // Double-check if Roth conversion fields are in the YAML
-    console.log('Checking final YAML for Roth fields:');
-    console.log('  RothConversionOpt in YAML:', yamlStr.includes('RothConversionOpt:'));
-    console.log('  RothConversionStart in YAML:', yamlStr.includes('RothConversionStart:'));
-    console.log('  RothConversionEnd in YAML:', yamlStr.includes('RothConversionEnd:'));
-    console.log('  RothConversionStrategy in YAML:', yamlStr.includes('RothConversionStrategy:'));
 
     // Add header comments to match the example format
     const headerComment = `# file format for scenario import/export.  version: ${new Date().toISOString().split('T')[0]}
@@ -474,11 +456,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('Final YAML check after potential additions:');
-    console.log('  RothConversionOpt in final YAML:', finalYamlStr.includes('RothConversionOpt:'));
-    console.log('  RothConversionStart in final YAML:', finalYamlStr.includes('RothConversionStart:'));
-    console.log('  RothConversionEnd in final YAML:', finalYamlStr.includes('RothConversionEnd:'));
-    console.log('  RothConversionStrategy in final YAML:', finalYamlStr.includes('RothConversionStrategy:'));
 
     return new NextResponse(finalYamlStr, {
       status: 200,
