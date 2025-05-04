@@ -74,11 +74,11 @@ const eventTypeSchema = new Schema(
         },
         investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
         percentages: [{ type: Number }],
-        initialPercentage: [{ type: Number }],
-        finalPercentage: [{ type: Number }],
+        initialPercentages: [{ type: Number }],
+        finalPercentages: [{ type: Number }],
       },
     ],
-    maximumCash: { type: Number },
+    maxCash: { type: Number },
   },
   { _id: false }
 );

@@ -231,37 +231,60 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         // Handle special event types with investment references
         if (eventToSave.eventType.type === "investment" && eventToSave.eventType.assetAllocation) {
           // Fix investment event's assetAllocation
-          const assetAllocation = { ...eventToSave.eventType.assetAllocation };
+          let assetAllocationData;
           
-          // Update asset allocation investments
-          if (assetAllocation.investments && Array.isArray(assetAllocation.investments)) {
-            // Convert the client-side investments array to proper MongoDB references
-            if (assetAllocation.type === "fixed") {
-              assetAllocation.percentages = assetAllocation.percentages || [];
-            } else if (assetAllocation.type === "glidePath") {
-              assetAllocation.initialPercentages = assetAllocation.initialPercentages || [];
-              assetAllocation.finalPercentages = assetAllocation.finalPercentages || [];
-            }
+          // Handle assetAllocation regardless if it comes as an array or direct object
+          if (Array.isArray(eventToSave.eventType.assetAllocation)) {
+            assetAllocationData = eventToSave.eventType.assetAllocation[0] || {
+              type: "fixed",
+              investments: [],
+              percentages: []
+            };
+          } else {
+            assetAllocationData = eventToSave.eventType.assetAllocation;
           }
           
-          eventToSave.eventType.assetAllocation = assetAllocation;
+          // Ensure assetAllocation data is properly structured
+          const assetAllocation = { ...assetAllocationData };
+          
+          // Update asset allocation investments
+          if (assetAllocation.type === "fixed") {
+            assetAllocation.percentages = assetAllocation.percentages || [];
+          } else if (assetAllocation.type === "glidePath") {
+            assetAllocation.initialPercentages = assetAllocation.initialPercentages || [];
+            assetAllocation.finalPercentages = assetAllocation.finalPercentages || [];
+          }
+          
+          // Store as an array to match the MongoDB schema
+          eventToSave.eventType.assetAllocation = [assetAllocation];
         } 
         else if (eventToSave.eventType.type === "rebalance" && eventToSave.eventType.portfolioDistribution) {
           // Fix rebalance event's portfolioDistribution
-          const portfolioDistribution = { ...eventToSave.eventType.portfolioDistribution };
+          let portfolioDistributionData;
           
-          // Update portfolio distribution investments
-          if (portfolioDistribution.investments && Array.isArray(portfolioDistribution.investments)) {
-            // Convert the client-side investments array to proper MongoDB references
-            if (portfolioDistribution.type === "fixed") {
-              portfolioDistribution.percentages = portfolioDistribution.percentages || [];
-            } else if (portfolioDistribution.type === "glidePath") {
-              portfolioDistribution.initialPercentages = portfolioDistribution.initialPercentages || [];
-              portfolioDistribution.finalPercentages = portfolioDistribution.finalPercentages || [];
-            }
+          // Handle portfolioDistribution regardless if it comes as an array or direct object
+          if (Array.isArray(eventToSave.eventType.portfolioDistribution)) {
+            portfolioDistributionData = eventToSave.eventType.portfolioDistribution[0] || {
+              type: "fixed",
+              investments: [],
+              percentages: []
+            };
+          } else {
+            portfolioDistributionData = eventToSave.eventType.portfolioDistribution;
           }
           
-          eventToSave.eventType.portfolioDistribution = portfolioDistribution;
+          const portfolioDistribution = { ...portfolioDistributionData };
+          
+          // Update portfolio distribution investments
+          if (portfolioDistribution.type === "fixed") {
+            portfolioDistribution.percentages = portfolioDistribution.percentages || [];
+          } else if (portfolioDistribution.type === "glidePath") {
+            portfolioDistribution.initialPercentages = portfolioDistribution.initialPercentages || [];
+            portfolioDistribution.finalPercentages = portfolioDistribution.finalPercentages || [];
+          }
+          
+          // Store as an array to match the MongoDB schema
+          eventToSave.eventType.portfolioDistribution = [portfolioDistribution];
         }
 
         // Update the existing event with the processed data
@@ -278,7 +301,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         // Process event data before creating a new document
         if (event.eventType.type === "investment" && event.eventType.assetAllocation) {
           // Fix investment event's assetAllocation
-          const assetAllocation = { ...event.eventType.assetAllocation };
+          let assetAllocationData;
+          
+          // Handle assetAllocation regardless if it comes as an array or direct object
+          if (Array.isArray(event.eventType.assetAllocation)) {
+            assetAllocationData = event.eventType.assetAllocation[0] || {
+              type: "fixed",
+              investments: [],
+              percentages: []
+            };
+          } else {
+            assetAllocationData = event.eventType.assetAllocation;
+          }
+          
+          // Ensure assetAllocation data is properly structured
+          const assetAllocation = { ...assetAllocationData };
           
           // Ensure percentages are initialized
           if (assetAllocation.type === "fixed") {
@@ -288,14 +325,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             assetAllocation.finalPercentages = assetAllocation.finalPercentages || [];
           }
           
+          // Store as an array to match the MongoDB schema
           eventData.eventType = {
             ...event.eventType,
-            assetAllocation
+            assetAllocation: [assetAllocation]
           };
         } 
         else if (event.eventType.type === "rebalance" && event.eventType.portfolioDistribution) {
           // Fix rebalance event's portfolioDistribution
-          const portfolioDistribution = { ...event.eventType.portfolioDistribution };
+          let portfolioDistributionData;
+          
+          // Handle portfolioDistribution regardless if it comes as an array or direct object
+          if (Array.isArray(event.eventType.portfolioDistribution)) {
+            portfolioDistributionData = event.eventType.portfolioDistribution[0] || {
+              type: "fixed",
+              investments: [],
+              percentages: []
+            };
+          } else {
+            portfolioDistributionData = event.eventType.portfolioDistribution;
+          }
+          
+          const portfolioDistribution = { ...portfolioDistributionData };
           
           // Ensure percentages are initialized
           if (portfolioDistribution.type === "fixed") {
@@ -307,7 +358,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           
           eventData.eventType = {
             ...event.eventType,
-            portfolioDistribution
+            portfolioDistribution: [portfolioDistribution]
           };
         }
         

@@ -33,6 +33,7 @@ export interface EventHandlers {
   handleInvestmentGlidePathPercentageChange: (investmentIndex: number, phase: "initial" | "final", value: string, eventIndex: number) => void;
   handleMaxCashChange: (value: string, index: number) => void;
   confirmDelete: (index: number) => void;
+  setCanProceed?: (isValid: boolean) => void;
 }
 
 export const renderEventForm = (

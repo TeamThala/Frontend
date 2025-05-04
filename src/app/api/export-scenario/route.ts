@@ -192,12 +192,9 @@ export async function GET(request: NextRequest) {
             
             // Handle both single investment and arrays of investments
             const investments = alloc.investment ? [alloc.investment] : alloc.investments || [];
-            const initialPercentages = alloc.initialPercentage ? 
-                (Array.isArray(alloc.initialPercentage) ? alloc.initialPercentage : [alloc.initialPercentage]) : 
-                alloc.percentages || [];
-            const finalPercentages = alloc.finalPercentage ? 
-                (Array.isArray(alloc.finalPercentage) ? alloc.finalPercentage : [alloc.finalPercentage]) : 
-                [];
+            const initialPercentages = alloc.initialPercentages || alloc.percentages || [];
+            const finalPercentages = alloc.finalPercentages || [];
+
                 
             // Process each investment with its corresponding percentage
             investments.forEach((investment, index) => {
@@ -227,12 +224,15 @@ export async function GET(request: NextRequest) {
         // No default entries - just use what's actually in the scenario data
 
         out.assetAllocation = assetMap;
+        out.glidePath = hasGlidePath;
         if (hasGlidePath) {
-          out.glidePath = true;
           out.assetAllocation2 = assetMap2;
         }
 
-        out.maxCash = evt.eventType.maximumCash;
+        
+
+        out.maxCash = typeof evt.eventType.maxCash === "number" ? evt.eventType.maxCash : 0;
+
       }
 
       return out;

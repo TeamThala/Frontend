@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
@@ -45,15 +45,30 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
   const [indexToDelete, setIndexToDelete] = useState<number | null>(null);
   const [addEventDialogOpen, setAddEventDialogOpen] = useState(false);
   const [eventType, setEventType] = useState<"income" | "expense" | "investment" | "rebalance">("income");
+  const [canProceed, setCanProceed] = useState(true);
   
   // Update scenario data when scenario prop changes
   useEffect(() => {
     setScenarioData(scenario);
   }, [scenario]);
 
+  // Check if there are any investment events
+  const hasInvestmentEvents = scenarioData?.eventSeries?.some(
+    event => event.eventType.type === "investment"
+  ) || false;
+  
+  // Only validate percentages if we have investment events
+  const setCanProceedWithCheck = useCallback((isValid: boolean) => {
+    if (hasInvestmentEvents) {
+      setCanProceed(isValid);
+    } else {
+      setCanProceed(true);
+    }
+  }, [hasInvestmentEvents]);
+
   // Handle next button click
   const handleNextClick = () => {
-    if (scenarioData) {
+    if (scenarioData && canProceed) {
       onUpdate(scenarioData);
       handleNext();
     }
@@ -208,6 +223,7 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
       handleInvestmentGlidePathPercentageChange(investmentIndex, phase, value, eventIndex, setScenarioData),
     handleMaxCashChange: (value: string, index: number) =>
       handleMaxCashChange(value, index, setScenarioData),
+    setCanProceed: setCanProceedWithCheck,
     confirmDelete
   };
 
@@ -381,18 +397,21 @@ export default function EventSeries({ scenario, canEdit, onUpdate, handlePreviou
         </p>
       )}
       
-      <div className="flex justify-end pt-4 border-t mt-6 space-x-4">
-        <Button
-          type="button"
+      {/* Navigation buttons */}
+      <div className="flex justify-between mt-8">
+        <Button 
+          type="button" 
           onClick={handlePreviousClick}
-          className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-600 transition"
+          className="bg-purple-700 hover:bg-purple-800"
         >
           Previous
         </Button>
-        <Button
-          type="button"
+        
+        <Button 
+          type="button" 
           onClick={handleNextClick}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition"
+          className="bg-purple-700 hover:bg-purple-800"
+          disabled={!canProceed}
         >
           Next
         </Button>
