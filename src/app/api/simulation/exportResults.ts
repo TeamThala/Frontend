@@ -12,7 +12,7 @@ export function exportResultsToJson(yearlyData: YearlyResult[], filepath: string
         fs.writeFileSync(filepath, JSON.stringify(jsonData, null, 2), 'utf-8');
 
         // Prepare CSV content
-        const csvHeaders = ['Year', ...Object.keys(yearlyData[0].investments)];
+        const csvHeaders = ['Year', ...Object.values(yearlyData[0].investments).map(investment => investment.id)];
         const csvRows = yearlyData.map(year => {
             return [year.year, ...Object.values(year.investments).map(investment => investment.value)];
         });
