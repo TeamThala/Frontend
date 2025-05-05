@@ -1,5 +1,19 @@
 import { Dispatch, SetStateAction } from "react";
 import { Scenario } from "@/types/scenario";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Type for portfolio distribution to help with type safety
+interface PortfolioDistributionFixed {
+  type: "fixed";
+  investments: any[];
+  percentages: number[];
+}
+
+interface PortfolioDistributionGlidePath {
+  type: "glidePath";
+  investments: any[];
+  initialPercentages: number[];
+  finalPercentages: number[];
+}
 
 // Handle allocation type change (fixed vs glidePath)
 export const handleAllocationTypeChange = (
@@ -16,8 +30,30 @@ export const handleAllocationTypeChange = (
     if (event.eventType.type !== "rebalance") return prev;
     
     // Get current investments or use empty array
-    const investments = prev.investments.length > 0 ? prev.investments : null;
-    const percentages = investments ? investments.map(() => 0) : [];
+    const investments = prev.investments || [];
+    
+    // Initialize with 0 percentages
+    const percentages = Array(investments.length).fill(0);
+    
+    // Preserve existing values if switching between types
+    const existingDistribution = event.eventType.portfolioDistribution;
+    let existingPercentages: number[] = [], existingInitial: number[] = [], existingFinal: number[] = [];
+    
+    if (existingDistribution) {
+      if (Array.isArray(existingDistribution)) {
+        const firstDist = existingDistribution[0] as any;
+        if (firstDist) {
+          existingPercentages = firstDist.percentages || [];
+          existingInitial = firstDist.initialPercentages || [];
+          existingFinal = firstDist.finalPercentages || [];
+        }
+      } else {
+        const dist = existingDistribution as any;
+        existingPercentages = dist.percentages || [];
+        existingInitial = dist.initialPercentages || [];
+        existingFinal = dist.finalPercentages || [];
+      }
+    }
     
     if (type === "fixed") {
       event.eventType = {
@@ -25,8 +61,9 @@ export const handleAllocationTypeChange = (
         portfolioDistribution: {
           type: "fixed",
           investments,
-          percentages
-        }
+          percentages: existingPercentages.length ? existingPercentages :
+                       existingInitial.length ? existingInitial : percentages
+        } as PortfolioDistributionFixed
       };
     } else {
       event.eventType = {
@@ -34,9 +71,11 @@ export const handleAllocationTypeChange = (
         portfolioDistribution: {
           type: "glidePath",
           investments,
-          initialPercentages: percentages,
-          finalPercentages: percentages
-        }
+          initialPercentages: existingInitial.length ? existingInitial :
+                              existingPercentages.length ? existingPercentages : percentages,
+          finalPercentages: existingFinal.length ? existingFinal :
+                           existingPercentages.length ? existingPercentages : percentages
+        } as PortfolioDistributionGlidePath
       };
     }
     
@@ -64,10 +103,20 @@ export const handlePercentageChange = (
     
     if (event.eventType.type !== "rebalance") return prev;
     
-    const portfolioDistribution = { ...event.eventType.portfolioDistribution };
+    // Safely get portfolioDistribution (handle both array and object cases)
+    let portfolioDistribution: any;
+    if (Array.isArray(event.eventType.portfolioDistribution)) {
+      portfolioDistribution = { ...(event.eventType.portfolioDistribution[0] || {}) };
+    } else {
+      portfolioDistribution = { ...(event.eventType.portfolioDistribution || {}) };
+    }
     
     if (portfolioDistribution.type === "fixed") {
-      const percentages = [...portfolioDistribution.percentages];
+      // Create percentages array if it doesn't exist
+      const percentages = Array.isArray(portfolioDistribution.percentages) 
+        ? [...portfolioDistribution.percentages]
+        : Array(prev.investments?.length || 0).fill(0);
+      
       const numValue = parseFloat(value);
       if (isNaN(numValue)) return prev;
       
@@ -80,9 +129,9 @@ export const handlePercentageChange = (
           percentages
         }
       };
+      
+      events[eventIndex] = event;
     }
-    
-    events[eventIndex] = event;
     
     return {
       ...prev,
@@ -107,14 +156,24 @@ export const handleGlidePathPercentageChange = (
     
     if (event.eventType.type !== "rebalance") return prev;
     
-    const portfolioDistribution = { ...event.eventType.portfolioDistribution };
+    // Safely get portfolioDistribution (handle both array and object cases)
+    let portfolioDistribution: any;
+    if (Array.isArray(event.eventType.portfolioDistribution)) {
+      portfolioDistribution = { ...(event.eventType.portfolioDistribution[0] || {}) };
+    } else {
+      portfolioDistribution = { ...(event.eventType.portfolioDistribution || {}) };
+    }
     
     if (portfolioDistribution.type === "glidePath") {
       const numValue = parseFloat(value);
       if (isNaN(numValue)) return prev;
       
       if (phase === "initial") {
-        const initialPercentages = [...portfolioDistribution.initialPercentages];
+        // Create initialPercentages array if it doesn't exist
+        const initialPercentages = Array.isArray(portfolioDistribution.initialPercentages)
+          ? [...portfolioDistribution.initialPercentages]
+          : Array(prev.investments?.length || 0).fill(0);
+        
         initialPercentages[investmentIndex] = numValue;
         
         event.eventType = {
@@ -125,7 +184,11 @@ export const handleGlidePathPercentageChange = (
           }
         };
       } else {
-        const finalPercentages = [...portfolioDistribution.finalPercentages];
+        // Create finalPercentages array if it doesn't exist
+        const finalPercentages = Array.isArray(portfolioDistribution.finalPercentages)
+          ? [...portfolioDistribution.finalPercentages]
+          : Array(prev.investments?.length || 0).fill(0);
+        
         finalPercentages[investmentIndex] = numValue;
         
         event.eventType = {
@@ -136,9 +199,9 @@ export const handleGlidePathPercentageChange = (
           }
         };
       }
+      
+      events[eventIndex] = event;
     }
-    
-    events[eventIndex] = event;
     
     return {
       ...prev,

@@ -56,13 +56,13 @@ export interface InvestmentEvent {
     // amount: number;
     inflationAdjustment: boolean;
     // targetAsset: string; // What is this for?
-    assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath | (AssetAllocationFixed | AssetAllocationGlidePath)[];
+    assetAllocation: AssetAllocationFixed | AssetAllocationGlidePath;
     maxCash: number;
 }
 
 export interface RebalanceEvent {
     type: "rebalance";
-    portfolioDistribution: AssetAllocationFixed | AssetAllocationGlidePath | (AssetAllocationFixed | AssetAllocationGlidePath)[];
+    portfolioDistribution: AssetAllocationFixed | AssetAllocationGlidePath;
 }
 
 export interface AssetAllocationFixed {

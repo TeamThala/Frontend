@@ -13,7 +13,6 @@ import EventSeries from "./components/event-series";
 import SpendingStrategy from "./components/spending-strategy";
 import ExpenseWithdrawalStrategy from "./components/expense-withdrawal-strategy";
 import RothAndRMD from "./components/roth-and-rmd";
-// import Summary from "./components/summary";
 
 
 export default function ScenarioPage() {
@@ -25,6 +24,7 @@ export default function ScenarioPage() {
   const [canEdit, setCanEdit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stateTaxFiles, setStateTaxFiles] = useState<Record<string, string>>({});
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const steps = [
     "General Info",
@@ -32,8 +32,7 @@ export default function ScenarioPage() {
     "Event Series",
     "Spending Strategy",
     "Expense Withdrawal",
-    "Roth and RMD",
-    "Summary"
+    "Roth and RMD"
   ];
 
   // Function to fetch scenario data from the server
@@ -107,6 +106,12 @@ export default function ScenarioPage() {
       // Move to next step
       setCurrentStep(currentStep + 1);
       console.log("updatedScenario", scenario);
+    } else {
+      // If on last step, show success message then redirect
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/scenarios');
+      }, 2000);
     }
   };
 
@@ -172,99 +177,110 @@ export default function ScenarioPage() {
     <div className="container mx-auto py-8 px-4 text-white">
       <h1 className="text-3xl font-bold mb-6">{scenario?.name || "Scenario"}</h1>
       
-      <Stepper 
-        currentStep={currentStep} 
-        steps={steps} 
-        onStepClick={handleStepClick}
-      />
-      
-      <div className="mt-8 bg-zinc-900 rounded-lg p-6">
-        {currentStep === 0 && (
-          <GeneralInformation 
-            scenario={scenario} 
-            canEdit={canEdit}
-            stateTaxFiles={stateTaxFiles}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
+      {showSuccess ? (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+          <div className="bg-zinc-800 p-8 rounded-lg text-center">
+            <div className="text-purple-400 text-4xl mb-4">✓</div>
+            <h2 className="text-2xl font-bold mb-4">Scenario Created Successfully!</h2>
+            <p>Redirecting to scenarios page...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <Stepper 
+            currentStep={currentStep} 
+            steps={steps} 
+            onStepClick={handleStepClick}
           />
-        )}
-        {currentStep === 1 && (
-          <Investments 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
-            handlePrevious={handlePrevious}
-          />
-        )}
-        {currentStep === 2 && (
-          <EventSeries   
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
-            handlePrevious={handlePrevious}
-          />
-        )}
-        {currentStep === 3 && (
-          <SpendingStrategy 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
-            handlePrevious={handlePrevious}
-          />
-        )}
-        {currentStep === 4 && (
-          <ExpenseWithdrawalStrategy 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
-            handlePrevious={handlePrevious}
-          />
-        )}
-        {currentStep === 5 && (
-          <RothAndRMD 
-            scenario={scenario} 
-            canEdit={canEdit}
-            onUpdate={(updatedScenario) => {
-              setScenario(updatedScenario);
-              if (canEdit) {
-                saveCurrentStepData(updatedScenario);
-              }
-            }}
-            handleNext={handleNext}
-            handlePrevious={handlePrevious}
-          />
-        )}
-        {/* {currentStep === 6 && <Summary />} */}
-      </div>
+          
+          <div className="mt-8 bg-zinc-900 rounded-lg p-6">
+            {currentStep === 0 && (
+              <GeneralInformation 
+                scenario={scenario} 
+                canEdit={canEdit}
+                stateTaxFiles={stateTaxFiles}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+              />
+            )}
+            {currentStep === 1 && (
+              <Investments 
+                scenario={scenario} 
+                canEdit={canEdit}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+                handlePrevious={handlePrevious}
+              />
+            )}
+            {currentStep === 2 && (
+              <EventSeries   
+                scenario={scenario} 
+                canEdit={canEdit}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+                handlePrevious={handlePrevious}
+              />
+            )}
+            {currentStep === 3 && (
+              <SpendingStrategy 
+                scenario={scenario} 
+                canEdit={canEdit}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+                handlePrevious={handlePrevious}
+              />
+            )}
+            {currentStep === 4 && (
+              <ExpenseWithdrawalStrategy 
+                scenario={scenario} 
+                canEdit={canEdit}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+                handlePrevious={handlePrevious}
+              />
+            )}
+            {currentStep === 5 && (
+              <RothAndRMD 
+                scenario={scenario} 
+                canEdit={canEdit}
+                onUpdate={(updatedScenario) => {
+                  setScenario(updatedScenario);
+                  if (canEdit) {
+                    saveCurrentStepData(updatedScenario);
+                  }
+                }}
+                handleNext={handleNext}
+                handlePrevious={handlePrevious}
+              />
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

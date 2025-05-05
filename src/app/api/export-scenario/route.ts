@@ -3,7 +3,6 @@ import dbConnect from "@/lib/dbConnect";
 import Scenario from "@/models/Scenario";
 import * as yaml from "js-yaml";
 import { FixedValues, NormalDistributionValues, UniformDistributionValues } from "@/types/utils";
-import { AssetAllocationFixed, AssetAllocationGlidePath } from "@/types/event";
 import RothConversionStrategy from "@/models/RothConversionStrategy";
 import { Investment } from "@/types/investment";
 
@@ -71,18 +70,18 @@ export async function GET(request: NextRequest) {
     // Enhanced mapping functions for investments
     const investmentTypesMap = new Map<string, YamlInvestmentType>();
     const investmentIdMap = new Map<string, string>();
-    
+
     // Helper function to create multiple variants of investment ID for more robust mapping
     const stashIdVariants = (humanId: string, investment: Investment) => {
       if (!humanId || !investment || !investment._id) return;
-      
+
       const id = investment._id.toString();
       const norm = humanId.toLowerCase().replace(/[^\w]+/g, "").trim();
-      
+
       investmentIdMap.set(humanId, id);
       investmentIdMap.set(norm, id);
       investmentIdMap.set(humanId.replace(/\s+/g, ""), id);
-      
+
       if (humanId.includes("S&P")) {
         investmentIdMap.set(humanId.replace(/S&P/g, "SP"), id);
       }
@@ -175,122 +174,144 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (["investment", "rebalance"].includes(evt.eventType.type)) {
+      /* ---------------- allocation → YAML ---------------- */
+      /* ---------------- allocation → YAML ---------------- */
+      if (evt.eventType.type === "investment") {
         const assetMap: Record<string, number> = {};
         const assetMap2: Record<string, number> = {};
-        const hasGlidePath = evt.eventType.assetAllocation && Array.isArray(evt.eventType.assetAllocation) && 
-            evt.eventType.assetAllocation.some((alloc: AssetAllocationFixed | AssetAllocationGlidePath) => 
-                alloc && alloc.type === 'glidePath');
-
-        if (evt.eventType.assetAllocation && evt.eventType.assetAllocation.length > 0) {
-          evt.eventType.assetAllocation.forEach((alloc) => {
-            // Check if allocation has valid data
-            if (!alloc) {
-              console.log(`Warning: Invalid asset allocation entry found in event ${evt.name}`);
-              return; // Skip this iteration
+      
+        const allAllocs = Array.isArray(evt.eventType.assetAllocation)
+          ? evt.eventType.assetAllocation
+          : evt.eventType.assetAllocation
+          ? [evt.eventType.assetAllocation]
+          : [];
+      
+        const hasGlidePath = allAllocs.some((alloc) => alloc?.type === "glidePath");
+      
+        for (const alloc of allAllocs) {
+          if (!alloc || !Array.isArray(alloc.investments)) continue;
+      
+          const initialPcts =
+            alloc.type === "glidePath"
+              ? alloc.initialPercentages ?? []
+              : alloc.percentages ?? [];
+      
+          const finalPcts =
+            alloc.type === "glidePath"
+              ? alloc.finalPercentages ?? []
+              : [];
+      
+          alloc.investments.forEach((inv, idx) => {
+            const humanId = investmentIdMap.get(inv.toString());
+            if (!humanId) return;
+      
+            const firstPct = initialPcts[idx] ?? initialPcts[0] ?? 0;
+            assetMap[humanId] = firstPct;
+      
+            if (hasGlidePath) {
+              const lastPct = finalPcts[idx] ?? finalPcts[0] ?? firstPct;
+              assetMap2[humanId] = lastPct;
             }
-            
-            // Handle both single investment and arrays of investments
-            const investments = alloc.investment ? [alloc.investment] : alloc.investments || [];
-            const initialPercentages = alloc.initialPercentages || alloc.percentages || [];
-            const finalPercentages = alloc.finalPercentages || [];
-
-                
-            // Process each investment with its corresponding percentage
-            investments.forEach((investment, index) => {
-              if (!investment) return;
-              
-              // Get the investment ID from the map
-              const id = investmentIdMap.get(investment.toString());
-              if (id) {
-                // Use the percentage at the matching index, or default to the first one
-                const initialPct = initialPercentages[index] !== undefined ? 
-                    initialPercentages[index] : 
-                    (initialPercentages[0] || 0);
-                    
-                assetMap[id] = initialPct;
-                
-                if (hasGlidePath) {
-                  const finalPct = finalPercentages[index] !== undefined ? 
-                      finalPercentages[index] : 
-                      (finalPercentages[0] || initialPct);
-                      
-                  assetMap2[id] = finalPct;
-                }
-              }
-            });
           });
         }
-        // No default entries - just use what's actually in the scenario data
-
+      
         out.assetAllocation = assetMap;
-        out.glidePath = hasGlidePath;
         if (hasGlidePath) {
+          out.glidePath = true;
           out.assetAllocation2 = assetMap2;
         }
-
-        
-
         out.maxCash = typeof evt.eventType.maxCash === "number" ? evt.eventType.maxCash : 0;
-
-      }
-
+      
+      } else if (evt.eventType.type === "rebalance") {
+        const assetMap: Record<string, number> = {};
+        const assetMap2: Record<string, number> = {};
+      
+        const allPds = Array.isArray(evt.eventType.portfolioDistribution)
+          ? evt.eventType.portfolioDistribution
+          : evt.eventType.portfolioDistribution
+          ? [evt.eventType.portfolioDistribution]
+          : [];
+      
+        const hasGlidePath = allPds.some((pd) => pd?.type === "glidePath");
+      
+        for (const pd of allPds) {
+          if (!pd || !Array.isArray(pd.investments)) continue;
+      
+          const initialPcts =
+            pd.type === "glidePath" ? pd.initialPercentages ?? [] : pd.percentages ?? [];
+      
+          const finalPcts =
+            pd.type === "glidePath" ? pd.finalPercentages ?? [] : [];
+      
+          pd.investments.forEach((inv, idx) => {
+            const humanId = investmentIdMap.get(inv.toString());
+            if (!humanId) return;
+      
+            const firstPct = initialPcts[idx] ?? initialPcts[0] ?? 0;
+            assetMap[humanId] = firstPct;
+      
+            if (hasGlidePath) {
+              const lastPct = finalPcts[idx] ?? finalPcts[0] ?? firstPct;
+              assetMap2[humanId] = lastPct;
+            }
+          });
+        }
+      
+        out.assetAllocation = assetMap;
+        if (hasGlidePath) {
+          out.glidePath = true;
+          out.assetAllocation2 = assetMap2;
+        }
+        out.maxCash = typeof evt.eventType.maxCash === "number" ? evt.eventType.maxCash : 0;
+      }      
       return out;
     }).filter(Boolean); // Filter out any null values
 
     // Helper function to get investment names from IDs with more robust error handling
     const getInvestmentIdsWithFallback = async (strategy: (string | Investment)[], strategyName: string): Promise<string[]> => {
-      console.log(`Processing ${strategyName} strategy`);
-      
+
       // If no strategy exists, return empty array
       if (!strategy || !Array.isArray(strategy) || strategy.length === 0) {
-        console.log(`No ${strategyName} strategy found, returning empty array`);
         return [];
       }
-      
+
       // Process all items in the strategy array
       const result: string[] = [];
-      
+
       for (const item of strategy) {
         if (!item) continue;
-        
+
         // Handle direct investment references
         if (typeof item === 'object' && item._id) {
           // Investment object reference
           const id = investmentIdMap.get(item._id.toString());
           if (id) {
             result.push(id);
-            console.log(`Added investment ${id} to ${strategyName} from direct reference`);
           } else {
-            console.log(`Warning: Could not find investment ID mapping for ${strategyName} item: ${item._id}`);
           }
         } else if (typeof item === 'string') {
           // String ID reference
           const id = investmentIdMap.get(item);
           if (id) {
             result.push(id);
-            console.log(`Added investment ${id} to ${strategyName} from string ID`);
           } else {
-            console.log(`Warning: Could not find investment ID mapping for ${strategyName} string ID: ${item}`);
           }
         }
       }
-      
+
       // Special handling for S&P 500 pre-tax in RothConversionStrategy
       if (strategyName === 'RothConversionStrategy' && result.length === 0) {
-        console.log('No Roth conversion mappings found, checking for S&P 500 pre-tax investments');
-        
+
         // Look for any investment that might be an S&P 500 pre-tax account
         for (const [key, value] of Object.entries(investmentIdMap)) {
-          if ((typeof key === 'string' && key.includes('S&P') && key.includes('pre-tax')) || 
-              (typeof value === 'string' && value.includes('S&P') && value.includes('pre-tax'))) {
+          if ((typeof key === 'string' && key.includes('S&P') && key.includes('pre-tax')) ||
+            (typeof value === 'string' && value.includes('S&P') && value.includes('pre-tax'))) {
             const investmentId = typeof value === 'string' ? value : key;
             result.push(investmentId);
-            console.log(`Added S&P 500 pre-tax investment to ${strategyName} as fallback: ${investmentId}`);
           }
         }
       }
-      
+
       return result;
     };
 
@@ -299,14 +320,13 @@ export async function GET(request: NextRequest) {
     if (scenario.rothConversion && scenario.rothConversion.rothConversion) {
       // First try to get from RothConversionStrategy collection references
       if (scenario.RothConversionStrategy && Array.isArray(scenario.RothConversionStrategy)) {
-        console.log('Fetching Roth conversion from RothConversionStrategy collection');
-        
+
         for (const strategyRef of scenario.RothConversionStrategy) {
           try {
             // If this is already populated as an object with investmentOrder
             if (strategyRef.investmentOrder) {
               const investments = await getInvestmentIdsWithFallback(
-                strategyRef.investmentOrder, 
+                strategyRef.investmentOrder,
                 'RothConversionStrategy.investmentOrder'
               );
               rothConversionStrategy = [...rothConversionStrategy, ...investments];
@@ -326,28 +346,25 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-      
+
       // If still empty, try direct investment references 
       if (rothConversionStrategy.length === 0) {
-        console.log('No RothConversionStrategy found in collection, trying direct investment references');
         const directInvestments = await getInvestmentIdsWithFallback(
-          scenario.RothConversionStrategy as (string | Investment)[], 
+          scenario.RothConversionStrategy as (string | Investment)[],
           'RothConversionStrategy (direct)'
         );
         rothConversionStrategy = directInvestments;
       }
-      
+
       // If still empty, fallback to all pre-tax accounts as last resort
       if (rothConversionStrategy.length === 0) {
-        console.log('No Roth conversion strategy found, using fallback to all pre-tax investments');
-        
+
         // Find all pre-tax investments
         for (const inv of scenario.investments) {
           if (inv && inv.taxStatus === 'pre-tax') {
             const id = investmentIdMap.get(inv._id.toString());
             if (id) {
               rothConversionStrategy.push(id);
-              console.log(`Added ${id} to RothConversionStrategy fallback`);
             }
           }
         }
@@ -358,30 +375,28 @@ export async function GET(request: NextRequest) {
     let rmdStrategy: string[] = [];
     if (scenario.RMDStrategy && Array.isArray(scenario.RMDStrategy)) {
       rmdStrategy = await getInvestmentIdsWithFallback(scenario.RMDStrategy as (string | Investment)[], 'RMDStrategy');
-      
+
       // If empty, fallback to all pre-tax accounts
       if (rmdStrategy.length === 0) {
-        console.log('No RMD strategy found, using fallback to all pre-tax investments');
-        
+
         // Find all pre-tax investments
         for (const inv of scenario.investments) {
           if (inv && inv.taxStatus === 'pre-tax') {
             const id = investmentIdMap.get(inv._id.toString());
             if (id) {
               rmdStrategy.push(id);
-              console.log(`Added ${id} to RMDStrategy fallback`);
             }
           }
         }
       }
     }
-    
+
     // Process spending strategy
     const spendingStrategy = scenario.spendingStrategy?.map((id) => {
       if (typeof id === 'string') return scenario.eventSeries.find((e) => e._id.toString() === id)?.name;
       return scenario.eventSeries.find((e) => e._id.equals(id))?.name;
     }).filter(Boolean) as string[];
-    
+
     // Process expense withdrawal strategy
     const expenseWithdrawalStrategy = scenario.expenseWithdrawalStrategy?.map((id) => {
       if (typeof id === 'string') return investmentIdMap.get(id);
@@ -391,7 +406,7 @@ export async function GET(request: NextRequest) {
     const yamlData: Record<string, string | number | boolean | null | unknown[] | Record<string, unknown>> = {
       name: scenario.name,
       description: scenario.description,
-      maritalStatus: scenario.type === 'couple' ? 'couple' : 'single', 
+      maritalStatus: scenario.type === 'couple' ? 'couple' : 'single',
       birthYears: [scenario.ownerBirthYear, scenario.spouseBirthYear].filter(Boolean),
       lifeExpectancy: [
         scenario.ownerLifeExpectancy ? serializeDistribution(scenario.ownerLifeExpectancy) : null,
@@ -402,42 +417,28 @@ export async function GET(request: NextRequest) {
       eventSeries: eventsYaml,
       inflationAssumption: serializeDistribution(scenario.inflationRate),
       // Include afterTaxContributionLimit 
-      afterTaxContributionLimit: 7000, 
+      afterTaxContributionLimit: 7000,
       spendingStrategy,
       expenseWithdrawalStrategy,
       RMDStrategy: rmdStrategy,
       RothConversionOpt: scenario.rothConversion?.rothConversion || false,
-      RothConversionStart: scenario.rothConversion?.rothConversion ? 
-          scenario.rothConversion.RothConversionStartYear : null,
-      RothConversionEnd: scenario.rothConversion?.rothConversion ? 
-          scenario.rothConversion.RothConversionEndYear : null,
+      RothConversionStart: scenario.rothConversion?.rothConversion ?
+        scenario.rothConversion.RothConversionStartYear : null,
+      RothConversionEnd: scenario.rothConversion?.rothConversion ?
+        scenario.rothConversion.RothConversionEndYear : null,
       RothConversionStrategy: rothConversionStrategy,
       financialGoal: scenario.financialGoal,
       residenceState: scenario.residenceState,
     };
 
-    // Log Roth conversion details for debugging
-    console.log('Roth Conversion details:');
-    console.log('  rothConversion from DB:', JSON.stringify(scenario.rothConversion));
-    console.log('  Values going into YAML:');
-    console.log('  RothConversionOpt:', yamlData.RothConversionOpt);
-    console.log('  RothConversionStart:', yamlData.RothConversionStart);
-    console.log('  RothConversionEnd:', yamlData.RothConversionEnd);
-    console.log('  RothConversionStrategy:', JSON.stringify(yamlData.RothConversionStrategy));
 
     // Generate the YAML string
-    const yamlStr = yaml.dump(yamlData, { 
+    const yamlStr = yaml.dump(yamlData, {
       lineWidth: 0,
       skipInvalid: false,
       noRefs: true
     });
 
-    // Double-check if Roth conversion fields are in the YAML
-    console.log('Checking final YAML for Roth fields:');
-    console.log('  RothConversionOpt in YAML:', yamlStr.includes('RothConversionOpt:'));
-    console.log('  RothConversionStart in YAML:', yamlStr.includes('RothConversionStart:'));
-    console.log('  RothConversionEnd in YAML:', yamlStr.includes('RothConversionEnd:'));
-    console.log('  RothConversionStrategy in YAML:', yamlStr.includes('RothConversionStrategy:'));
 
     // Add header comments to match the example format
     const headerComment = `# file format for scenario import/export.  version: ${new Date().toISOString().split('T')[0]}
@@ -453,7 +454,7 @@ export async function GET(request: NextRequest) {
 
     // If for some reason the fields don't appear in the YAML, manually add them
     let finalYamlStr = headerComment + yamlStr;
-    
+
     // Ensure critical fields are always present
     const requiredFields = [
       { key: 'RothConversionOpt', value: yamlData.RothConversionOpt },
@@ -461,7 +462,7 @@ export async function GET(request: NextRequest) {
       { key: 'RothConversionEnd', value: yamlData.RothConversionEnd },
       { key: 'RothConversionStrategy', value: JSON.stringify(yamlData.RothConversionStrategy) === '[]' ? '[]' : yamlData.RothConversionStrategy }
     ];
-    
+
     // Check each field and add it if missing
     for (const field of requiredFields) {
       if (!finalYamlStr.includes(`${field.key}:`)) {
@@ -474,11 +475,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('Final YAML check after potential additions:');
-    console.log('  RothConversionOpt in final YAML:', finalYamlStr.includes('RothConversionOpt:'));
-    console.log('  RothConversionStart in final YAML:', finalYamlStr.includes('RothConversionStart:'));
-    console.log('  RothConversionEnd in final YAML:', finalYamlStr.includes('RothConversionEnd:'));
-    console.log('  RothConversionStrategy in final YAML:', finalYamlStr.includes('RothConversionStrategy:'));
 
     return new NextResponse(finalYamlStr, {
       status: 200,
@@ -495,12 +491,12 @@ export async function GET(request: NextRequest) {
 
 function serializeDistribution(dist: FixedValues | NormalDistributionValues | UniformDistributionValues | Record<string, unknown>, isYear = false): Record<string, unknown> {
   if (!dist || typeof dist !== 'object' || !('type' in dist)) return {};
-  
+
   // Extract all possible fields
   const { type } = dist;
-  
+
   if (!type) return {};
-  
+
   if (type === "fixed") {
     const fixedDist = dist as FixedValues;
     // For year fields, use year if available, otherwise value
@@ -509,16 +505,16 @@ function serializeDistribution(dist: FixedValues | NormalDistributionValues | Un
     }
     return { type, value: fixedDist.value };
   }
-  
+
   if (type === "normal") {
     const normalDist = dist as NormalDistributionValues;
     return { type, mean: normalDist.mean, stdev: normalDist.stdDev };
   }
-  
+
   if (type === "uniform") {
     const uniformDist = dist as UniformDistributionValues;
     return { type, lower: uniformDist.min, upper: uniformDist.max };
   }
-  
+
   return {};
 }
