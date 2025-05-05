@@ -151,6 +151,56 @@ const mockInvestmentEvent2: Event = {
     }
 };
 
+const mockNoCash: Event = {
+    "id": "cashOnly",
+    "name": "Cash Only Event",
+    "description": "Default cash event and no other investments.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "year": 99
+    },
+    "eventType": {
+        "type": "investment",
+        "inflationAdjustment": true,
+        "assetAllocation":{
+            "type": "fixed",
+            "investments":[
+                {
+                    "id": "investment1",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Variable amounts investment",
+                        "description": "Normal annual % return, normal annual amount income",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 100,
+                            "stdDev": 1
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": 50
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 5000
+                }
+            ],
+            "percentages": [100]
+        },
+        "maxCash": 999999999
+    }
+};
+
 const mockCashInvestment: Investment = {
     "id": "cashInvestment",
     "value": 10000,
@@ -264,6 +314,9 @@ describe('Simulation: Run income events', () => {
 
         expect(updatedEvents.curYearIncome).toBeCloseTo(77000); // Ensure income is calculated correctly
         expect(updatedEvents.curYearSS).toBeCloseTo(0); // Ensure social security is calculated correctly
+
+        const failedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockNoCash, 1, "percentage", mockLog);
+        expect(failedEvents).toBeNull(); // Ensure the result is null when no cash investment is found
     });
 });
 
@@ -274,7 +327,7 @@ describe('Simulation: Update values of investments', () => {
         expect(dCurYearIncome).toBe(1000); // non-retirement income from investment1
 
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[0].value).toBeCloseTo(10000); // cash account does not change
-        expect(mockInvestmentEvent2.eventType.assetAllocation.investments[1].value).toBeCloseTo(12100); // (value + income) * annual return
+        expect(mockInvestmentEvent2.eventType.assetAllocation.investments[1].value).toBeCloseTo(12100); // (value + income) * annual return // Ensure the result is null
     });
 });
 
