@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction } from "react";
 import { Scenario } from "@/types/scenario";
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Type for portfolio distribution to help with type safety
 interface PortfolioDistributionFixed {
   type: "fixed";
@@ -14,8 +14,6 @@ interface PortfolioDistributionGlidePath {
   initialPercentages: number[];
   finalPercentages: number[];
 }
-
-type PortfolioDistribution = PortfolioDistributionFixed | PortfolioDistributionGlidePath;
 
 // Handle allocation type change (fixed vs glidePath)
 export const handleAllocationTypeChange = (
