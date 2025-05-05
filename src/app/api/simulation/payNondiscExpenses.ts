@@ -5,7 +5,7 @@ import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 import { TaxData } from "@/lib/taxData";
 
-export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData, log: string[]){
+export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, prevYearEarlyWithdrawals: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData, age: number, log: string[]){
     log.push(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
     let prevYearTaxes: number = 0;
 
@@ -48,9 +48,9 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         }
     }
     prevYearTaxes += stateTaxAmount; // state taxes
-    log.push(`State taxes for ${year} are calculated to ${stateTaxAmount}`);
+    log.push(`State taxes for ${year} are calculated to ${stateTaxAmount} (state: ${state}, year: ${year}, income: ${curYearIncome}, SS: ${curYearSS})`);
 
-    // TODO: Add capital gains taxes
+    // Add capital gains taxes
     const capitalGainsRates = taxData.capitalGainsRates;
     let capitalGainsTaxAmount = 0;
     if (prevYearGains >= parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.from) && prevYearGains < parseFloat(capitalGainsRates.zeroPercent[married ? 1:0].range.to)){
@@ -66,7 +66,13 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         log.push(`Using 20% tax for capital gains`)
     }
     prevYearTaxes += capitalGainsTaxAmount; // capital 
-    log.push(`Capital gains taxes for ${year} are calculated to ${capitalGainsTaxAmount}`);
+    log.push(`Capital gains taxes for ${year} are calculated to ${capitalGainsTaxAmount} (prev year gains: ${prevYearGains})`);
+
+    // Add early withdrawal tax
+    prevYearTaxes += prevYearEarlyWithdrawals * 0.1; // 10% penalty for early withdrawal
+    log.push(`Early withdrawal taxes for ${year} are calculated to ${prevYearEarlyWithdrawals * 0.1} (prev year early withdrawals: ${prevYearEarlyWithdrawals})`);
+
+    // Calculate total nondiscretionary expenses
     let totalPayments = 0;
     for (let i=0; i<expenseEvents.length; i++){
         const event = expenseEvents[i];
@@ -86,22 +92,38 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;
     }
-    log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
-    cashInvestment.value -= totalPayments;
-    log.push(`Cash investment with value ${cashInvestment.value} is going to have ${prevYearTaxes} withdrawn for prevYearTaxes`);
-    cashInvestment.value -= prevYearTaxes;
+    // log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
+    // cashInvestment.value -= totalPayments;
+    // log.push(`Cash investment with value ${cashInvestment.value} is going to have ${prevYearTaxes} withdrawn for prevYearTaxes`);
+    // cashInvestment.value -= prevYearTaxes;
 
     // Withdraw until cash investment is 0
     let dCurYearGains = 0; // to return this change in curYearGains from withdrawing investments
     let dCurYearIncome = 0; // to return this change in curYearIncome from withdrawing investments (cap gains on pre-tax investments)
+    let dCurYearEarlyWithdrawals = 0;
+
     for(let i=0; i<expenseWithdrawalStrategy.length; i++){
         const investment = expenseWithdrawalStrategy[i];
-        if (cashInvestment.value >= 0){ // withdraw until cash is 0
-            log.push(`Cash investment value is ${cashInvestment.value}, ending withdrawals...`);
+        if (totalPayments <= 0 && prevYearTaxes <= 0){
+            log.push(`All non-discretionary expenses and taxes have been paid off`);
             break;
         }
-        if (investment.value > 0){
-            const withdrawalAmount = Math.min(investment.value, -1 * cashInvestment.value);
+
+        if (cashInvestment.value >= 0){ // withdraw until cash is 0
+            log.push(`Cash investment value is ${cashInvestment.value}. Paying with cash instead.`);
+            const amountToWithdraw = Math.min(totalPayments + prevYearTaxes, cashInvestment.value);
+            log.push(`Withdrawing ${amountToWithdraw} from cash investment`);
+            cashInvestment.value -= amountToWithdraw;
+            totalPayments -= Math.min(totalPayments, amountToWithdraw);
+            prevYearTaxes -= Math.max(0, amountToWithdraw - totalPayments);
+            if (totalPayments <= 0 && prevYearTaxes <= 0){
+                log.push(`All non-discretionary expenses and taxes have been paid off`);
+                break;
+            }
+        }
+
+        if (investment.value > 0){ // withdraw from investment in investment withdrawal strategy
+            const withdrawalAmount = Math.min(investment.value, totalPayments + prevYearTaxes);
             const f = withdrawalAmount / investment.value; // fraction of investment value withdrawn
             if (investment.taxStatus === "pre-tax"){
                 dCurYearIncome += f * (investment.value - (investment.purchasePrice || 0)); // capital gains on pre-tax investments
@@ -109,6 +131,12 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
             else if (investment.taxStatus === "non-retirement"){
                 dCurYearGains += f * (investment.value - (investment.purchasePrice || 0));
             }
+
+            if (age < 59 && (investment.taxStatus === "pre-tax" || investment.taxStatus === "after-tax")){ 
+                dCurYearEarlyWithdrawals += withdrawalAmount;
+                log.push(`PENALTY: Withdrew ${withdrawalAmount} from ${investment.id} with early withdrawal penalty`);
+            }
+
             // after-tax does not have taxes on capital gains
             investment.value -= withdrawalAmount;
             cashInvestment.value += withdrawalAmount;
@@ -167,5 +195,5 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
         }
     }
 
-    return {dCurYearGains, dCurYearIncome};
+    return {dCurYearGains, dCurYearIncome, dCurYearEarlyWithdrawals};
 }

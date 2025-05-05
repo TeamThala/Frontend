@@ -254,13 +254,15 @@ export async function simulation(scenario: Scenario){
             }
             curYearIncome += rc;
         }
-        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, log);
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, curYearEarlyWithdrawals, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, age, log);
         if (nondiscExpenseRet === null){
             log.push(`Ending simulation run...`);
             return null;
         }
         curYearGains += nondiscExpenseRet.dCurYearGains;
         curYearIncome += nondiscExpenseRet.dCurYearIncome;
+        curYearEarlyWithdrawals += nondiscExpenseRet.dCurYearEarlyWithdrawals;
+        log.push(`Return from payNondiscExpenses: dCurYearGains: ${nondiscExpenseRet.dCurYearGains}, dCurYearIncome: ${nondiscExpenseRet.dCurYearIncome}, dCurYearEarlyWithdrawals: ${nondiscExpenseRet.dCurYearEarlyWithdrawals}`);
 
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;
