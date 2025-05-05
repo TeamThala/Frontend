@@ -454,9 +454,9 @@ export const renderInvestmentEventDetails = (
                       }
                       onChange={(e) => {
                         if (distributionType === "fixed") {
-                          handlers.handlePercentageChange && handlers.handlePercentageChange(investmentIndex, String(toStoredPercentage(parseFloat(e.target.value))), index);
+                          handlers.handlePercentageChange?.(investmentIndex, String(toStoredPercentage(parseFloat(e.target.value))), index);
                         } else {
-                          handlers.handleGlidePathPercentageChange && handlers.handleGlidePathPercentageChange(
+                          handlers.handleGlidePathPercentageChange?.(
                             investmentIndex,
                             isInitial ? "initial" : "final",
                             String(toStoredPercentage(parseFloat(e.target.value))),
