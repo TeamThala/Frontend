@@ -728,7 +728,7 @@ import {
   NormalYear,
   EventYear,
   InvestmentEvent,
-  RebalanceEvent
+  RebalanceEvent,
 } from "@/types/event";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
@@ -773,7 +773,7 @@ const isMongoId = (v: unknown): v is string =>
   typeof v === "string" && mongoose.Types.ObjectId.isValid(v);
 
 function normalizeStartYear(
-  raw: FixedYear | UniformYear | NormalYear | EventYear
+  raw: FixedYear | UniformYear | NormalYear | EventYear,
 ): DbStartYear {
   switch (raw.type) {
     case "fixed":
@@ -816,11 +816,13 @@ function normalizeDuration(raw: FixedYear | UniformYear | NormalYear): DbDuratio
 }
 
 function extractInvestmentIds(
-  items: Array<
-    | string
-    | mongoose.Types.ObjectId
-    | { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId }
-  > | null
+  items:
+    | null
+    | Array<
+        | string
+        | mongoose.Types.ObjectId
+        | { _id?: string | mongoose.Types.ObjectId; id?: string | mongoose.Types.ObjectId }
+      >,
 ): mongoose.Types.ObjectId[] {
   if (!items) return [];
   return items
@@ -839,12 +841,16 @@ function extractInvestmentIds(
     .filter((id): id is mongoose.Types.ObjectId => Boolean(id));
 }
 
+/* helper: first non‑null element or null */
+const firstOrNull = <T,>(v: T | T[] | null | undefined): T | null =>
+  Array.isArray(v) ? v[0] ?? null : v ?? null;
+
 /* ────────────────────────────────
    GET
    ──────────────────────────────── */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
   const scenarioId = (await params).id;
@@ -852,7 +858,7 @@ export async function GET(
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json(
       { success: false, error: "Invalid scenario ID" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -860,7 +866,7 @@ export async function GET(
   if (!session?.user?.email) {
     return NextResponse.json(
       { success: false, error: "Authentication required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -873,7 +879,7 @@ export async function GET(
   if (!scenario) {
     return NextResponse.json(
       { success: false, error: "Scenario not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -881,20 +887,22 @@ export async function GET(
   if (!user) {
     return NextResponse.json(
       { success: false, error: "User not found" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
   const isOwner = scenario.owner.toString() === user._id.toString();
-  const canEdit = user.readWriteScenarios.some((id) => id.toString() === scenarioId);
+  const canEdit = user.readWriteScenarios.some(
+    (id) => id.toString() === scenarioId,
+  );
   const canView = scenario.viewPermissions.some(
-    (id) => id.toString() === user._id.toString()
+    (id) => id.toString() === user._id.toString(),
   );
 
   if (!isOwner && !canEdit && !canView) {
     return NextResponse.json(
       { success: false, error: "No permission" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -916,7 +924,7 @@ export async function GET(
    ──────────────────────────────── */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   await dbConnect();
   const scenarioId = (await params).id;
@@ -924,7 +932,7 @@ export async function PUT(
   if (!mongoose.Types.ObjectId.isValid(scenarioId)) {
     return NextResponse.json(
       { success: false, error: "Invalid scenario ID" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -932,7 +940,7 @@ export async function PUT(
   if (!session?.user?.email) {
     return NextResponse.json(
       { success: false, error: "Authentication required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -944,17 +952,17 @@ export async function PUT(
   if (!scenario)
     return NextResponse.json(
       { success: false, error: "Scenario not found" },
-      { status: 404 }
+      { status: 404 },
     );
   if (!user)
     return NextResponse.json(
       { success: false, error: "User not found" },
-      { status: 404 }
+      { status: 404 },
     );
 
   const body: ScenarioUpdateBody = await req.json();
 
-  /* 1 — general info */
+  /* 1 — general info */
   scenario.name = body.name;
   scenario.description = body.description;
   scenario.financialGoal = body.financialGoal;
@@ -968,12 +976,12 @@ export async function PUT(
     scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
   }
 
-  /* 2 — investments (deduped) */
+  /* 2 — investments (deduped) */
   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
   for (const inv of body.investments) {
     let invTypeId: mongoose.Types.ObjectId;
 
-    /* 2-a InvestmentType */
+    /* 2‑a InvestmentType */
     if (inv.investmentType._id && isMongoId(inv.investmentType._id)) {
       const existingType = await InvestmentType.findById(inv.investmentType._id);
       if (existingType) {
@@ -1012,7 +1020,7 @@ export async function PUT(
       )._id;
     }
 
-    /* 2-b Investment */
+    /* 2‑b Investment */
     if (inv._id && isMongoId(inv._id)) {
       const existingInv = await Investment.findById(inv._id);
       if (existingInv) {
@@ -1033,12 +1041,12 @@ export async function PUT(
           purchasePrice: inv.purchasePrice,
           taxStatus: inv.taxStatus,
         }).save()
-      )._id
+      )._id,
     );
   }
   scenario.investments = updatedInvestmentIds;
 
-  /* 3 — events (deduped) */
+  /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
 
   const normaliseAlloc = (alloc: any) => {
@@ -1052,7 +1060,6 @@ export async function PUT(
     return alloc;
   };
 
-  // now safe: only call normalisePd when we actually have a pd object
   const normalisePd = (pd: any) => {
     pd.investments = extractInvestmentIds(pd.investments ?? []);
     if (pd.type === "fixed") {
@@ -1065,7 +1072,7 @@ export async function PUT(
   };
 
   for (const evt of body.eventSeries) {
-    // ── UPDATE path ─────────────────────────────────────
+    /* ---------- UPDATE path ---------- */
     if (evt._id && isMongoId(evt._id)) {
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
@@ -1078,32 +1085,20 @@ export async function PUT(
       let dbEventType: any;
       if (evt.eventType.type === "investment") {
         const ie = evt.eventType as InvestmentEvent;
-        const allocRaw = Array.isArray(ie.assetAllocation)
-          ? ie.assetAllocation[0]
-          : ie.assetAllocation;
+        const alloc = firstOrNull(ie.assetAllocation);
         dbEventType = {
           type: "investment",
           inflationAdjustment: ie.inflationAdjustment,
           maxCash: ie.maxCash,
-          assetAllocation: [normaliseAlloc(allocRaw)],
+          assetAllocation: alloc ? [normaliseAlloc(alloc)] : [],
         };
-
       } else if (evt.eventType.type === "rebalance") {
         const re = evt.eventType as RebalanceEvent;
-        // ←————— guard here
-        if (!re.portfolioDistribution) {
-          dbEventType = { ...re };
-        } else {
-          const rawPd = Array.isArray(re.portfolioDistribution)
-            ? re.portfolioDistribution[0]
-            : re.portfolioDistribution;
-          const { _id, id, ...pdFields } = rawPd;
-          dbEventType = {
-            type: "rebalance",
-            portfolioDistribution: [normalisePd(pdFields)],
-          };
-        }
-
+        const pd = firstOrNull(re.portfolioDistribution);
+        dbEventType = {
+          type: "rebalance",
+          portfolioDistribution: pd ? [normalisePd(pd)] : [],
+        };
       } else {
         dbEventType = { ...evt.eventType };
       }
@@ -1114,38 +1109,26 @@ export async function PUT(
       continue;
     }
 
-    // ── CREATE path ─────────────────────────────────────
+    /* ---------- CREATE path ---------- */
     const { _id: _drop1, id: _drop2, ...evtWithoutIds } = evt as any;
 
     let dbEventType: any;
     if (evt.eventType.type === "investment") {
       const ie = evt.eventType as InvestmentEvent;
-      const allocRaw = Array.isArray(ie.assetAllocation)
-        ? ie.assetAllocation[0]
-        : ie.assetAllocation;
+      const alloc = firstOrNull(ie.assetAllocation);
       dbEventType = {
         type: "investment",
         inflationAdjustment: ie.inflationAdjustment,
         maxCash: ie.maxCash,
-        assetAllocation: [normaliseAlloc(allocRaw)],
+        assetAllocation: alloc ? [normaliseAlloc(alloc)] : [],
       };
-
     } else if (evt.eventType.type === "rebalance") {
       const re = evt.eventType as RebalanceEvent;
-      // ←————— same guard here
-      if (!re.portfolioDistribution) {
-        dbEventType = { ...re };
-      } else {
-        const rawPd = Array.isArray(re.portfolioDistribution)
-          ? re.portfolioDistribution[0]
-          : re.portfolioDistribution;
-        const { _id, id, ...pdFields } = rawPd;
-        dbEventType = {
-          type: "rebalance",
-          portfolioDistribution: [normalisePd(pdFields)],
-        };
-      }
-
+      const pd = firstOrNull(re.portfolioDistribution);
+      dbEventType = {
+        type: "rebalance",
+        portfolioDistribution: pd ? [normalisePd(pd)] : [],
+      };
     } else {
       dbEventType = { ...evt.eventType };
     }
@@ -1162,20 +1145,20 @@ export async function PUT(
 
   scenario.eventSeries = updatedEventIds;
 
-  /* 4 — spending / expense withdrawal strategies */
+  /* 4 — spending / expense withdrawal strategies */
   scenario.spendingStrategy = extractInvestmentIds(body.spendingStrategy ?? []);
   scenario.expenseWithdrawalStrategy = extractInvestmentIds(
-    body.expenseWithdrawalStrategy ?? []
+    body.expenseWithdrawalStrategy ?? [],
   );
 
-  /* 5 — RMD & Roth */
+  /* 5 — RMD & Roth */
   scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy ?? []);
   scenario.RothConversionStrategy = extractInvestmentIds(
-    body.RothConversionStrategy ?? []
+    body.RothConversionStrategy ?? [],
   );
   scenario.rothConversion = body.rothConversion ?? null;
 
-  /* 6 — state-tax files (user-level) */
+  /* 6 — state‑tax files (user‑level) */
   if (body.stateTaxFiles) {
     user.stateTaxFiles = body.stateTaxFiles;
     await user.save();

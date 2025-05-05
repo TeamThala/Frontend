@@ -332,6 +332,7 @@ export async function POST(req: NextRequest) {
         discretionary?: boolean;
         assetAllocation?: Allocation[];
         maxCash?: number;
+        portfolioDistribution?: Allocation[];
       }
 
       const eventType: EventType = {
@@ -356,7 +357,7 @@ export async function POST(req: NextRequest) {
         const alloc: Allocation = ev.glidePath
           ? { type: "glidePath", investments: [], initialPercentages: [], finalPercentages: [] }
           : { type: "fixed",     investments: [], percentages: [] };
-
+      
         if (ev.assetAllocation) {
           for (const [label, pctRaw] of Object.entries(ev.assetAllocation)) {
             const oid =
@@ -367,16 +368,16 @@ export async function POST(req: NextRequest) {
                 { success: false, error: `Allocation refers to unknown investment '${label}'` },
                 { status: 400 }
               );
-
+      
             const pct = Number(pctRaw);
             if (!Number.isFinite(pct))
               return NextResponse.json(
                 { success: false, error: `Invalid percentage for '${label}'` },
                 { status: 400 }
               );
-
+      
             alloc.investments.push(oid);
-
+      
             if (ev.glidePath) {
               alloc.initialPercentages!.push(pct);
               const finalPct =
@@ -389,10 +390,13 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-
-        /* store on eventType **inside** this branch so `alloc` is in scope */
-        eventType.assetAllocation = [alloc];
-        eventType.maxCash         = ev.maxCash ?? 0;
+      
+        if (ev.type === "invest") {
+          eventType.assetAllocation = [alloc];
+          eventType.maxCash = ev.maxCash ?? 0;
+        } else {
+          eventType.portfolioDistribution = [alloc];
+        }
       }
 
       /* 5d  create Event */
