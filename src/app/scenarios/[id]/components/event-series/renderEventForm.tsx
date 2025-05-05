@@ -9,6 +9,7 @@ import { renderBasicEventDetails } from "./renderBasicEventDetails";
 import { renderIncomeEventDetails } from "./renderIncomeEventDetails";
 import { renderExpenseEventDetails } from "./renderExpenseEventDetails";
 import { renderInvestmentEventDetails } from "./renderInvestmentEventDetails";
+import { renderRebalanceEventDetails } from "./renderRebalanceEventDetails";
 
 // Type for distribution types used in UI controls
 type DistributionType = "fixed" | "normal" | "uniform";
@@ -25,13 +26,18 @@ export interface EventHandlers {
   handleIncomeDistributionTypeChange: (newType: DistributionType, index: number) => void;
   handleExpenseDistributionValueChange: (subField: keyof (FixedValues & NormalDistributionValues & UniformDistributionValues), value: string, index: number) => void;
   handleExpenseDistributionTypeChange: (newType: DistributionType, index: number) => void;
-  handleAllocationTypeChange: (type: "fixed" | "glidePath", index: number) => void;
-  handlePercentageChange: (investmentIndex: number, value: string, eventIndex: number) => void;
-  handleGlidePathPercentageChange: (investmentIndex: number, phase: "initial" | "final", value: string, eventIndex: number) => void;
+  
+  // Investment handlers
   handleInvestmentAllocationTypeChange: (type: "fixed" | "glidePath", index: number) => void;
   handleInvestmentPercentageChange: (investmentIndex: number, value: string, eventIndex: number) => void;
   handleInvestmentGlidePathPercentageChange: (investmentIndex: number, phase: "initial" | "final", value: string, eventIndex: number) => void;
   handleMaxCashChange: (value: string, index: number) => void;
+  
+  // Rebalance handlers (make sure these are not optional)
+  handleAllocationTypeChange: (type: "fixed" | "glidePath", index: number) => void;
+  handlePercentageChange: (investmentIndex: number, value: string, eventIndex: number) => void;
+  handleGlidePathPercentageChange: (investmentIndex: number, phase: "initial" | "final", value: string, eventIndex: number) => void;
+  
   confirmDelete: (index: number) => void;
   setCanProceed?: (isValid: boolean) => void;
 }
@@ -63,7 +69,7 @@ export const renderEventForm = (
       {event.eventType.type === "income" && renderIncomeEventDetails(event, index, canEdit, handlers)}
       {event.eventType.type === "expense" && renderExpenseEventDetails(event, index, canEdit, handlers)}
       {event.eventType.type === "investment" && renderInvestmentEventDetails(event, index, canEdit, handlers, scenarioInvestments as any)}
-      {/* {event.eventType.type === "rebalance" && renderRebalanceEventDetails(event, index, canEdit, handlers)} */}
+      {event.eventType.type === "rebalance" && renderRebalanceEventDetails(event, index, canEdit, handlers, scenarioInvestments as any)}
     </div>
   );
 }; 

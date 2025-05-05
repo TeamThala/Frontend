@@ -44,7 +44,7 @@ const eventTypeSchema = new Schema(
 
     // Fields for IncomeEvent
     amount: { type: Number },
-    
+
     expectedAnnualChange: {
       type: {
         type: String,
@@ -61,7 +61,7 @@ const eventTypeSchema = new Schema(
     percentageOfIncome: { type: Number },
     socialSecurity: { type: Boolean, default: false },
     wage: { type: Boolean, default: true },
-    
+
     // Fields for ExpenseEvent
     discretionary: { type: Boolean },
 
@@ -72,6 +72,15 @@ const eventTypeSchema = new Schema(
           type: String,
           enum: ["fixed", "glidePath"],
         },
+        investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
+        percentages: [{ type: Number }],
+        initialPercentages: [{ type: Number }],
+        finalPercentages: [{ type: Number }],
+      },
+    ],
+    portfolioDistribution: [
+      {
+        type: { type: String, enum: ["fixed", "glidePath"] },
         investments: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
         percentages: [{ type: Number }],
         initialPercentages: [{ type: Number }],

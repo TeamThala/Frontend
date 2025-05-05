@@ -57,7 +57,7 @@ function stashIdVariants(
   humanId: string,
   mongoId: Types.ObjectId,
   map: Map<string, Types.ObjectId>
-) {
+):void {
   const norm = humanId.toLowerCase().replace(/[^\w]+/g, "").trim();
   map.set(humanId, mongoId);
   map.set(norm, mongoId);
@@ -168,6 +168,17 @@ interface YamlScenario {
   customStateTaxYaml?: string;
 }
 
+// Interface to be used for startYear fields
+interface StartYear {
+  type: string;
+  year?: number | {
+    mean?: number; stdDev?: number; min?: number; max?: number; valueType?: string;
+  };
+  eventTime?: "start" | "end";
+  eventId?: Types.ObjectId | null;
+  event?: Types.ObjectId | null; // Backwards compatibility
+}
+
 /* ────────────────────────────────
    POST handler
    ──────────────────────────────── */
@@ -259,15 +270,6 @@ export async function POST(req: NextRequest) {
     /* 5️⃣  Events */
     for (const ev of yml.eventSeries ?? []) {
       /* 5a  startYear */
-      interface StartYear {
-        type: string;
-        year?: number | {
-          mean?: number; stdDev?: number; min?: number; max?: number; valueType: string;
-        };
-        eventTime?: "start" | "end";
-        event?: Types.ObjectId | null;
-      }
-
       let start: StartYear = { type: "fixed" };
       switch (ev.start.type) {
         case "fixed":
@@ -290,7 +292,7 @@ export async function POST(req: NextRequest) {
           start = {
             type: "event",
             eventTime: ev.start.type === "startWith" ? "start" : "end",
-            event: null
+            eventId: null
           };
           depTracker.set(ev.name, ev.start.eventSeries ?? "salary");
           break;
@@ -330,6 +332,7 @@ export async function POST(req: NextRequest) {
         discretionary?: boolean;
         assetAllocation?: Allocation[];
         maxCash?: number;
+        portfolioDistribution?: Allocation[];
       }
 
       const eventType: EventType = {
@@ -354,7 +357,7 @@ export async function POST(req: NextRequest) {
         const alloc: Allocation = ev.glidePath
           ? { type: "glidePath", investments: [], initialPercentages: [], finalPercentages: [] }
           : { type: "fixed",     investments: [], percentages: [] };
-
+      
         if (ev.assetAllocation) {
           for (const [label, pctRaw] of Object.entries(ev.assetAllocation)) {
             const oid =
@@ -365,16 +368,16 @@ export async function POST(req: NextRequest) {
                 { success: false, error: `Allocation refers to unknown investment '${label}'` },
                 { status: 400 }
               );
-
+      
             const pct = Number(pctRaw);
             if (!Number.isFinite(pct))
               return NextResponse.json(
                 { success: false, error: `Invalid percentage for '${label}'` },
                 { status: 400 }
               );
-
+      
             alloc.investments.push(oid);
-
+      
             if (ev.glidePath) {
               alloc.initialPercentages!.push(pct);
               const finalPct =
@@ -387,10 +390,13 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-
-        /* store on eventType **inside** this branch so `alloc` is in scope */
-        eventType.assetAllocation = [alloc];
-        eventType.maxCash         = ev.maxCash ?? 0;
+      
+        if (ev.type === "invest") {
+          eventType.assetAllocation = [alloc];
+          eventType.maxCash = ev.maxCash ?? 0;
+        } else {
+          eventType.portfolioDistribution = [alloc];
+        }
       }
 
       /* 5d  create Event */
@@ -412,14 +418,14 @@ export async function POST(req: NextRequest) {
         (await Event.findOne({ name: { $regex: new RegExp(`^${parentName}$`, "i") } }));
 
       if (childEvt && parentEvt) {
-        (childEvt.startYear as any).event = parentEvt._id;
+        (childEvt.startYear as StartYear).eventId = parentEvt._id;
         await childEvt.save();
       } else {
         console.warn(`Could not resolve dependency '${child}' → '${parentName}'`);
       }
     }
 
-    /* 7️⃣  Strategies -------------------------------------------------- */
+    /* 7️⃣  Strategies */
     const normalizeKey = (s: string) => s.toLowerCase().replace(/[^\w]+/g, "").trim();
     const toIds = (arr: string[] | undefined, map: Map<string, Types.ObjectId>) =>
       (arr ?? []).map(s => map.get(s) || map.get(normalizeKey(s))).filter(Boolean) as Types.ObjectId[];
@@ -481,7 +487,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    /* 8️⃣  Scenario ---------------------------------------------------- */
+    /* 8️⃣  Scenario */
     const uniqueInvestmentIds = getUniqueInvestmentIds(investMap);
 
     let finalRothConv: Types.ObjectId[] | Types.ObjectId[] = [];
@@ -493,9 +499,10 @@ export async function POST(req: NextRequest) {
           owner: user._id
         });
         finalRothConv = [rc._id];
-      } catch (e) {
+      } catch (_e) {
         console.warn("Could not create RothConversionStrategy doc, storing direct IDs");
         finalRothConv = directRothIds;
+        console.log(_e);
       }
     }
 

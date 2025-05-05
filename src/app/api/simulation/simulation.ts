@@ -25,7 +25,7 @@ export async function simulation(scenario: Scenario){
     let finalReturn: SimulationResult | null = null;
     const yearlyResults: YearlyResult[] = [];
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
-    const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
+    const snowflakeId = scenario.owner.id + "_" + timestamp; // Unique identifier for the simulation run
     const currentYear = new Date().getFullYear();
     let year = currentYear;
     const log: string[] = [];
@@ -353,8 +353,8 @@ export async function simulation(scenario: Scenario){
         
     }
     log.push("=====================SIMULATION FINISHED=====================");
-    finalReturn = exportResultsToJson(yearlyResults, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, success, log);
-    saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
+    finalReturn = exportResultsToJson(yearlyResults, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, `src/data/${snowflakeId}.csv`, success, log);
+    saveLogToFile(log.join('\n'), `src/data/${snowflakeId}.log`, log);
     return finalReturn;
 }
 
