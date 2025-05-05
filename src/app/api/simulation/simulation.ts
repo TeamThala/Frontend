@@ -128,7 +128,7 @@ export async function simulation(scenario: Scenario){
         }
 
         if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, log);
+            const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, scenario.investments, log);
             if (incomeResults === null){
                 log.push("Error: Could not update income events.");
                 return null;
@@ -273,7 +273,7 @@ export async function simulation(scenario: Scenario){
         }
 
         if(currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, curYearEarlyWithdrawals, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, age, log);
+            const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, curYearEarlyWithdrawals, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, age, scenario.investments, log);
             if (nondiscExpenseRet === null){
                 log.push(`Ending simulation run...`);
                 return null;
@@ -300,7 +300,7 @@ export async function simulation(scenario: Scenario){
         }
         // Run invest event scheduled for the current year
         if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
+            const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, scenario.investments, log);
             if (runInvestResult === null){
                 console.log("Error: Could not run investment event.");
                 return null;
@@ -310,29 +310,14 @@ export async function simulation(scenario: Scenario){
             log.push(`WARNING: Skipping investment event for year ${year} because current investment event is not found.`);
         }
         // Run rebalance events scheduled for the current year
-        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
-            if (cashInvestment === null){
-                log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
-                return null;
-            }
-            log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
+        const cashInvestment = findCashInvestment(scenario.investments, log);
+        if (cashInvestment === null){
+            log.push(`Error: Could not find cash investment in ${scenario.name}`);
+            return null;
         }
-        else{
-            log.push(`WARNING: Skipping rebalance events for year ${year} because current investment event is not found.`);
-        }
+        log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
         runRebalanceEvents(rebalanceEvents, year, currentYear, log);
-        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
-            if (cashInvestment === null){
-                log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
-                return null;
-            }
-            log.push(`Cash investment value after rebalance: ${cashInvestment.value}`);
-        }
-        else{
-            log.push(`WARNING: Log statement for cash investment value for year ${year} because current investment event is not found.`);
-        }
+        log.push(`Cash investment value after rebalance: ${cashInvestment.value}`);
 
 
 
@@ -353,17 +338,8 @@ export async function simulation(scenario: Scenario){
             curYearGains: curYearGains
         };
         log.push(`Yearly result being added for year ${year}: ${JSON.stringify(yearlyResult)}`);
-        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
-            if (cashInvestment === null){
-                log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
-                return null;
-            }
-            log.push(`Cash investment value: ${cashInvestment.value}`);
-        }
-        else{
-            log.push(`WARNING: Log statement for cash investment value for year ${year} because current investment event is not found.`);
-        }
+        log.push(`Cash investment value: ${cashInvestment.value}`);
+
         yearlyResults.push(yearlyResult); // Add yearly result to array
 
         // Check if financial goal is met

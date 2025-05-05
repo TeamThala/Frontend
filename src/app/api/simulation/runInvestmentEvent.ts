@@ -3,16 +3,16 @@ import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { FixedYear } from "@/types/event";
 
-export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number, log: string[]){ // e = currentInvestmentEvent, l = contributionsLimit
+export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number, investments: Investment[], log: string[]){ // e = currentInvestmentEvent, l = contributionsLimit
     log.push(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
     const eType = e.eventType as InvestmentEvent;
     if (eType.assetAllocation.investments === null){
         log.push(`Error: Could not find investments in asset allocation in ${e.name}`);
         return null;
     }
-    const investments: Investment[] = eType.assetAllocation.investments;
+    const currentInvestments: Investment[] = eType.assetAllocation.investments;
 
-    log.push(`Investments: ${investments}`);
+    log.push(`Investments: ${currentInvestments}`);
 
     let b = 0; // sum of amount to buy in after tax accounts
     let cashCounter = 0; // countdown of excess cash to be invested
@@ -20,8 +20,8 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     // Compute amount each investment needs to increase to reach allocation
     const investmentValues: number[] = [];
     let investmentNetValue = 0; // collect sum of all investment values
-    for (let i=0; i<investments.length; i++){
-        const investment = investments[i];
+    for (let i=0; i<currentInvestments.length; i++){
+        const investment = currentInvestments[i];
         if (investment === undefined || investment === null){
             log.push(`Error: Investment ${i} is undefined or null`);
             return null;
@@ -34,7 +34,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     }
     log.push(`Collected a b value of ${b} from after tax accounts`);
     log.push(`Collected a net value of ${investmentNetValue} from all investments`);
-    const cashInvestment = findCashInvestment(e, log);
+    const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
         log.push(`Error: Could not find cash investment in ${e.name}`);
         return null;
@@ -65,7 +65,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     else{ // glidePath
         const eDuration = e.duration as FixedYear;
         const elapseRatio = eDuration.year !== 0 ? (year - simStartYear) / eDuration.year : 0; // percentage of how much current event has elapsed until end
-        for (let i=0; i<investments.length; i++){
+        for (let i=0; i<currentInvestments.length; i++){
             if (eType.assetAllocation.initialPercentages[i] === undefined || eType.assetAllocation.finalPercentages[i] === undefined){
                 log.push(`Error: Target ratio ${eType.assetAllocation.initialPercentages[i]} or ${eType.assetAllocation.finalPercentages[i]} is undefined`);
                 return null;
@@ -86,8 +86,8 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
 
         let diff = 0;
         let numNonAfterAccounts = 0;
-        for (let i = 0; i < investments.length; i++) {
-            const investment = investments[i];
+        for (let i = 0; i < currentInvestments.length; i++) {
+            const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
                 log.push(`Error: Investment ${i} is undefined or null`);
                 return null;
@@ -112,9 +112,9 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     
         const scaleUp = numNonAfterAccounts !== 0 ? diff / numNonAfterAccounts : 0; // Safe division
         // Spread the difference across non-after tax accounts
-        for (let i = 0; i < investments.length; i++) {
+        for (let i = 0; i < currentInvestments.length; i++) {
 
-            const investment = investments[i];
+            const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
                 log.push(`Error: Investment ${i} is undefined or null`);
                 return null;
@@ -145,8 +145,8 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         }
     }
     else{
-        for (let i=0; i<investments.length; i++){
-            const investment = investments[i];
+        for (let i=0; i<currentInvestments.length; i++){
+            const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
                 log.push(`Error: Investment ${i} is undefined or null`);
                 return null;

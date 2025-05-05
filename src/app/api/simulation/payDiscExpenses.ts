@@ -31,7 +31,7 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
     }
     log.push(`Total payments for discretionary expenses is ${totalPayments}`);
     log.push(`Net worth after discretionary expenses is ${netWorth}`);
-    const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+    const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
         log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;

@@ -479,7 +479,7 @@ const mockInvestment3: Investment = {
 
 describe('Simulation: Run income events', () => {
     it('should update income events correctly', async () => {
-        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage", mockLog);
+        const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage", [mockCashInvestment], mockLog);
         expect(updatedEvents).toBeDefined(); // Ensure the result is not undefined or null
         expect(updatedEvents).toHaveProperty('incomeEvents'); // Ensure 'incomeEvents' exists
         expect(updatedEvents).toHaveProperty('curYearIncome'); // Ensure 'curYearIncome' exists
@@ -492,15 +492,15 @@ describe('Simulation: Run income events', () => {
         expect(updatedEvents.curYearIncome).toBeCloseTo(77000); // Ensure income is calculated correctly
         expect(updatedEvents.curYearSS).toBeCloseTo(0); // Ensure social security is calculated correctly
 
-        const failedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockNoCash, 1, "percentage", mockLog);
+        const failedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockNoCash, 1, "percentage", [], mockLog);
         expect(failedEvents).toBeNull(); // Ensure the result is null when no cash investment is found
 
-        const normalTest = await updateIncomeEvents([mockIncomeEvent2], 2025, mockInvestmentEvent, 1, "percentage", mockLog);
+        const normalTest = await updateIncomeEvents([mockIncomeEvent2], 2025, mockInvestmentEvent, 1, "percentage", [mockCashInvestment], mockLog);
         expect(normalTest).toBeDefined(); // Ensure the result is not undefined or null
         expect(normalTest.curYearIncome).toBeGreaterThan(70000);
         expect(normalTest.curYearSS).toBeGreaterThan(70000);
 
-        const uniformTest = await updateIncomeEvents([mockIncomeEvent3], 2025, mockInvestmentEvent, 0, "amount", mockLog);
+        const uniformTest = await updateIncomeEvents([mockIncomeEvent3], 2025, mockInvestmentEvent, 0, "amount", [mockCashInvestment], mockLog);
         expect(uniformTest).toBeDefined(); // Ensure the result is not undefined or null
         expect(uniformTest.curYearIncome).toBeGreaterThan(77000);
         expect(uniformTest.curYearSS).toBeGreaterThan(77000);
