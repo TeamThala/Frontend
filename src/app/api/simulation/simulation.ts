@@ -293,7 +293,7 @@ export async function simulation(scenario: Scenario){
         log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
         if(currentInvestmentEventExists && currentInvestmentEvent !== undefined){
-            payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
+            payDiscExpenses(year, expenseEvents, scenario.spendingStrategy, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         }
         else{
             log.push(`WARNING: Skipping discretionary expenses for year ${year} because current investment event is not found.`);
