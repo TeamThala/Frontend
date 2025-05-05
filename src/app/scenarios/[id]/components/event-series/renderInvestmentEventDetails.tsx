@@ -48,9 +48,12 @@ export const renderInvestmentEventDetails = (
     const allocationType = assetAllocationData.type || "fixed";
     
     // Handle both array of investments and array of investment IDs by checking the structure
-    const investments = Array.isArray(assetAllocationData.investments) 
-      ? assetAllocationData.investments 
-      : [];
+    // Use all investments from the scenario if available
+    const investments = scenarioInvestments.length > 0 
+      ? scenarioInvestments 
+      : Array.isArray(assetAllocationData.investments) 
+          ? assetAllocationData.investments 
+          : [];
     
     // Calculate total percentages with safety checks
     const calculateTotal = (percentages: number[] = []) => {
@@ -128,7 +131,7 @@ export const renderInvestmentEventDetails = (
       const id = typeof investmentRef === 'string' ? investmentRef : investmentRef?._id;
       
       // Find the matching investment in scenario investments
-      return scenarioInvestments.find(inv => inv._id === id);
+      return scenarioInvestments.find(inv => inv._id === id || inv.id === id);
     };
 
     // Render each investment with percentage input
@@ -193,7 +196,7 @@ export const renderInvestmentEventDetails = (
                       disabled={!canEdit}
                       min="0"
                       max="100"
-                      step="1"
+                      step="0.1"
                       className="w-20"
                     />
                     <span className="text-sm">%</span>
@@ -232,7 +235,6 @@ export const renderInvestmentEventDetails = (
             onChange={(e) => handlers.handleMaxCashChange(e.target.value, index)}
             disabled={!canEdit}
             min="0"
-            max="100"
             step="1"
             className="max-w-[150px]"
           />
@@ -380,10 +382,16 @@ export const renderInvestmentEventDetails = (
         percentages: []
       };
     }
+    
     const distributionType = portfolioDistributionData.type || "fixed";
-    const investments = Array.isArray(portfolioDistributionData.investments)
-      ? portfolioDistributionData.investments
-      : [];
+    
+    // Use all scenario investments
+    const investments = scenarioInvestments.length > 0 
+      ? scenarioInvestments 
+      : Array.isArray(portfolioDistributionData.investments) 
+          ? portfolioDistributionData.investments 
+          : [];
+          
     const percentages = distributionType === "fixed"
       ? (Array.isArray(portfolioDistributionData.percentages) ? portfolioDistributionData.percentages : [])
       : [];
@@ -398,8 +406,10 @@ export const renderInvestmentEventDetails = (
     const calculateTotal = (percentages: number[] = []) => {
       return percentages ? percentages.reduce((sum, current) => sum + (current || 0), 0) : 0;
     };
+    
     const toDisplayPercentage = (value: number) => value * 100;
     const toStoredPercentage = (value: number) => value / 100;
+    
     const totalFixed = distributionType === "fixed" ? calculateTotal(percentages) * 100 : 0;
     const totalInitial = distributionType === "glidePath" ? calculateTotal(initialPercentages) * 100 : 0;
     const totalFinal = distributionType === "glidePath" ? calculateTotal(finalPercentages) * 100 : 0;
@@ -412,8 +422,9 @@ export const renderInvestmentEventDetails = (
         return investmentRef;
       }
       const id = typeof investmentRef === 'string' ? investmentRef : investmentRef?._id;
-      return scenarioInvestments.find(inv => inv._id === id);
+      return scenarioInvestments.find(inv => inv._id === id || inv.id === id);
     };
+    
     // --- Shared rendering for investment rows ---
     const renderRebalanceInvestmentInputs = (isInitial = true) => {
       if (!investments || investments.length === 0) {
@@ -453,13 +464,14 @@ export const renderInvestmentEventDetails = (
                             : toDisplayPercentage(finalPercentages[investmentIndex] || 0)
                       }
                       onChange={(e) => {
+                        const inputValue = parseFloat(e.target.value);
                         if (distributionType === "fixed") {
-                          handlers.handlePercentageChange?.(investmentIndex, String(toStoredPercentage(parseFloat(e.target.value))), index);
+                          handlers.handlePercentageChange?.(investmentIndex, String(toStoredPercentage(inputValue)), index);
                         } else {
                           handlers.handleGlidePathPercentageChange?.(
                             investmentIndex,
                             isInitial ? "initial" : "final",
-                            String(toStoredPercentage(parseFloat(e.target.value))),
+                            String(toStoredPercentage(inputValue)),
                             index
                           );
                         }
@@ -467,7 +479,7 @@ export const renderInvestmentEventDetails = (
                       disabled={!canEdit}
                       min="0"
                       max="100"
-                      step="1"
+                      step="0.1"
                       className="w-20"
                     />
                     <span className="text-sm">%</span>
@@ -488,7 +500,7 @@ export const renderInvestmentEventDetails = (
             <Label className="font-semibold">Portfolio Distribution Type</Label>
             <RadioGroup
               value={distributionType}
-              onValueChange={(value) => handlers.handleInvestmentAllocationTypeChange && handlers.handleInvestmentAllocationTypeChange(value as "fixed" | "glidePath", index)}
+              onValueChange={(value) => handlers.handleAllocationTypeChange?.(value as "fixed" | "glidePath", index)}
               disabled={!canEdit}
               className="flex space-x-4 mb-4"
             >

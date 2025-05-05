@@ -48,9 +48,12 @@ export const renderRebalanceEventDetails = (
   const allocationType = portfolioDistributionData.type || "fixed";
   
   // Handle both array of investments and array of investment IDs by checking the structure
-  const investments = Array.isArray(portfolioDistributionData.investments) 
-    ? portfolioDistributionData.investments 
-    : [];
+  // Ensure we use ALL investments from the scenario
+  const investments = scenarioInvestments.length > 0 
+    ? scenarioInvestments 
+    : Array.isArray(portfolioDistributionData.investments) 
+        ? portfolioDistributionData.investments 
+        : [];
   
   // Function to convert decimal percentages to display percentages (0.2 → 20)
   const toDisplayPercentage = (value: number) => {
@@ -110,7 +113,7 @@ export const renderRebalanceEventDetails = (
     const id = typeof investmentRef === 'string' ? investmentRef : investmentRef?._id;
     
     // Find the matching investment in scenario investments
-    return scenarioInvestments.find(inv => inv._id === id);
+    return scenarioInvestments.find(inv => inv._id === id || inv.id === id);
   };
 
   // Render each investment with percentage input
@@ -176,7 +179,7 @@ export const renderRebalanceEventDetails = (
                     disabled={!canEdit}
                     min="0"
                     max="100"
-                    step="1"
+                    step="0.1"
                     className="w-20"
                   />
                   <span className="text-sm">%</span>
