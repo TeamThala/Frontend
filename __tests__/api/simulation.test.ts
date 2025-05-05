@@ -205,6 +205,127 @@ const mockInvestmentEvent2: Event = {
     }
 };
 
+const mockInvestmentEvent3: Event = {
+    "id": "errorInvestEvent",
+    "name": "Error Investment Event",
+    "description": "Should not work",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "year": 99
+    },
+    "eventType": {
+        "type": "investment",
+        "inflationAdjustment": true,
+        "assetAllocation":{
+            "type": "fixed",
+            "investments":[],
+            "percentages": [100]
+        },
+        "maxCash": 999999999
+    }
+};
+
+const mockInvestmentEvent4: Event = {
+    "id": "cashAndInvest4",
+    "name": "Cash Only Event + Investment Event 1,3,4",
+    "description": "Default cash event and investment event 1,3,4. Fixed allocation ratio.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "year": 99
+    },
+    "eventType": {
+        "type": "investment",
+        "inflationAdjustment": true,
+        "assetAllocation":{
+            "type": "fixed",
+            "investments":[
+                {
+                    "id": "cashInvestment",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "cash",
+                        "name": "Cash Account",
+                        "description": "Default cash investment",
+                        "expectedAnnualReturn": {
+                            "type": "fixed",
+                            "valueType": "percentage",
+                            "value": 100
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "fixed",
+                            "valueType": "amount",
+                            "value": 0
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 0
+                },
+                {
+                    "id": "investment1",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype1",
+                        "name": "Fixed amounts investment",
+                        "description": "All fixed",
+                        "expectedAnnualReturn": {
+                            "type": "fixed",
+                            "valueType": "percentage",
+                            "value": 110
+                        },
+                        "expenseRatio": 0,
+                        "expectedAnnualIncome": {
+                            "type": "fixed",
+                            "valueType": "amount",
+                            "value": 1000
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 5000
+                },
+                {
+                    "id": "investment3",
+                    "value": 10000,
+                    "investmentType": {
+                        "id": "investmenttype2",
+                        "name": "Normal amounts investment",
+                        "description": "All normal",
+                        "expectedAnnualReturn": {
+                            "type": "normal",
+                            "valueType": "percentage",
+                            "mean": 200,
+                            "stdDev": .01
+                        },
+                        "expenseRatio": 0.1,
+                        "expectedAnnualIncome": {
+                            "type": "normal",
+                            "valueType": "amount",
+                            "mean": 1000,
+                            "stdDev": .01
+                        },
+                        "taxability": true
+                    },
+                    "taxStatus": "non-retirement",
+                    "purchasePrice": 5000
+                }
+            ],
+            "percentages": [50, 25, 25]
+        },
+        "maxCash": 999999999
+    }
+};
+
+
 const mockNoCash: Event = {
     "id": "cashOnly",
     "name": "Cash Only Event",
@@ -354,6 +475,8 @@ const mockInvestment3: Investment = {
     "purchasePrice": 5000
 };
 
+
+
 describe('Simulation: Run income events', () => {
     it('should update income events correctly', async () => {
         const updatedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockInvestmentEvent, 1, "percentage", mockLog);
@@ -392,6 +515,13 @@ describe('Simulation: Update values of investments', () => {
 
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[0].value).toBeCloseTo(10000); // cash account does not change
         expect(mockInvestmentEvent2.eventType.assetAllocation.investments[1].value).toBeCloseTo(12100); // (value + income) * annual return // Ensure the result is null
+
+        const dCurYearIncome2 = updateInvestmentEvent(mockInvestmentEvent3, mockLog);
+        expect(dCurYearIncome2).toBeNull(); // Ensure the result is null when no investments are found
+
+        const dNormUniIncome = updateInvestmentEvent(mockInvestmentEvent4, mockLog);
+        expect(dNormUniIncome).toBeDefined(); // Ensure the result is not undefined or null
+        expect(dNormUniIncome).toBeGreaterThan(1500); // 1000 from fixed investment and 500 from normal
     });
 });
 

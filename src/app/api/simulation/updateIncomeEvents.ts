@@ -6,7 +6,7 @@ export function findCashInvestment(investmentEvent: Event, log: string[]): Inves
     // Find the cash investment in the investment event
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const nestedInvestments = investmentEventType.assetAllocation.investments;
-    if (nestedInvestments === null){
+    if (nestedInvestments === null || nestedInvestments.length === 0) {
         log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
         return null;
     }
