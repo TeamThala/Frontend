@@ -7,7 +7,7 @@ export function updateInvestmentEvent(investmentEvent: Event, log: string[]){
     log.push(`=== UPDATING INVESTMENT EVENT ${investmentEvent.name} ===`);
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const assetAllocation = investmentEventType.assetAllocation;
-    if (assetAllocation.investments === null){
+    if (assetAllocation.investments === null || assetAllocation.investments.length === 0) {
         log.push(`Error: Could not find investments in asset allocation in ${investmentEvent.name}`);
         return null;
     }

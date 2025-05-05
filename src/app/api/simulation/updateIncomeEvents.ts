@@ -6,7 +6,7 @@ export function findCashInvestment(investmentEvent: Event, log: string[]): Inves
     // Find the cash investment in the investment event
     const investmentEventType = investmentEvent.eventType as InvestmentEvent;
     const nestedInvestments = investmentEventType.assetAllocation.investments;
-    if (nestedInvestments === null){
+    if (nestedInvestments === null || nestedInvestments.length === 0) {
         log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
         return null;
     }
@@ -80,7 +80,7 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
                     incomeEventType.amount *= inflation; // inflation already comes in as a percentage (5% inflation rate = 1.05 already)
                 }
                 else{
-                    incomeEventType.amount += inflation;
+                    incomeEventType.amount += inflation; // should not happen
                 }
             }
 

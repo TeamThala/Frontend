@@ -1,9 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-interface ShadedDataPoint {
+export interface ShadedDataPoint {
   year: number;
   p10: number;
   p20: number;
@@ -16,18 +17,29 @@ interface ShadedDataPoint {
   p90: number;
 }
 
-export default function ShadedProbabilityChart({ data, financialGoal }: { data: ShadedDataPoint[]; financialGoal?: number }) {
+export default function ShadedProbabilityChart({ 
+  data, 
+  financialGoal,
+  chartTitle
+}: { 
+  data: ShadedDataPoint[]; 
+  financialGoal?: number;
+  chartTitle?: string;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ x: number; d: ShadedDataPoint } | null>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 500 });
 
-  // AI tool (ChatGPT) was used to assist with generating 
-  // chart code, sample data, and visualization design. 
-  // All content was reviewed and revised by the author.
-  // It was used to first generate chart in observablehq.com
-  // and then converted to React code.
-  useEffect(() => {
+  // Function to draw the chart
+  const drawChart = () => {
+    if (!svgRef.current || !containerRef.current || data.length === 0) return;
+    
+    const containerWidth = containerRef.current.clientWidth;
+    setDimensions({ width: containerWidth, height: 500 });
+    
     const svg = d3.select(svgRef.current);
-    const width = window.innerWidth - 100;
+    const width = containerWidth;
     const height = 500;
     const margin = { top: 20, right: 30, bottom: 50, left: 70 };
 
@@ -121,10 +133,24 @@ export default function ShadedProbabilityChart({ data, financialGoal }: { data: 
         }
       })
       .on("mouseleave", () => setHover(null));
+  };
 
+  // Effect to draw chart when data changes or on resize
+  useEffect(() => {
+    drawChart();
+    
+    // Add resize event listener
+    const handleResize = () => {
+      drawChart();
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
   }, [data, financialGoal]);
-
-  const tooltipLeft = hover?.x && hover.x > window.innerWidth - 150 ? hover.x - 150 : hover?.x;
 
   return (
     <Card
@@ -134,10 +160,10 @@ export default function ShadedProbabilityChart({ data, financialGoal }: { data: 
       }}
     >
       <CardHeader>
-        <CardTitle className="text-lg">Total Investment Range Over Time</CardTitle>
+        <CardTitle className="text-lg">{chartTitle || "Total Investment Range Over Time"}</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 relative">
-        <svg ref={svgRef} height={500} className="w-full"></svg>
+      <CardContent className="p-0 relative" ref={containerRef}>
+        <svg ref={svgRef} width="100%" height={dimensions.height}></svg>
 
         {hover && (
           <>
@@ -148,12 +174,16 @@ export default function ShadedProbabilityChart({ data, financialGoal }: { data: 
             />
             {/* Hover Tooltip */}
             <div
-            className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[240px] whitespace-nowrap transform -translate-x-1/2"
-            style={{ left: `${tooltipLeft}px`, top: "50px" }}
+              className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[240px] whitespace-nowrap transform -translate-x-1/2"
+              style={{ 
+                left: `${hover.x > dimensions.width - 120 ? hover.x - 120 : hover.x}px`, 
+                top: "50px",
+                transform: hover.x > dimensions.width - 120 ? "none" : "translateX(-50%)"
+              }}
             >
-                <p>Year: {hover.d.year}</p>
-                <p>Median: ${hover.d.median.toLocaleString()}</p>
-                <p>Range: ${hover.d.p10.toLocaleString()} - ${hover.d.p90.toLocaleString()}</p>
+              <p>Year: {hover.d.year}</p>
+              <p>Median: ${hover.d.median.toLocaleString()}</p>
+              <p>Range: ${hover.d.p10.toLocaleString()} - ${hover.d.p90.toLocaleString()}</p>
             </div>
           </>
         )}

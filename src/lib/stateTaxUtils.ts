@@ -5,6 +5,27 @@ import yaml from 'js-yaml';
 import User from '@/models/User';
 import dbConnect from './dbConnect';
 
+interface TaxBracket {
+  over: number;
+  but_not_over: number | null;
+  base_tax: number;
+  plus: string | null;
+  rate: number;
+  of_excess_over: number;
+}
+
+interface FilingStatus {
+  married_jointly_or_surviving_spouse: TaxBracket[];
+  single_or_married_separately: TaxBracket[];
+  head_of_household: TaxBracket[];
+}
+
+interface StateTaxData {
+  [stateCode: string]: {
+    [year: string]: FilingStatus;
+  };
+}
+
 export async function saveStateTaxFile(
   userId: string,
   stateCode: string,
@@ -12,7 +33,7 @@ export async function saveStateTaxFile(
 ): Promise<{ success: boolean; error?: string; fileId?: string }> {
   try {
     // Validate YAML content
-    const data = yaml.load(yamlContent) as any;
+    const data = yaml.load(yamlContent) as StateTaxData;
     if (!data || typeof data !== 'object' || !data[stateCode]) {
       return { success: false, error: 'Invalid YAML format or missing state data' };
     }

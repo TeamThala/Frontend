@@ -7,12 +7,12 @@ export interface SimulationResult {
 }
 
 export interface YearlyResult {
-    "year": number;
-    "investments": Investment[];
-    "inflation": number;
-    "eventSeries": Event[];
-    "curYearIncome": number;
-    "curYearEarlyWithdrawals": number;
-    "curYearSS": number;
-    "curYearGains": number;
+    year: number;
+    investments: Investment[];
+    inflation: number;
+    eventSeries: Event[];
+    curYearIncome: number;
+    curYearEarlyWithdrawals: number;
+    curYearSS: number;
+    curYearGains: number;
 }

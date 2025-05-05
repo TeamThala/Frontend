@@ -1,11 +1,11 @@
 import { Scenario } from '@/types/scenario';
-import { Event, FixedYear, EventYear, InvestmentEvent } from '@/types/event';
+import { Event, FixedYear, EventYear, InvestmentEvent, RebalanceEvent } from '@/types/event';
 import { randomNormal } from 'd3-random';
 import { getTaxData } from '@/lib/taxData';
 // import client from '@/lib/db';
 import { SingleScenario } from '@/types/scenario';
 import { getInflationRate } from './inflation';
-import { updateIncomeEvents } from './updateIncomeEvents';
+import { findCashInvestment, updateIncomeEvents } from './updateIncomeEvents';
 import { updateInvestmentEvent } from './updateInvestmentEvent';
 import { payNondiscExpenses } from './payNondiscExpenses';
 import { updateTaxBrackets } from './taxInflation';
@@ -15,14 +15,17 @@ import { RMDService } from '@/services/rmdService';
 import { Investment as RMDInvestment, RmdStrategy } from '@/types/rmd';
 import { exportResultsToJson, saveLogToFile } from './exportResults';
 import { payDiscExpenses } from './payDiscExpenses';
-import { SimulationResult } from '@/types/simulationResult';
+import { SimulationResult, YearlyResult } from '@/types/simulationResult';
+import { runRebalanceEvents } from './runRebalanceEvents';
+import { runInvestmentEvent } from './runInvestmentEvent';
 
 
 export async function simulation(scenario: Scenario){
     let success: boolean = true;
     let finalReturn: SimulationResult | null = null;
+    const yearlyResults: YearlyResult[] = [];
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
-    const snowflakeId = timestamp + '_' + Math.floor(Math.random() * 10000); // Generate a random snowflake ID
+    const snowflakeId = scenario.owner.id + "_" + timestamp; // Unique identifier for the simulation run
     const currentYear = new Date().getFullYear();
     let year = currentYear;
     const log: string[] = [];
@@ -67,13 +70,13 @@ export async function simulation(scenario: Scenario){
         return null;
     }
     log.push(`Initialized events: ${eventArrays}`);
-    let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[];//,  rebalanceEvents:Event[];
+    let incomeEvents:Event[], investmentEvents:Event[], expenseEvents:Event[],  rebalanceEvents:Event[];
 
     if (eventArrays !== undefined){
         incomeEvents = eventArrays[0];
         expenseEvents = eventArrays[1];
         investmentEvents = eventArrays[2];
-        // rebalanceEvents = eventArrays[3];
+        rebalanceEvents = eventArrays[3];
     }
     else {
         log.push("Error: No events found.");
@@ -81,6 +84,7 @@ export async function simulation(scenario: Scenario){
     }
     // Initialize investment related fields to use unified objects
     initializeInvestmentEvents(investmentEvents, scenario, log);
+    initializeRebalanceEvents(rebalanceEvents, scenario, log);
     initializeStrategy(scenario.RMDStrategy, scenario, log);
     initializeStrategy(scenario.RothConversionStrategy, scenario, log);
     initializeStrategy(scenario.expenseWithdrawalStrategy, scenario, log);
@@ -91,13 +95,18 @@ export async function simulation(scenario: Scenario){
     const taxData = await getTaxData(scenario.residenceState, scenario.owner.id);
     let standardDeductions = (scenario.type === "couple") ? taxData.standardDeductions.standardDeductions['Married filing jointly or Qualifying surviving spouse'] : taxData.standardDeductions.standardDeductions['Single or Married filing separately'];
 
+    let inflation: number = 0;
+    let curYearIncome: number = 0;
+    let curYearSS: number = 0; // Social Security income for the current year
+
     // Simulation loop
     log.push("=====================SIMULATION STARTED=====================");
+    log.push(`Financial Goal: ${scenario.financialGoal}`);
     for(let age = currentYear - scenario.ownerBirthYear; age < ownerLifeExpectancy; age++){
         // Simulation logic
         // log.push(incomeEvents[0])
         // Inflation assumption calculation for this year
-        const inflation = getInflationRate(scenario.inflationRate);
+        inflation = getInflationRate(scenario.inflationRate);
         log.push(`Inflation rate for age ${age} parsed as ${inflation}`);
 
         // update retirement account contributions annual limits
@@ -123,8 +132,8 @@ export async function simulation(scenario: Scenario){
             log.push("Error: Could not update income events.");
             return null;
         }
-        let curYearIncome = incomeResults.curYearIncome;
-        const curYearSS = incomeResults.curYearSS;
+        curYearIncome = incomeResults.curYearIncome;
+        curYearSS = incomeResults.curYearSS;
         log.push(`Income for current year ${year}: ${curYearIncome}`);
         log.push(`Social Security for current year ${year}: ${curYearSS}`);
         
@@ -260,12 +269,42 @@ export async function simulation(scenario: Scenario){
         // Pay discretionary expenses in spending strategy
         payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
         // Run invest event scheduled for the current year
-        // const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year); // TODO: Check if this is correct
-        // if (runInvestResult === null){
-        //     console.log("Error: Could not run investment event.");
-        //     return null;
-        // }
-        // TODO: Run rebalance events scheduled for the current year
+        const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
+        if (runInvestResult === null){
+            console.log("Error: Could not run investment event.");
+            return null;
+        }
+        // Run rebalance events scheduled for the current year
+        const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+        if (cashInvestment === null){
+            log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+            return null;
+        }
+        log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
+        runRebalanceEvents(rebalanceEvents, year, currentYear, log);
+        log.push(`Cash investment value after rebalance: ${cashInvestment.value}`);
+
+
+
+        // End of loop calculations
+        log.push(`End of year ${year} calculations...`);
+        year++;
+        updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
+        standardDeductions *= inflation; // Update standard deductions for next year
+
+        const yearlyResult: YearlyResult = {
+            year: year,
+            investments: JSON.parse(JSON.stringify(scenario.investments)), // Deep copy to decouple from original reference
+            inflation: inflation,
+            eventSeries: JSON.parse(JSON.stringify(scenario.eventSeries)), // Deep copy to decouple from original reference
+            curYearIncome: curYearIncome,
+            curYearEarlyWithdrawals: curYearEarlyWithdrawals,
+            curYearSS: curYearSS,
+            curYearGains: curYearGains
+        };
+        log.push(`Yearly result being added for year ${year}: ${JSON.stringify(yearlyResult)}`);
+        log.push(`Cash investment value: ${cashInvestment.value}`);
+        yearlyResults.push(yearlyResult); // Add yearly result to array
 
         // Check if financial goal is met
         let netWorth = 0;
@@ -275,17 +314,10 @@ export async function simulation(scenario: Scenario){
         }
         log.push(`Net worth for year ${year} is ${netWorth}`);
         if (netWorth < scenario.financialGoal){
-            console.log(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
+            log.push(`Financial goal not met for year ${year}. Current net worth: ${netWorth}`);
             success = false;
             break;
         }
-
-
-
-        // End of loop calculations
-        year++;
-        updateTaxBrackets(taxData, inflation, log); // Update tax brackets for next year
-        standardDeductions *= inflation; // Update standard deductions for next year
         
         // prevTaxBrackets = taxBrackets; // Update previous tax brackets for next iteration
 
@@ -318,10 +350,11 @@ export async function simulation(scenario: Scenario){
         }
         // Save results of this year to a JSON file
         
-        finalReturn = exportResultsToJson(scenario, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, year, inflation, curYearIncome, curYearEarlyWithdrawals, curYearSS, curYearGains, success, log);
+        
     }
     log.push("=====================SIMULATION FINISHED=====================");
-    saveLogToFile(log.join('\n'), `src/data/${snowflakeId}_simulationLog_${scenario.id}.txt`, log);
+    finalReturn = exportResultsToJson(yearlyResults, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, `src/data/${snowflakeId}.csv`, success, log);
+    saveLogToFile(log.join('\n'), `src/data/${snowflakeId}.log`, log);
     return finalReturn;
 }
 
@@ -458,6 +491,31 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
         const investments = investmentType.assetAllocation.investments;
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+            return null;
+        }
+        for (let j=0; j<investments.length; j++){
+            const investment = investments[j];
+            const investmentId = investment.id;
+            const investmentInField = scenario.investments.find(i => i.id === investmentId);
+            if (investmentInField){
+                investments[j] = investmentInField; // replace with reference to investment object in scenario.investments
+            }
+            else{
+                log.push(`Error: Could not find investment with id ${investmentId}`);
+                return null;
+            }
+        }
+    }
+}
+
+function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario, log: string[]){
+    // replaces investments in all investment events with references to investment objects in scenario.investments
+    for (let i=0; i<rebalanceEvents.length; i++){
+        const rebalanceEvent = rebalanceEvents[i];
+        const rebalanceType = rebalanceEvent.eventType as RebalanceEvent;
+        const investments = rebalanceType.portfolioDistribution.investments;
+        if (investments === null){
+            log.push(`Error: Could not find the investments nested inside ${rebalanceEvent.id}, ${rebalanceEvent.name}`);
             return null;
         }
         for (let j=0; j<investments.length; j++){
