@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
         const data = await req.json(); // Assuming body is never null
         const filepath = data.filepath;
         const simulationCount = data.simulationCount || 1;
-        
+        const parameterExploration = data.parameterExploration || null;
+
         console.log("FILEPATH:", filepath);
         console.log("SIMULATION COUNT:", simulationCount);
         console.log("MAX CONCURRENT:", MAX_CONCURRENT);
@@ -51,6 +52,11 @@ export async function POST(req: NextRequest) {
                 const scenarios = Array.from({ length: simulationCount }, () => 
                     JSON.parse(JSON.stringify(scenario)) as Scenario
                 );
+
+                if (parameterExploration !== null) {
+                    console.log("PARAMETER EXPLORE:", parameterExploration);
+                    
+                }
                 
                 // Create a worker pool and run the batch
                 const workerPool = new WorkerPool(MAX_CONCURRENT);

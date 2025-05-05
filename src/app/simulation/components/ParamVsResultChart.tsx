@@ -131,6 +131,7 @@ export default function ParamVsResultChart({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   return (

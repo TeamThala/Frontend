@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { parentPort, workerData } = require('worker_threads');
-const path = require('path');
 
 // Worker receives scenario data and runs a single simulation
 async function runSimulation() {

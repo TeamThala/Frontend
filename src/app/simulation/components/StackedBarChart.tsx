@@ -3,7 +3,6 @@ import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Investment } from "@/types/investment";
 
 interface BarSegment {
   id: string;
@@ -167,6 +166,7 @@ export default function StackedBarChart({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, useMedian, chartType]);
 
   const getChartTitle = () => {
