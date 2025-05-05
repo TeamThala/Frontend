@@ -32,6 +32,60 @@ const mockIncomeEvent: Event = {
     }    
 };
 
+const mockIncomeEvent2: Event = {
+    "id": "incomeEvent2",
+    "name": "Income Event 2",
+    "description": "Income event with SS and normal annual change. Very unlikely to decrease.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "year": 10
+    },
+    "eventType": {
+        "type": "income",
+        "amount": 70000,
+        "inflationAdjustment": true,
+        "expectedAnnualChange": {
+            "type": "normal",
+            "valueType": "percentage",
+            "mean": 200,
+            "stdDev": 0.01
+        },
+        "socialSecurity": true,
+        "wage": false
+    }    
+};
+
+const mockIncomeEvent3: Event = {
+    "id": "incomeEvent3",
+    "name": "Income Event 3",
+    "description": "Income event FLAT INFLATION,  SS, and uniform annual change. Impossible event.",
+    "startYear": {
+        "type": "fixed",
+        "year": 2025
+    },
+    "duration": {
+        "type": "fixed",
+        "year": 10
+    },
+    "eventType": {
+        "type": "income",
+        "amount": 70000,
+        "inflationAdjustment": true,
+        "expectedAnnualChange": {
+            "type": "uniform",
+            "valueType": "percentage",
+            "min": 110,
+            "max": 120
+        },
+        "socialSecurity": true,
+        "wage": false
+    }    
+};
+
 const mockInvestmentEvent: Event = {
     "id": "cashOnly",
     "name": "Cash Only Event",
@@ -317,6 +371,16 @@ describe('Simulation: Run income events', () => {
 
         const failedEvents = await updateIncomeEvents([mockIncomeEvent], 2025, mockNoCash, 1, "percentage", mockLog);
         expect(failedEvents).toBeNull(); // Ensure the result is null when no cash investment is found
+
+        const normalTest = await updateIncomeEvents([mockIncomeEvent2], 2025, mockInvestmentEvent, 1, "percentage", mockLog);
+        expect(normalTest).toBeDefined(); // Ensure the result is not undefined or null
+        expect(normalTest.curYearIncome).toBeGreaterThan(70000);
+        expect(normalTest.curYearSS).toBeGreaterThan(70000);
+
+        const uniformTest = await updateIncomeEvents([mockIncomeEvent3], 2025, mockInvestmentEvent, 0, "amount", mockLog);
+        expect(uniformTest).toBeDefined(); // Ensure the result is not undefined or null
+        expect(uniformTest.curYearIncome).toBeGreaterThan(77000);
+        expect(uniformTest.curYearSS).toBeGreaterThan(77000);
     });
 });
 

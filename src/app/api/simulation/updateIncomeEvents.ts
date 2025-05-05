@@ -80,7 +80,7 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
                     incomeEventType.amount *= inflation; // inflation already comes in as a percentage (5% inflation rate = 1.05 already)
                 }
                 else{
-                    incomeEventType.amount += inflation;
+                    incomeEventType.amount += inflation; // should not happen
                 }
             }
 
