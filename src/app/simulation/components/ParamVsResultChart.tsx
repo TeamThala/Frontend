@@ -182,7 +182,7 @@ export default function ParamVsResultChart({
             }}
           >
             <p>{parameterName}: {hover.d.parameterValue}</p>
-            <p>{yLabel || "Final Probability"}: {hover.d.finalResult}%</p>
+            <p>{yLabel || "Final Probability"}: {hover.d.finalResult.toLocaleString()}</p>
           </div>
         )}
       </CardContent>

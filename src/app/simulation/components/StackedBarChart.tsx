@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 import * as d3 from "d3";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +39,53 @@ export default function StackedBarChart({
   } | null>(null);
   const [useMedian, setUseMedian] = useState(true);
 
+  // Move the color function to component scope so it can be used in the tooltip
+  const color = (taxStatus?: string, investmentKey?: string) => {
+    // For investment chart type with investment key provided, use investment-based colors
+    if (chartType === "investments" && investmentKey) {
+      // Create a colorful palette for investments
+      const investmentColors = [
+        "#7F56D9", // Purple
+        "#FF4690", // Pink
+        "#6EE7B7", // Green
+        "#6366F1", // Indigo
+        "#F59E0B", // Amber
+        "#EC4899", // Fuchsia
+        "#10B981", // Emerald
+        "#3B82F6", // Blue
+        "#8B5CF6", // Violet
+        "#EF4444"  // Red
+      ];
+      
+      // Use a hash function to consistently map investment names to colors
+      const hashCode = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash);
+      };
+      
+      const colorIndex = hashCode(investmentKey) % investmentColors.length;
+      return investmentColors[colorIndex];
+    } 
+    // Keep the original tax status based coloring as fallback
+    else if (chartType === "investments" && taxStatus) {
+      return {
+        "non-retirement": "#7F56D9", // Purple
+        "pre-tax": "#FF4690",        // Pink
+        "after-tax": "#6EE7B7",      // Green
+      }[taxStatus] || "#999";
+    } else if (chartType === "income") {
+      return "#6366F1"; // Income color
+    } else if (chartType === "expenses") {
+      return "#FF4690"; // Expense color
+    }
+    
+    // Default color scheme
+    return "#999"; // Gray as default
+  };
+
   // AI tool (ChatGPT) was used to assist with generating 
   // chart code, sample data, and visualization design. 
   // All content was reviewed and revised by the author.
@@ -65,24 +114,6 @@ export default function StackedBarChart({
     const maxY = d3.max(displayData, d => d3.sum(d.segments || [], s => s.value))!;
     const y = d3.scaleLinear().domain([0, maxY * 1.1]).range([height - margin.bottom, margin.top]);
 
-    const color = (taxStatus?: string) => {
-      if (chartType === "investments" && taxStatus) {
-        return {
-          "non-retirement": "#7F56D9",
-          "pre-tax": "#FF4690",
-          "after-tax": "#6366F1",
-        }[taxStatus] || "#999";
-      } else if (chartType === "income") {
-        return "#6366F1"; // Income color
-      } else if (chartType === "expenses") {
-        return "#FF4690"; // Expense color
-      }
-      
-      // Default color scheme for items
-      const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-      return colorScale(taxStatus || "default");
-    };
-
     // Horizontal Grid Lines
     svg.append("g")
       .attr("stroke", "#333")
@@ -95,19 +126,68 @@ export default function StackedBarChart({
       .attr("y1", d => y(d))
       .attr("y2", d => y(d));
 
-    // Draw Stacked Bars
-    displayData.forEach(d => {
-      let y0 = y(0);
-      d.segments.forEach(segment => {
-        const segmentHeight = y(0) - y(segment.value);
-        svg.append("rect")
-          .attr("x", x(d.year)!)
-          .attr("y", y0 - segmentHeight)
-          .attr("width", x.bandwidth())
-          .attr("height", segmentHeight)
-          .attr("fill", color(segment.taxStatus));
-        y0 -= segmentHeight;
+    // Prepare data for D3 stack
+    const stackKeys: string[] = Array.from(
+      new Set(
+        displayData.flatMap(d => d.segments.map(s => s.name || s.id))
+      )
+    );
+
+    // Create a map of investment name -> value for each year
+    const stackData = displayData.map(d => {
+      const entry: Record<string, any> = { year: d.year };
+      // Initialize all keys with 0
+      stackKeys.forEach(key => {
+        entry[key] = 0;
       });
+      // Fill in actual values
+      d.segments.forEach(segment => {
+        const key = segment.name || segment.id;
+        entry[key] = segment.value;
+        // Store tax status for coloring
+        if (!entry[`${key}_taxStatus`]) {
+          entry[`${key}_taxStatus`] = segment.taxStatus;
+        }
+      });
+      // Store the original segments for tooltip
+      entry.originalSegments = d.segments;
+      return entry;
+    });
+
+    // Create stack generator
+    const stack = d3.stack()
+      .keys(stackKeys)
+      .order(d3.stackOrderNone)
+      .offset(d3.stackOffsetNone);
+
+    // Generate stacked data
+    const stackedSeries = stack(stackData);
+
+    // Draw stacked bars
+    stackedSeries.forEach((series, i) => {
+      svg.append("g")
+        .selectAll("rect")
+        .data(series)
+        .join("rect")
+        .attr("x", d => x(d.data.year)!)
+        .attr("y", d => y(d[1]))
+        .attr("height", d => y(d[0]) - y(d[1]))
+        .attr("width", x.bandwidth())
+        .attr("fill", d => {
+          // Using proper type annotations to fix TypeScript error
+          const key = String(stackKeys[i]);
+          // Color based on investment key rather than tax status
+          return color(undefined, key);
+        })
+        .on("mouseover", (event, d) => {
+          const originalSegments = d.data.originalSegments as unknown as BarSegment[];
+          setHover({
+            x: x(d.data.year)! + x.bandwidth() / 2,
+            year: d.data.year,
+            total: d3.sum(originalSegments, s => s.value),
+            breakdown: originalSegments
+          });
+        });
     });
 
     // Axes
@@ -151,6 +231,50 @@ export default function StackedBarChart({
         }
       })
       .on("mouseleave", () => setHover(null));
+
+    // Clear previous hover overlay
+    svg.selectAll(".hover-overlay").remove();
+
+    // Add colored legend at the bottom if we're showing investments
+    if (chartType === "investments") {
+      // Get unique investment names/ids across all data
+      const uniqueInvestments = Array.from(
+        new Set(
+          data.flatMap(entry => 
+            (useMedian ? entry.median : entry.average).map(seg => seg.name || seg.id)
+          )
+        )
+      ).slice(0, 5); // Limit to first 5 to avoid overcrowding
+      
+      const legend = svg.append("g")
+        .attr("transform", `translate(${margin.left + 20}, ${height - 30})`);
+      
+      uniqueInvestments.forEach((investmentName, i) => {
+        // Find an example of this investment to get its tax status for coloring
+        const exampleSegment = data.flatMap(entry => 
+          (useMedian ? entry.median : entry.average)
+        ).find(seg => (seg.name || seg.id) === investmentName);
+        
+        const legendItem = legend.append("g")
+          .attr("transform", `translate(${i * 150}, 0)`);
+        
+        legendItem.append("rect")
+          .attr("width", 16)
+          .attr("height", 16)
+          .attr("fill", color(exampleSegment?.taxStatus, investmentName as string));
+        
+        // Truncate long investment names
+        const displayName = investmentName.length > 15 
+          ? investmentName.substring(0, 15) + "..." 
+          : investmentName;
+        
+        legendItem.append("text")
+          .attr("x", 24)
+          .attr("y", 12)
+          .attr("fill", "#fff")
+          .text(displayName);
+      });
+    }
   };
 
   // Draw chart on data change or window resize
@@ -222,17 +346,38 @@ export default function StackedBarChart({
               style={{ left: `${hover.x}px` }}
             />
             <div
-              className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[260px] whitespace-nowrap transform -translate-x-1/2"
+              className="absolute bg-[#1a1a1a] text-white p-2 rounded border border-[#7F56D9] max-w-[300px] whitespace-nowrap transform -translate-x-1/2"
               style={{ 
-                left: `${hover.x > dimensions.width - 130 ? dimensions.width - 130 : hover.x}px`, 
+                left: `${hover.x > dimensions.width - 150 ? dimensions.width - 150 : hover.x}px`, 
                 top: "50px",
-                transform: hover.x > dimensions.width - 130 ? "none" : "translateX(-50%)"
+                transform: hover.x > dimensions.width - 150 ? "none" : "translateX(-50%)"
               }}
             >
               <p>Year: {hover.year}</p>
               <p>Total: ${hover.total.toLocaleString()}</p>
               {hover.breakdown.map((s, i) => (
-                <p key={i}>{s.name || s.id}: ${s.value.toLocaleString()}</p>
+                <p key={i} className="flex items-center">
+                  <span 
+                    className="inline-block w-3 h-3 mr-2 rounded-sm" 
+                    style={{ backgroundColor: color(undefined, s.name || s.id) }}
+                  ></span>
+                  <span className="font-medium">{s.name || s.id}: </span>
+                  <span className="ml-1">${s.value.toLocaleString()}</span>
+                  {s.taxStatus && (
+                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{
+                      backgroundColor: s.taxStatus === 'non-retirement' ? 'rgba(127, 86, 217, 0.2)' : 
+                                     s.taxStatus === 'pre-tax' ? 'rgba(255, 70, 144, 0.2)' : 
+                                     'rgba(110, 231, 183, 0.2)',
+                      color: s.taxStatus === 'non-retirement' ? '#a78bec' : 
+                             s.taxStatus === 'pre-tax' ? '#ff7eb0' : 
+                             '#95f1d0'
+                    }}>
+                      {s.taxStatus === 'non-retirement' ? 'Non-Retirement' : 
+                       s.taxStatus === 'pre-tax' ? 'Pre-Tax' : 
+                       'After-Tax'}
+                    </span>
+                  )}
+                </p>
               ))}
             </div>
           </>

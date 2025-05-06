@@ -14,7 +14,6 @@ const Header = () => {
   // Navigation links
   const navLinks = [
     { name: "Home", href: "/", isActive: pathname === "/" },
-    { name: "Dashboard", href: "/dashboard", isActive: pathname.startsWith("/dashboard") },
     { name: "Scenarios", href: "/scenarios", isActive: pathname.startsWith("/scenarios") },
     { name: "Simulations", href: "/simulation", isActive: pathname.startsWith("/simulation") },
   ];
