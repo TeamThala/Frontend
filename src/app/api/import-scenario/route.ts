@@ -21,35 +21,35 @@ import * as yaml         from "js-yaml";
 /* ────────────────────────────────
    helpers
    ──────────────────────────────── */
-type DistributionYaml =
-  | { type: "fixed"  ; value : number }
-  | { type: "normal" ; mean  : number ; stdev : number }
-  | { type: "uniform"; lower : number ; upper : number };
-
-type DistValue = {
-  type      : "fixed" | "normal" | "uniform";
-  valueType : "amount" | "percentage";
-  value?    : number;
-  mean?     : number;
-  stdDev?   : number;
-  min?      : number;
-  max?      : number;
-};
-
-function dist(
-  src?: DistributionYaml,
-  valueType: "amount" | "percentage" = "amount"
-): DistValue {
-  if (!src) return { type: "fixed", valueType, value: 0 };
-  switch (src.type) {
-    case "fixed":
-      return { type: "fixed", valueType, value: src.value };
-    case "normal":
-      return { type: "normal", valueType, mean: src.mean, stdDev: src.stdev };
-    case "uniform":
-      return { type: "uniform", valueType, min: src.lower, max: src.upper };
-  }
-}
+   type DistributionYaml =
+   | { type: "fixed"  ; value : number }
+   | { type: "normal" ; mean  : number ; stdev : number }
+   | { type: "uniform"; lower : number ; upper : number };
+ 
+ type DistValue = {
+   type      : "fixed" | "normal" | "uniform";
+   valueType : "amount" | "percentage";
+   value?    : number;
+   mean?     : number;
+   stdDev?   : number;
+   min?      : number;
+   max?      : number;
+ };
+ 
+ function dist(
+   src?: DistributionYaml,
+   valueType: "amount" | "percentage" = "amount"
+ ): DistValue {
+   if (!src) return { type: "fixed", valueType, value: 0 };
+   switch (src.type) {
+     case "fixed":
+       return { type: "fixed", valueType, value: src.value };
+     case "normal":
+       return { type: "normal", valueType, mean: src.mean, stdDev: src.stdev };
+     case "uniform":
+       return { type: "uniform", valueType, min: src.lower, max: src.upper };
+   }
+ }
 
 /* keep harmless variants of an ID → ObjectId so we can
    match allocation names written slightly differently       */
@@ -300,25 +300,55 @@ export async function POST(req: NextRequest) {
 
       /* 5b  duration */
       interface Duration {
-        type: string;
+        type: "fixed" | "normal" | "uniform";
         valueType: "amount";
-        value?: number;
-        year?: {
-          mean?: number; stdDev?: number; min?: number; max?: number; valueType: "amount";
-        };
+        year?:           // ⬅︎ notice the first union member is *number* now
+          | number                              //  ← fixed
+          | { mean: number; stdDev: number; valueType: "amount" }   // normal
+          | { min: number; max: number; valueType: "amount" };      // uniform
       }
+      
+      
 
       let duration: Duration | undefined;
+
       if (ev.duration) {
-        duration = { type: ev.duration.type, valueType: "amount" };
-        if (ev.duration.type === "fixed") {
-          duration.value = ev.duration.value;
-        } else if (ev.duration.type === "normal") {
-          duration.year = { mean: ev.duration.mean, stdDev: ev.duration.stdev, valueType: "amount" };
-        } else {
-          duration.year = { min: ev.duration.lower, max: ev.duration.upper, valueType: "amount" };
+        const type = ev.duration.type;
+      
+        if (type === "fixed") {
+          duration = {
+            type,
+            valueType: "amount",
+            year: typeof ev.duration.value === "number" && isFinite(ev.duration.value)
+                    ? ev.duration.value            // number – not an object
+                    : 0
+          };
+        }
+        else if (type === "normal") {
+          duration = {
+            type,
+            valueType: "amount",
+            year: {
+              mean: ev.duration.mean ?? 0,
+              stdDev: ev.duration.stdev ?? 0,
+              valueType: "amount",
+            },
+          };
+        } else if (type === "uniform") {
+          duration = {
+            type,
+            valueType: "amount",
+            year: {
+              min: ev.duration.lower ?? 0,
+              max: ev.duration.upper ?? 0,
+              valueType: "amount",
+            },
+          };
         }
       }
+      
+      
+
 
       /* 5c  eventType */
       interface EventType {

@@ -110,7 +110,7 @@ export default function ScenarioPage() {
       // If on last step, show success message then redirect
       setShowSuccess(true);
       setTimeout(() => {
-        router.push(`/simulation/${scenario?.id}`);
+        router.push(`/simulation/${scenario?._id}`);
       }, 2000);
     }
   };

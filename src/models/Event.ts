@@ -97,10 +97,13 @@ const durationSchema = new Schema(
     type: {
       type: String,
       enum: ["fixed", "normal", "uniform"],
+      required: true,
     },
-    valueType: { type: String, enum: ["amount"] },
-    value: { type: Number },
-    year: { type: distributionValueSchema },
+    valueType: { type: String, enum: ["amount"], required: true },
+    year: {
+      type: Schema.Types.Mixed,
+      required: true,
+    },
   },
   { _id: false }
 );
