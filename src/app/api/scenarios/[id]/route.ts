@@ -772,9 +772,9 @@ type ScenarioUpdateBody = CoupleScenario & {
 const isMongoId = (v: unknown): v is string =>
   typeof v === "string" && mongoose.Types.ObjectId.isValid(v);
 
-function normalizeStartYear(
+async function normalizeStartYear(
   raw: FixedYear | UniformYear | NormalYear | EventYear,
-): DbStartYear {
+): Promise<DbStartYear> {
   switch (raw.type) {
     case "fixed":
       return { type: "fixed", year: raw.year };
@@ -786,13 +786,35 @@ function normalizeStartYear(
         year: { mean: raw.year.mean, stdDev: raw.year.stdDev },
       };
     case "event":
-      return {
-        type: "event",
-        eventTime: raw.eventTime,
-        ...(isMongoId(raw.eventId)
-          ? { eventId: new mongoose.Types.ObjectId(raw.eventId) }
-          : {}),
-      };
+      // return {
+      //   type: "event",
+      //   eventTime: raw.eventTime,
+      //   ...(isMongoId(raw.eventId)
+      //     ? { eventId: new mongoose.Types.ObjectId(raw.eventId) }
+      //     : {}),
+      // };
+      if (isMongoId((raw as any).eventId)) {
+              return {
+                type: "event",
+                eventTime: raw.eventTime,
+                eventId: new mongoose.Types.ObjectId((raw as any).eventId),
+              };
+            }
+        
+            // ② Otherwise try the name → _id lookup
+            if ((raw as any).eventSeries) {
+              const parent = await Event.findOne({ name: (raw as any).eventSeries });
+              if (parent) {
+              return {
+                  type: "event",
+                  eventTime: raw.eventTime,
+                  eventId: parent._id,
+                };
+              }
+            }
+        
+            // ③ Couldn’t resolve → just store the stub
+            return { type: "event", eventTime: raw.eventTime };
   }
 }
 
@@ -1077,7 +1099,7 @@ export async function PUT(
       const existingEvt = await Event.findById(evt._id);
       if (!existingEvt) continue;
 
-      existingEvt.startYear = normalizeStartYear(evt.startYear);
+      existingEvt.startYear = await normalizeStartYear(evt.startYear);
       existingEvt.duration = normalizeDuration(evt.duration);
       existingEvt.name = evt.name;
       existingEvt.description = evt.description;
@@ -1135,7 +1157,7 @@ export async function PUT(
 
     const newEvt = await new Event({
       ...evtWithoutIds,
-      startYear: normalizeStartYear(evt.startYear),
+      startYear: await normalizeStartYear(evt.startYear),
       duration: normalizeDuration(evt.duration),
       eventType: dbEventType,
     }).save();
