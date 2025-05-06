@@ -1,0 +1,724 @@
+{
+  "inflationRate": {
+    "type": "fixed",
+    "valueType": "percentage",
+    "value": 0.03
+  },
+  "rothConversion": {
+    "rothConversion": true,
+    "RothConversionStartYear": 2050,
+    "RothConversionEndYear": 2060
+  },
+  "ownerLifeExpectancy": {
+    "type": "fixed",
+    "valueType": "amount",
+    "value": 80
+  },
+  "spouseLifeExpectancy": {
+    "type": "normal",
+    "valueType": "amount",
+    "mean": 82,
+    "stdDev": 3
+  },
+  "_id": "6819855d43966198d77867d4",
+  "name": "Retirement Planning Scenario",
+  "description": "",
+  "financialGoal": 10000,
+  "investments": [
+    {
+      "_id": "6819855d43966198d77867b3",
+      "value": 100,
+      "investmentType": {
+        "expectedAnnualReturn": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "expectedAnnualIncome": {
+          "type": "fixed",
+          "valueType": "percentage",
+          "value": 0
+        },
+        "_id": "6819855d43966198d77867ad",
+        "name": "cash",
+        "description": "cash",
+        "expenseRatio": 0,
+        "taxability": true,
+        "createdAt": "2025-05-06T03:43:25.476Z",
+        "updatedAt": "2025-05-06T03:45:36.593Z",
+        "__v": 0,
+        "id": "6819855d43966198d77867ad"
+      },
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.531Z",
+      "updatedAt": "2025-05-06T03:43:25.531Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b3"
+    },
+    {
+      "_id": "6819855d43966198d77867b5",
+      "value": 10000,
+      "investmentType": {
+        "expectedAnnualReturn": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.06,
+          "stdDev": 0.02
+        },
+        "expectedAnnualIncome": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.01,
+          "stdDev": 0.005
+        },
+        "_id": "6819855d43966198d77867af",
+        "name": "S&P 500",
+        "description": "S&P 500 index fund",
+        "expenseRatio": 0.001,
+        "taxability": true,
+        "createdAt": "2025-05-06T03:43:25.495Z",
+        "updatedAt": "2025-05-06T03:45:36.827Z",
+        "__v": 0,
+        "id": "6819855d43966198d77867af"
+      },
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.551Z",
+      "updatedAt": "2025-05-06T03:43:25.551Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b5"
+    },
+    {
+      "_id": "6819855d43966198d77867b7",
+      "value": 2000,
+      "investmentType": {
+        "expectedAnnualReturn": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "expectedAnnualIncome": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.03,
+          "stdDev": 0.01
+        },
+        "_id": "6819855d43966198d77867b1",
+        "name": "tax-exempt bonds",
+        "description": "NY tax-exempt bonds",
+        "expenseRatio": 0.004,
+        "taxability": false,
+        "createdAt": "2025-05-06T03:43:25.515Z",
+        "updatedAt": "2025-05-06T03:45:36.718Z",
+        "__v": 0,
+        "id": "6819855d43966198d77867b1"
+      },
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.568Z",
+      "updatedAt": "2025-05-06T03:43:25.568Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b7"
+    },
+    {
+      "_id": "6819855d43966198d77867b9",
+      "value": 10000,
+      "investmentType": {
+        "expectedAnnualReturn": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.06,
+          "stdDev": 0.02
+        },
+        "expectedAnnualIncome": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.01,
+          "stdDev": 0.005
+        },
+        "_id": "6819855d43966198d77867af",
+        "name": "S&P 500",
+        "description": "S&P 500 index fund",
+        "expenseRatio": 0.001,
+        "taxability": true,
+        "createdAt": "2025-05-06T03:43:25.495Z",
+        "updatedAt": "2025-05-06T03:45:36.827Z",
+        "__v": 0,
+        "id": "6819855d43966198d77867af"
+      },
+      "taxStatus": "pre-tax",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.586Z",
+      "updatedAt": "2025-05-06T03:43:25.586Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b9"
+    },
+    {
+      "_id": "6819855d43966198d77867bb",
+      "value": 2000,
+      "investmentType": {
+        "expectedAnnualReturn": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.06,
+          "stdDev": 0.02
+        },
+        "expectedAnnualIncome": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.01,
+          "stdDev": 0.005
+        },
+        "_id": "6819855d43966198d77867af",
+        "name": "S&P 500",
+        "description": "S&P 500 index fund",
+        "expenseRatio": 0.001,
+        "taxability": true,
+        "createdAt": "2025-05-06T03:43:25.495Z",
+        "updatedAt": "2025-05-06T03:45:36.827Z",
+        "__v": 0,
+        "id": "6819855d43966198d77867af"
+      },
+      "taxStatus": "after-tax",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.601Z",
+      "updatedAt": "2025-05-06T03:43:25.601Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867bb"
+    }
+  ],
+  "eventSeries": [
+    {
+      "_id": "6819855d43966198d77867bd",
+      "name": "salary",
+      "description": "",
+      "startYear": {
+        "type": "fixed",
+        "year": 2025
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "uniform",
+          "valueType": "amount",
+          "min": 500,
+          "max": 2000
+        },
+        "type": "income",
+        "amount": 75000,
+        "inflationAdjustment": false,
+        "percentageOfIncome": 1,
+        "socialSecurity": false,
+        "wage": false,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.618Z",
+      "updatedAt": "2025-05-06T03:45:36.882Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867bd"
+    },
+    {
+      "_id": "6819855d43966198d77867bf",
+      "name": "food",
+      "description": "",
+      "startYear": {
+        "type": "event",
+        "eventTime": "start"
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "normal",
+          "valueType": "percentage",
+          "mean": 0.02,
+          "stdDev": 0.01
+        },
+        "type": "expense",
+        "amount": 5000,
+        "inflationAdjustment": true,
+        "percentageOfIncome": 0.5,
+        "socialSecurity": false,
+        "wage": true,
+        "discretionary": false,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.645Z",
+      "updatedAt": "2025-05-06T03:45:36.914Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867bf"
+    },
+    {
+      "_id": "6819855d43966198d77867c1",
+      "name": "vacation",
+      "description": "",
+      "startYear": {
+        "type": "event",
+        "eventTime": "start"
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "type": "expense",
+        "amount": 1200,
+        "inflationAdjustment": true,
+        "percentageOfIncome": 0.6,
+        "socialSecurity": false,
+        "wage": true,
+        "discretionary": true,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.668Z",
+      "updatedAt": "2025-05-06T03:45:36.946Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c1"
+    },
+    {
+      "_id": "6819855d43966198d77867c3",
+      "name": "streaming services",
+      "description": "",
+      "startYear": {
+        "type": "event",
+        "eventTime": "start"
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "type": "expense",
+        "amount": 500,
+        "inflationAdjustment": true,
+        "percentageOfIncome": 1,
+        "socialSecurity": false,
+        "wage": true,
+        "discretionary": true,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.686Z",
+      "updatedAt": "2025-05-06T03:45:36.976Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c3"
+    },
+    {
+      "_id": "6819855d43966198d77867c5",
+      "name": "my investments",
+      "description": "",
+      "startYear": {
+        "type": "uniform",
+        "year": {
+          "type": "uniform",
+          "valueType": "amount",
+          "min": 2025,
+          "max": 2030
+        }
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "type": "investment",
+        "inflationAdjustment": true,
+        "socialSecurity": false,
+        "wage": true,
+        "assetAllocation": [
+          {
+            "type": "glidePath",
+            "investments": [
+              {
+                "_id": "6819855d43966198d77867b3",
+                "value": 100,
+                "investmentType": {
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 0
+                  },
+                  "_id": "6819855d43966198d77867ad",
+                  "name": "cash",
+                  "description": "cash",
+                  "expenseRatio": 0,
+                  "taxability": true,
+                  "createdAt": "2025-05-06T03:43:25.476Z",
+                  "updatedAt": "2025-05-06T03:45:36.593Z",
+                  "__v": 0,
+                  "id": "6819855d43966198d77867ad"
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0,
+                "createdAt": "2025-05-06T03:43:25.531Z",
+                "updatedAt": "2025-05-06T03:43:25.531Z",
+                "__v": 0,
+                "id": "6819855d43966198d77867b3"
+              },
+              {
+                "_id": "6819855d43966198d77867b5",
+                "value": 10000,
+                "investmentType": {
+                  "expectedAnnualReturn": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 0.06,
+                    "stdDev": 0.02
+                  },
+                  "expectedAnnualIncome": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 0.01,
+                    "stdDev": 0.005
+                  },
+                  "_id": "6819855d43966198d77867af",
+                  "name": "S&P 500",
+                  "description": "S&P 500 index fund",
+                  "expenseRatio": 0.001,
+                  "taxability": true,
+                  "createdAt": "2025-05-06T03:43:25.495Z",
+                  "updatedAt": "2025-05-06T03:45:36.827Z",
+                  "__v": 0,
+                  "id": "6819855d43966198d77867af"
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0,
+                "createdAt": "2025-05-06T03:43:25.551Z",
+                "updatedAt": "2025-05-06T03:43:25.551Z",
+                "__v": 0,
+                "id": "6819855d43966198d77867b5"
+              }
+            ],
+            "percentages": [],
+            "initialPercentages": [
+              60,
+              40
+            ],
+            "finalPercentages": [
+              80,
+              20
+            ]
+          }
+        ],
+        "maxCash": 1000,
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.707Z",
+      "updatedAt": "2025-05-06T03:45:37.008Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c5"
+    },
+    {
+      "_id": "6819855d43966198d77867c7",
+      "name": "rebalance",
+      "description": "",
+      "startYear": {
+        "type": "uniform",
+        "year": {
+          "type": "uniform",
+          "valueType": "amount",
+          "min": 2025,
+          "max": 2030
+        }
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "type": "rebalance",
+        "inflationAdjustment": true,
+        "socialSecurity": false,
+        "wage": true,
+        "portfolioDistribution": [
+          {
+            "type": "fixed",
+            "investments": [
+              {
+                "_id": "6819855d43966198d77867b3",
+                "value": 100,
+                "investmentType": {
+                  "expectedAnnualReturn": {
+                    "type": "fixed",
+                    "valueType": "amount",
+                    "value": 0
+                  },
+                  "expectedAnnualIncome": {
+                    "type": "fixed",
+                    "valueType": "percentage",
+                    "value": 0
+                  },
+                  "_id": "6819855d43966198d77867ad",
+                  "name": "cash",
+                  "description": "cash",
+                  "expenseRatio": 0,
+                  "taxability": true,
+                  "createdAt": "2025-05-06T03:43:25.476Z",
+                  "updatedAt": "2025-05-06T03:45:36.593Z",
+                  "__v": 0,
+                  "id": "6819855d43966198d77867ad"
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0,
+                "createdAt": "2025-05-06T03:43:25.531Z",
+                "updatedAt": "2025-05-06T03:43:25.531Z",
+                "__v": 0,
+                "id": "6819855d43966198d77867b3"
+              },
+              {
+                "_id": "6819855d43966198d77867b5",
+                "value": 10000,
+                "investmentType": {
+                  "expectedAnnualReturn": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 0.06,
+                    "stdDev": 0.02
+                  },
+                  "expectedAnnualIncome": {
+                    "type": "normal",
+                    "valueType": "percentage",
+                    "mean": 0.01,
+                    "stdDev": 0.005
+                  },
+                  "_id": "6819855d43966198d77867af",
+                  "name": "S&P 500",
+                  "description": "S&P 500 index fund",
+                  "expenseRatio": 0.001,
+                  "taxability": true,
+                  "createdAt": "2025-05-06T03:43:25.495Z",
+                  "updatedAt": "2025-05-06T03:45:36.827Z",
+                  "__v": 0,
+                  "id": "6819855d43966198d77867af"
+                },
+                "taxStatus": "non-retirement",
+                "purchasePrice": 0,
+                "createdAt": "2025-05-06T03:43:25.551Z",
+                "updatedAt": "2025-05-06T03:43:25.551Z",
+                "__v": 0,
+                "id": "6819855d43966198d77867b5"
+              }
+            ],
+            "percentages": [
+              70,
+              30
+            ],
+            "initialPercentages": [],
+            "finalPercentages": []
+          }
+        ],
+        "assetAllocation": []
+      },
+      "createdAt": "2025-05-06T03:43:25.725Z",
+      "updatedAt": "2025-05-06T03:45:37.039Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c7"
+    }
+  ],
+  "spendingStrategy": [
+    {
+      "_id": "6819855d43966198d77867c1",
+      "name": "vacation",
+      "description": "",
+      "startYear": {
+        "type": "event",
+        "eventTime": "start"
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "type": "expense",
+        "amount": 1200,
+        "inflationAdjustment": true,
+        "percentageOfIncome": 0.6,
+        "socialSecurity": false,
+        "wage": true,
+        "discretionary": true,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.668Z",
+      "updatedAt": "2025-05-06T03:45:36.946Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c1"
+    },
+    {
+      "_id": "6819855d43966198d77867c3",
+      "name": "streaming services",
+      "description": "",
+      "startYear": {
+        "type": "event",
+        "eventTime": "start"
+      },
+      "duration": {
+        "type": "fixed",
+        "valueType": "amount"
+      },
+      "eventType": {
+        "expectedAnnualChange": {
+          "type": "fixed",
+          "valueType": "amount",
+          "value": 0
+        },
+        "type": "expense",
+        "amount": 500,
+        "inflationAdjustment": true,
+        "percentageOfIncome": 1,
+        "socialSecurity": false,
+        "wage": true,
+        "discretionary": true,
+        "assetAllocation": [],
+        "portfolioDistribution": []
+      },
+      "createdAt": "2025-05-06T03:43:25.686Z",
+      "updatedAt": "2025-05-06T03:45:36.976Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867c3"
+    }
+  ],
+  "expenseWithdrawalStrategy": [
+    {
+      "_id": "6819855d43966198d77867b5",
+      "value": 10000,
+      "investmentType": "6819855d43966198d77867af",
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.551Z",
+      "updatedAt": "2025-05-06T03:43:25.551Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b5"
+    },
+    {
+      "_id": "6819855d43966198d77867b7",
+      "value": 2000,
+      "investmentType": "6819855d43966198d77867b1",
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.568Z",
+      "updatedAt": "2025-05-06T03:43:25.568Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b7"
+    },
+    {
+      "_id": "6819855d43966198d77867bb",
+      "value": 2000,
+      "investmentType": "6819855d43966198d77867af",
+      "taxStatus": "after-tax",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.601Z",
+      "updatedAt": "2025-05-06T03:43:25.601Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867bb"
+    },
+    {
+      "_id": "6819855d43966198d77867b3",
+      "value": 100,
+      "investmentType": "6819855d43966198d77867ad",
+      "taxStatus": "non-retirement",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.531Z",
+      "updatedAt": "2025-05-06T03:43:25.531Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b3"
+    },
+    {
+      "_id": "6819855d43966198d77867b9",
+      "value": 10000,
+      "investmentType": "6819855d43966198d77867af",
+      "taxStatus": "pre-tax",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.586Z",
+      "updatedAt": "2025-05-06T03:43:25.586Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b9"
+    }
+  ],
+  "RothConversionStrategy": [],
+  "RMDStrategy": [
+    {
+      "_id": "6819855d43966198d77867b9",
+      "value": 10000,
+      "investmentType": "6819855d43966198d77867af",
+      "taxStatus": "pre-tax",
+      "purchasePrice": 0,
+      "createdAt": "2025-05-06T03:43:25.586Z",
+      "updatedAt": "2025-05-06T03:43:25.586Z",
+      "__v": 0,
+      "id": "6819855d43966198d77867b9"
+    }
+  ],
+  "residenceState": "NY",
+  "owner": {
+    "_id": "67e1798bde23dc9c9f3c97dc",
+    "name": "Uday Turakhia",
+    "email": "uday.turakhia@stonybrook.edu",
+    "image": "https://lh3.googleusercontent.com/a/ACg8ocIyYyPfIAA0dMIhSmhF2egiDjLdgRg_1uSnYUWWZHmA4YEGgg=s96-c",
+    "emailVerified": null,
+    "createdScenarios": [
+      "67e2258bcaac2f76f43362cc",
+      "67e2258bcaac2f76f43362ce",
+      "67e2258bcaac2f76f43362d0",
+      "67e227dbc2870398b47fc77b",
+      "67fdd8125ce22e7e5867bbcd",
+      "681946343fd15876bffba995",
+      "68195fb73fd15876bffbde65",
+      "68196d07c2ae65668655d273",
+      "681971c343966198d778609b",
+      "6819784e43966198d778619d",
+      "68197e4843966198d7786324",
+      "681980fa43966198d7786413",
+      "681981fe43966198d778655e",
+      "681983d143966198d778668d",
+      "6819855d43966198d77867d4"
+    ],
+    "updatedAt": "2025-05-06T03:43:25.902Z",
+    "__v": 19,
+    "readScenarios": [
+      "67fb0ce452ddb5a188139fb9",
+      "67fdd7825ce22e7e5867baff"
+    ],
+    "readWriteScenarios": [],
+    "stateTaxFiles": {},
+    "id": "67e1798bde23dc9c9f3c97dc"
+  },
+  "ownerBirthYear": 1985,
+  "viewPermissions": [],
+  "editPermissions": [],
+  "updatedAt": "2025-05-06T03:43:25.884Z",
+  "type": "couple",
+  "spouseBirthYear": 1987,
+  "step": 0,
+  "__v": 2,
+  "id": "6819855d43966198d77867d4"
+}

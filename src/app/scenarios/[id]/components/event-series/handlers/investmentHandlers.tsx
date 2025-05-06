@@ -47,6 +47,8 @@ export const handleInvestmentAllocationTypeChange = (
       investments 
     };
 
+    console.log("New allocation:", newAlloc);
+
     if (type === "fixed") {
       // seed the fixed percentages from whichever you have
       newAlloc.percentages = percentages.length

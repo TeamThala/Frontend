@@ -521,7 +521,13 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
     for (let i=0; i<investmentEvents.length; i++){
         const investmentEvent = investmentEvents[i];
         const investmentType = investmentEvent.eventType as InvestmentEvent;
-        const investments = investmentType.assetAllocation.investments;
+
+        let assetAllocation = investmentType.assetAllocation;
+        if (Array.isArray(assetAllocation)){
+            assetAllocation = assetAllocation[0];
+        }
+
+        const investments = assetAllocation.investments;
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
             return null;
