@@ -4,18 +4,6 @@ import "@/models/User";
 import "@/models/Scenario";
 import "@/models/Investment";
 
-// Sub-schema for distribution values
-const distributionValueSchema = new Schema(
-  {
-    min: { type: Number },
-    max: { type: Number },
-    mean: { type: Number },
-    stdDev: { type: Number },
-    valueType: { type: String, enum: ["amount", "percentage"] },
-  },
-  { _id: false }
-);
-
 // Sub-schema for the "year" union (FixedYear, UniformYear, NormalYear, EventYear)
 const yearSchema = new Schema(
   {
