@@ -15,6 +15,7 @@ import { Scenario } from "@/types/scenario";
 // Event series interface - made permissive to match actual JSON structure
 interface EventSeries {
   id: string;
+  _id?: string; // MongoDB ID that may be present
   name: string;
   description: string;
   startYear: {
@@ -22,6 +23,7 @@ interface EventSeries {
     year: number;
   };
   duration: {
+    value: number;
     type: string;
     year: number;
   };
@@ -45,7 +47,7 @@ interface ParameterExplorationTabProps {
 }
 
 // Helper function to check if an investment event has exactly 2 investments
-const hasExactlyTwoInvestments = (event: EventSeries | undefined): boolean => {
+const hasExactlyTwoInvestments = (event: EventSeries | undefined | null): boolean => {
   if (!event || event.eventType.type !== "investment") return false;
   
   const assetAllocation = event.eventType.assetAllocation;
@@ -55,7 +57,7 @@ const hasExactlyTwoInvestments = (event: EventSeries | undefined): boolean => {
 };
 
 // Get the current allocation percentage for the first investment in a dual-investment event
-const getFirstInvestmentAllocationPercentage = (event: EventSeries | undefined): number => {
+const getFirstInvestmentAllocationPercentage = (event: EventSeries | undefined | null): number => {
   if (!hasExactlyTwoInvestments(event)) return 50; // Default to 50% if not applicable
   
   const percentages = event?.eventType.assetAllocation.percentages;
@@ -67,7 +69,7 @@ const getFirstInvestmentAllocationPercentage = (event: EventSeries | undefined):
 };
 
 // Helper function to get the investment names for display
-const getInvestmentNames = (event: EventSeries | undefined): { first: string, second: string } => {
+const getInvestmentNames = (event: EventSeries | undefined | null): { first: string, second: string } => {
   if (!hasExactlyTwoInvestments(event)) {
     return { first: "First Investment", second: "Second Investment" };
   }
@@ -111,6 +113,9 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
     dataType: "line" | "impact";
   }>>([]);
   
+  // Add a state to track the selected event object directly
+  const [selectedEvent, setSelectedEvent] = useState<EventSeries | null>(null);
+
   // Fetch scenario data from the API
   useEffect(() => {
     const fetchScenarioData = async () => {
@@ -125,9 +130,18 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
         const scenario = data.scenario as Scenario;
         
         if (scenario && scenario.eventSeries) {
-          setEventSeries(scenario.eventSeries as EventSeries[]);
-          if (scenario.eventSeries.length > 0) {
-            setSelectedEventSeries(scenario.eventSeries[0].id);
+          const seriesData = scenario.eventSeries as unknown as EventSeries[];
+          console.log('Event series loaded:', seriesData);
+          setEventSeries(seriesData);
+          
+          if (seriesData.length > 0) {
+            const firstEvent = seriesData[0];
+            const eventId = firstEvent.id || firstEvent._id || 'event-0';
+            console.log('Setting initial event:', firstEvent);
+            console.log('Initial event ID:', eventId);
+            
+            setSelectedEventSeries(eventId);
+            setSelectedEvent(firstEvent);
           }
         }
       } catch (error) {
@@ -137,6 +151,26 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
 
     fetchScenarioData();
   }, [scenarioId]);
+
+  // Debug useEffect to track selectedEvent changes
+  useEffect(() => {
+    console.log("Selected event updated:", selectedEvent);
+    console.log("Selected event type:", selectedEvent?.eventType?.type);
+  }, [selectedEvent]);
+
+  // Debug useEffect to inspect event series data structure
+  useEffect(() => {
+    if (eventSeries.length > 0) {
+      console.log('Checking event series structure:');
+      console.log('First event:', eventSeries[0]);
+      
+      // Output each event type
+      eventSeries.forEach((event, index) => {
+        console.log(`Event ${index}: ${event.name}, Type: ${event.eventType?.type}`);
+        console.log(`Event ${index} has amount:`, !!event.eventType?.amount);
+      });
+    }
+  }, [eventSeries]);
 
   // Function to run one-dimensional scenario exploration
   const runScenarioExploration = async () => {
@@ -150,8 +184,7 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
         values.push(Math.round(i * 100) / 100); // Round to 2 decimal places
       }
       
-      // Get the selected event and create the parameter variation payload
-      const selectedEvent = eventSeries.find(e => e.id === selectedEventSeries);
+      // Check if we have a selected event
       if (!selectedEvent) {
         throw new Error("No event selected");
       }
@@ -215,18 +248,17 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
 
   // Get parameter label based on event and parameter type
   const getParameterLabel = () => {
-    const event = eventSeries.find(e => e.id === selectedEventSeries);
-    if (!event) return parameterType;
+    if (!selectedEvent) return parameterType;
     
     if (parameterType === "startYear") {
-      return `Start Year for "${event.name}"`;
+      return `Start Year for "${selectedEvent.name}"`;
     } else if (parameterType === "duration") {
-      return `Duration for "${event.name}"`;
+      return `Duration for "${selectedEvent.name}"`;
     } else if (parameterType === "amount") {
-      return `Amount for "${event.name}"`;
+      return `Amount for "${selectedEvent.name}"`;
     } else if (parameterType === "allocation") {
       // For allocation, include the investment names if available
-      const investments = event.eventType.assetAllocation?.investments;
+      const investments = selectedEvent.eventType.assetAllocation?.investments;
       if (investments && investments.length === 2) {
         const firstInvestmentName = investments[0].investmentType?.name || "First Investment";
         const secondInvestmentName = investments[1].investmentType?.name || "Second Investment";
@@ -240,10 +272,20 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
   
   // Update parameter settings when changing the event series or parameter type
   const handleEventSeriesChange = (eventId: string) => {
+    console.log('Event ID selected:', eventId);
+    console.log('Available events:', eventSeries);
+    
     setSelectedEventSeries(eventId);
-    const event = eventSeries.find(e => e.id === eventId);
+    const event = eventSeries.find(e => e.id === eventId || e._id === eventId);
+    
+    console.log('Event selected:', event);
+    console.log('Event type:', event?.eventType?.type);
+    console.log('Has amount property:', !!event?.eventType?.amount);
     
     if (!event) return;
+    
+    // Store the selected event object in state
+    setSelectedEvent(event);
     
     // Check if current parameter type is valid for the new event, reset if not
     const eventType = event.eventType.type;
@@ -262,12 +304,13 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
       setParameterMax(startYear + 5);
       setParameterStep(1);
     } else if (parameterType === "duration") {
-      const duration = event.duration.year;
+      const duration = event.duration.year || event.duration.value;
       setParameterMin(Math.max(1, duration - 10));
       setParameterMax(duration + 10);
       setParameterStep(1);
     } else if (parameterType === "amount" && event.eventType.amount) {
       const amount = event.eventType.amount;
+      console.log('Setting amount range based on:', amount);
       setParameterMin(Math.max(1000, amount * 0.5));
       setParameterMax(amount * 1.5);
       setParameterStep(1000);
@@ -281,28 +324,28 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
   
   const handleParameterTypeChange = (type: "startYear" | "duration" | "amount" | "allocation") => {
     setParameterType(type);
-    const event = eventSeries.find(e => e.id === selectedEventSeries);
     
-    if (!event) return;
+    if (!selectedEvent) return;
     
     if (type === "startYear") {
-      const startYear = event.startYear.year;
+      const startYear = selectedEvent.startYear.year;
       setParameterMin(startYear - 5);
       setParameterMax(startYear + 5);
       setParameterStep(1);
     } else if (type === "duration") {
-      const duration = event.duration.year;
+      const duration = selectedEvent.duration.year;
       setParameterMin(Math.max(1, duration - 10));
       setParameterMax(duration + 10);
       setParameterStep(1);
-    } else if (type === "amount" && event.eventType.amount) {
-      const amount = event.eventType.amount;
+    } else if (type === "amount" && selectedEvent.eventType.amount) {
+      const amount = selectedEvent.eventType.amount;
+      console.log('Setting amount range based on:', amount);
       setParameterMin(Math.max(1000, amount * 0.5));
       setParameterMax(amount * 1.5);
       setParameterStep(1000);
-    } else if (type === "allocation" && hasExactlyTwoInvestments(event)) {
+    } else if (type === "allocation" && hasExactlyTwoInvestments(selectedEvent)) {
       // For asset allocation, get the current percentage of the first investment
-      const currentPercentage = getFirstInvestmentAllocationPercentage(event);
+      const currentPercentage = getFirstInvestmentAllocationPercentage(selectedEvent);
       
       // Allow exploring a range of percentages around the current value
       setParameterMin(Math.max(0, currentPercentage - 30));
@@ -342,20 +385,33 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
           <div className="space-y-4">
             <div>
               <Label htmlFor="eventSeries" className="text-gray-300">Event Series</Label>
-              <Select value={selectedEventSeries} onValueChange={handleEventSeriesChange}>
+              <Select 
+                value={selectedEventSeries} 
+                onValueChange={(value) => {
+                  console.log('Select onValueChange:', value);
+                  handleEventSeriesChange(value);
+                }}
+              >
                 <SelectTrigger className="mt-1 bg-gray-800 text-white w-full">
                   <SelectValue placeholder="Select event series" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eventSeries.map((event) => (
-                    <SelectItem key={event.id} value={event.id}>
-                      {event.name} ({event.eventType.type})
-                    </SelectItem>
-                  ))}
+                  {eventSeries.map((event, index) => {
+                    const eventId = event.id || event._id || `event-${index}`;
+                    console.log(`Event ${index} ID:`, eventId, 'Name:', event.name);
+                    return (
+                      <SelectItem 
+                        key={`event-series-${eventId}-${index}`} 
+                        value={eventId}
+                      >
+                        {event.name} ({event.eventType.type})
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-400 mt-1">
-                {eventSeries.find(e => e.id === selectedEventSeries)?.description || ''}
+                {selectedEvent?.description || ''}
               </p>
             </div>
             
@@ -369,28 +425,30 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                   <SelectValue placeholder="Select parameter type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="startYear">Start Year</SelectItem>
-                  <SelectItem value="duration">Duration</SelectItem>
+                  <SelectItem key="start-year" value="startYear">Start Year</SelectItem>
+                  <SelectItem key="duration" value="duration">Duration</SelectItem>
                   {/* Only show Amount option for income or expense events */}
-                  {eventSeries.find(e => e.id === selectedEventSeries)?.eventType.type === "income" || 
-                   eventSeries.find(e => e.id === selectedEventSeries)?.eventType.type === "expense" ? (
-                    <SelectItem value="amount">Amount</SelectItem>
-                  ) : null}
-                  {/* Only show Asset Allocation option for investment events with exactly 2 investments */}
-                  {hasExactlyTwoInvestments(eventSeries.find(e => e.id === selectedEventSeries)) ? (
-                    <SelectItem value="allocation">
-                      Asset Allocation - {getInvestmentNames(eventSeries.find(e => e.id === selectedEventSeries)).first} %
+                  {selectedEvent && selectedEvent.eventType && 
+                   (selectedEvent.eventType.type === "income" || selectedEvent.eventType.type === "expense") && (
+                    <SelectItem key="amount" value="amount">
+                      Amount {selectedEvent.eventType.type === "income" ? "(Income)" : "(Expense)"}
                     </SelectItem>
-                  ) : null}
+                  )}
+                  {/* Only show Asset Allocation option for investment events with exactly 2 investments */}
+                  {hasExactlyTwoInvestments(selectedEvent) && (
+                    <SelectItem key="allocation" value="allocation">
+                      Asset Allocation - {getInvestmentNames(selectedEvent).first} %
+                    </SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {parameterType === "allocation" && (
                 <>
                   <p className="text-sm text-gray-400 mt-2">
-                    Adjust the percentage allocation for <strong className="text-white">{getInvestmentNames(eventSeries.find(e => e.id === selectedEventSeries)).first}</strong>.
+                    Adjust the percentage allocation for <strong className="text-white">{getInvestmentNames(selectedEvent).first}</strong>.
                   </p>
                   <p className="text-sm text-gray-400">
-                    The allocation for <strong className="text-white">{getInvestmentNames(eventSeries.find(e => e.id === selectedEventSeries)).second}</strong> will automatically be set to (100% - {getInvestmentNames(eventSeries.find(e => e.id === selectedEventSeries)).first} %).
+                    The allocation for <strong className="text-white">{getInvestmentNames(selectedEvent).second}</strong> will automatically be set to (100% - {getInvestmentNames(selectedEvent).first} %).
                   </p>
                 </>
               )}
@@ -466,8 +524,8 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                       <SelectValue placeholder="Select graph type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="multi-line">Multi-line chart over time</SelectItem>
-                      <SelectItem value="parameter-impact">Parameter impact line chart</SelectItem>
+                      <SelectItem key="multi-line" value="multi-line">Multi-line chart over time</SelectItem>
+                      <SelectItem key="parameter-impact" value="parameter-impact">Parameter impact line chart</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-400 mt-1">
@@ -485,8 +543,8 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                       <SelectValue placeholder="Select metric" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="success-probability">Probability of Success</SelectItem>
-                      <SelectItem value="total-investments">Total Investments</SelectItem>
+                      <SelectItem key="success-probability" value="success-probability">Probability of Success</SelectItem>
+                      <SelectItem key="total-investments" value="total-investments">Total Investments</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
