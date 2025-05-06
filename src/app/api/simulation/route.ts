@@ -260,9 +260,13 @@ async function getScenarioFromDatabase(scenarioId: string): Promise<Scenario | n
         // Query the database directly
         const scenario = await ScenarioModel.findById(scenarioId)
             .populate({ path: "investments", populate: { path: "investmentType" } })
-            .populate("eventSeries")
+            .populate({ path: "eventSeries", populate: { path: "eventType", populate: { path: "assetAllocation", populate: { path: "investments", populate: { path: "investmentType" } } } } })
+            .populate({ path: "eventSeries", populate: { path: "eventType", populate: { path: "portfolioDistribution", populate: { path: "investments", populate: { path: "investmentType" } } } } })
             .populate("spendingStrategy")
-            .populate("expenseWithdrawalStrategy");
+            .populate("expenseWithdrawalStrategy")
+            .populate("RMDStrategy")
+            .populate("RothConversionStrategy")
+            .populate("owner");
             
         if (!scenario) {
             console.error("Scenario not found in database:", scenarioId);
@@ -274,6 +278,9 @@ async function getScenarioFromDatabase(scenarioId: string): Promise<Scenario | n
         
         // Convert all _id fields to id fields throughout the entire object
         convertMongoIds(scenarioData);
+        
+        // Transform startYear fields in eventSeries
+        transformStartYearFields(scenarioData);
         
         return scenarioData as Scenario;
     } catch (error) {
@@ -308,6 +315,66 @@ function convertMongoIds(obj: any): void {
         if (obj[key] && typeof obj[key] === 'object') {
             convertMongoIds(obj[key]);
         }
+    }
+}
+
+// Function to transform startYear fields in scenario
+function transformStartYearFields(scenario: Scenario): void {
+    if (!scenario?.eventSeries || !Array.isArray(scenario.eventSeries)) return;
+    
+    scenario.eventSeries.forEach((event) => {
+        if (event.startYear) {
+            if (event.startYear.type === "uniform" && event.startYear.year?.min !== undefined && event.startYear.year?.max !== undefined) {
+                event.startYear = {
+                    type: "uniform",
+                    year: {
+                        type: "uniform",
+                        valueType: "amount",
+                        min: event.startYear.year.min,
+                        max: event.startYear.year.max
+                    }
+                };
+            } else if (event.startYear.type === "normal" && event.startYear.year?.mean !== undefined && event.startYear.year?.stdDev !== undefined) {
+                event.startYear = {
+                    type: "normal",
+                    year: {
+                        type: "normal",
+                        valueType: "amount",
+                        mean: event.startYear.year.mean,
+                        stdDev: event.startYear.year.stdDev
+                    }
+                };
+            }
+        }
+    });
+    
+    // Also transform spendingStrategy if it exists
+    if (scenario?.spendingStrategy && Array.isArray(scenario.spendingStrategy)) {
+        scenario.spendingStrategy.forEach((strategy) => {
+            if (strategy.startYear) {
+                if (strategy.startYear.type === "uniform" && strategy.startYear.year?.min !== undefined && strategy.startYear.year?.max !== undefined) {
+                    strategy.startYear = {
+                        type: "uniform",
+                        year: {
+                            type: "uniform",
+                            valueType: "amount",
+                            min: strategy.startYear.year.min,
+                            max: strategy.startYear.year.max
+                        }
+                    };
+                } else if (strategy.startYear.type === "normal" && strategy.startYear.year?.mean !== undefined && strategy.startYear.year?.stdDev !== undefined) {
+                    strategy.startYear = {
+                        type: "normal",
+                        year: {
+                            type: "normal",
+                            valueType: "amount",
+                            mean: strategy.startYear.year.mean,
+                            stdDev: strategy.startYear.year.stdDev
+                        }
+                    };
+                }
+            }
+        });
     }
 }
 

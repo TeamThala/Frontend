@@ -300,7 +300,7 @@ export async function PUT(
 
   const body: ScenarioUpdateBody = await req.json();
 
-  /* 1 — general info */
+  /* 1 — general info */
   scenario.name = body.name;
   scenario.description = body.description;
   scenario.financialGoal = body.financialGoal;
@@ -314,12 +314,12 @@ export async function PUT(
     scenario.spouseLifeExpectancy = body.spouseLifeExpectancy;
   }
 
-  /* 2 — investments (deduped) */
+  /* 2 — investments (deduped) */
   const updatedInvestmentIds: mongoose.Types.ObjectId[] = [];
   for (const inv of body.investments) {
     let invTypeId: mongoose.Types.ObjectId;
 
-    /* 2‑a InvestmentType */
+    /* 2‑a InvestmentType */
     if (inv.investmentType._id && isMongoId(inv.investmentType._id)) {
       const existingType = await InvestmentType.findById(inv.investmentType._id);
       if (existingType) {
@@ -358,7 +358,7 @@ export async function PUT(
       )._id;
     }
 
-    /* 2‑b Investment */
+    /* 2‑b Investment */
     if (inv._id && isMongoId(inv._id)) {
       const existingInv = await Investment.findById(inv._id);
       if (existingInv) {
@@ -384,27 +384,56 @@ export async function PUT(
   }
   scenario.investments = updatedInvestmentIds;
 
-  /* 3 — events (deduped) */
+  /* 3 — events (deduped) */
   const updatedEventIds: mongoose.Types.ObjectId[] = [];
 
   const normaliseAlloc = (alloc: any) => {
-    alloc.investments = extractInvestmentIds(alloc.investments ?? []);
+    alloc.investments = extractInvestmentIds(scenario.investments ?? []);
     if (alloc.type === "fixed") {
       alloc.percentages = alloc.percentages ?? [];
+      // Filter out entries with 0 percentages
+      const validIndices = alloc.percentages.map((p: number, i: number) => p !== 0 ? i : -1).filter((i: number) => i !== -1);
+      alloc.percentages = alloc.percentages.filter((_: number, i: number) => validIndices.includes(i));
+      alloc.percentages = alloc.percentages.map((p: number) => p * 100);
+      alloc.investments = alloc.investments.filter((_: any, i: number) => validIndices.includes(i));
     } else {
       alloc.initialPercentages = alloc.initialPercentages ?? [];
+      alloc.initialPercentages = alloc.initialPercentages.map((p: number) => p * 100);
       alloc.finalPercentages = alloc.finalPercentages ?? [];
+      alloc.finalPercentages = alloc.finalPercentages.map((p: number) => p * 100);
+      // Filter out entries where both initial and final percentages are 0
+      const validIndices = alloc.initialPercentages.map((ip: number, i: number) => 
+        (ip !== 0 || alloc.finalPercentages[i] !== 0) ? i : -1
+      ).filter((i: number) => i !== -1);
+      alloc.initialPercentages = alloc.initialPercentages.filter((_: number, i: number) => validIndices.includes(i));
+      alloc.finalPercentages = alloc.finalPercentages.filter((_: number, i: number) => validIndices.includes(i));
+      alloc.investments = alloc.investments.filter((_: any, i: number) => validIndices.includes(i));
     }
     return alloc;
   };
 
   const normalisePd = (pd: any) => {
-    pd.investments = extractInvestmentIds(pd.investments ?? []);
+    pd.investments = extractInvestmentIds(scenario.investments ?? []);
     if (pd.type === "fixed") {
       pd.percentages = pd.percentages ?? [];
+      // Filter out entries with 0 percentages
+      const validIndices = pd.percentages.map((p: number, i: number) => p !== 0 ? i : -1).filter((i: number) => i !== -1);
+      pd.percentages = pd.percentages.filter((_: number, i: number) => validIndices.includes(i));
+      // Multiply percentages by 100 to convert from decimal to percentage
+      pd.percentages = pd.percentages.map((p: number) => p * 100);
+      pd.investments = pd.investments.filter((_: any, i: number) => validIndices.includes(i));
     } else {
       pd.initialPercentages = pd.initialPercentages ?? [];
       pd.finalPercentages = pd.finalPercentages ?? [];
+      // Filter out entries where both initial and final percentages are 0
+      const validIndices = pd.initialPercentages.map((ip: number, i: number) => 
+        (ip !== 0 || pd.finalPercentages[i] !== 0) ? i : -1
+      ).filter((i: number) => i !== -1);
+      pd.initialPercentages = pd.initialPercentages.filter((_: number, i: number) => validIndices.includes(i));
+      pd.finalPercentages = pd.finalPercentages.filter((_: number, i: number) => validIndices.includes(i));
+      pd.initialPercentages = pd.initialPercentages.map((p: number) => p * 100);
+      pd.finalPercentages = pd.finalPercentages.map((p: number) => p * 100);
+      pd.investments = pd.investments.filter((_: any, i: number) => validIndices.includes(i));
     }
     return pd;
   };
@@ -458,7 +487,7 @@ export async function PUT(
         type: "investment",
         inflationAdjustment: ie.inflationAdjustment,
         maxCash: ie.maxCash,
-        assetAllocation: alloc ? [normaliseAlloc(alloc)] : [],
+        assetAllocation: alloc ? normaliseAlloc(alloc) : {},
       };
     } else if (evt.eventType.type === "rebalance") {
       const re = evt.eventType as RebalanceEvent;
@@ -483,20 +512,20 @@ export async function PUT(
 
   scenario.eventSeries = updatedEventIds;
 
-  /* 4 — spending / expense withdrawal strategies */
+  /* 4 — spending / expense withdrawal strategies */
   scenario.spendingStrategy = extractInvestmentIds(body.spendingStrategy ?? []);
   scenario.expenseWithdrawalStrategy = extractInvestmentIds(
     body.expenseWithdrawalStrategy ?? [],
   );
 
-  /* 5 — RMD & Roth */
+  /* 5 — RMD & Roth */
   scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy ?? []);
   scenario.RothConversionStrategy = extractInvestmentIds(
     body.RothConversionStrategy ?? [],
   );
   scenario.rothConversion = body.rothConversion ?? null;
 
-  /* 6 — state‑tax files (user‑level) */
+  /* 6 — state‑tax files (user‑level) */
   if (body.stateTaxFiles) {
     user.stateTaxFiles = body.stateTaxFiles;
     await user.save();
