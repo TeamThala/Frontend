@@ -21,6 +21,12 @@ const yearSchema = new Schema(
   },
   { _id: false }
 );
+yearSchema.virtual("event", {
+  ref: "Event",
+  localField: "eventId",
+  foreignField: "_id",
+  justOne: true,
+});
 
 // Sub-schema for the "eventType" union
 const eventTypeSchema = new Schema(
@@ -106,6 +112,9 @@ const eventSchema = new Schema(
   },
   { timestamps: true }
 );
+eventSchema.set("toObject", { virtuals: true });
+eventSchema.set("toJSON", { virtuals: true });
+
 
 const Event = models.Event || model("Event", eventSchema);
 export default Event;
