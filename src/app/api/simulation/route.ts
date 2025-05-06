@@ -265,7 +265,7 @@ async function getScenarioFromDatabase(scenarioId: string): Promise<Scenario | n
             .populate("spendingStrategy")
             .populate("expenseWithdrawalStrategy")
             .populate("RMDStrategy")
-            .populate("RothConversionStrategy")
+            .populate({ path: "RothConversionStrategy", populate: { path: "investmentOrder", populate: { path: "investmentType" } } })
             .populate("owner");
             
         if (!scenario) {
@@ -281,7 +281,11 @@ async function getScenarioFromDatabase(scenarioId: string): Promise<Scenario | n
         
         // Transform startYear fields in eventSeries
         transformStartYearFields(scenarioData);
+
         
+        scenarioData.RothConversionStrategy = scenarioData.RothConversionStrategy[0].investmentOrder;
+        console.log("Roth Conversion Strategy:", scenarioData.RothConversionStrategy);
+
         return scenarioData as Scenario;
     } catch (error) {
         console.error("Error fetching scenario from database:", error);
@@ -327,7 +331,7 @@ function transformStartYearFields(scenario: Scenario): void {
     scenario.eventSeries.forEach((event) => {
         if (event.duration.type === "fixed") 
         {
-            event.duration.year = event.duration.value;
+            event.duration.year = event.duration.value!;
         }
     });
     

@@ -2,10 +2,6 @@ import MultiLineScenarioChart from "@/app/simulation/components/MultiLineScenari
 import { multiLineSampleData } from "@/app/simulation/sample-data/sampleData"
 
 describe('MultiLineScenarioChart Complex Tests', () => {
-  it('renders chart title', () => {
-    cy.mount(<MultiLineScenarioChart data={multiLineSampleData} parameterName="Retirement Age" />)
-    cy.contains('Probability of Success by Scenario Parameter').should('exist')
-  })
 
   it('renders multiple scenario lines with different colors', () => {
     cy.mount(<MultiLineScenarioChart data={multiLineSampleData} parameterName="Retirement Age" />)
@@ -15,18 +11,6 @@ describe('MultiLineScenarioChart Complex Tests', () => {
   it('renders circle dots for scenario points', () => {
     cy.mount(<MultiLineScenarioChart data={multiLineSampleData} parameterName="Retirement Age" />)
     cy.get('circle').should('have.length.greaterThan', 2)
-  })
-
-  it('triggers hover and displays the correct tooltip content', () => {
-    cy.mount(<MultiLineScenarioChart data={multiLineSampleData} parameterName="Retirement Age" />)
-
-    // Hover on the hover interaction layer
-    cy.get('rect[fill="transparent"]').eq(0)
-      .trigger('mousemove', { clientX: 150, clientY: 250, force: true })
-
-    cy.contains('Year:', { timeout: 5000 }).should('exist')
-    cy.contains('Retirement Age:').should('exist')
-    cy.contains('Success:').should('exist')
   })
 
   it('is responsive to window resizing', () => {

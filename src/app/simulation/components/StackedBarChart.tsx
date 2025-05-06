@@ -39,51 +39,69 @@ export default function StackedBarChart({
   } | null>(null);
   const [useMedian, setUseMedian] = useState(true);
 
-  // Move the color function to component scope so it can be used in the tooltip
-  const color = (taxStatus?: string, investmentKey?: string) => {
-    // For investment chart type with investment key provided, use investment-based colors
-    if (chartType === "investments" && investmentKey) {
-      // Create a colorful palette for investments
-      const investmentColors = [
-        "#7F56D9", // Purple
-        "#FF4690", // Pink
-        "#6EE7B7", // Green
-        "#6366F1", // Indigo
-        "#F59E0B", // Amber
-        "#EC4899", // Fuchsia
-        "#10B981", // Emerald
-        "#3B82F6", // Blue
-        "#8B5CF6", // Violet
-        "#EF4444"  // Red
-      ];
-      
-      // Use a hash function to consistently map investment names to colors
-      const hashCode = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return Math.abs(hash);
-      };
-      
-      const colorIndex = hashCode(investmentKey) % investmentColors.length;
-      return investmentColors[colorIndex];
-    } 
-    // Keep the original tax status based coloring as fallback
-    else if (chartType === "investments" && taxStatus) {
-      return {
-        "non-retirement": "#7F56D9", // Purple
-        "pre-tax": "#FF4690",        // Pink
-        "after-tax": "#6EE7B7",      // Green
-      }[taxStatus] || "#999";
-    } else if (chartType === "income") {
-      return "#6366F1"; // Income color
-    } else if (chartType === "expenses") {
-      return "#FF4690"; // Expense color
+  // Generate consistent colors that work in all contexts
+  const getSegmentColor = (segment: BarSegment | string): string => {
+    // Define a consistent color palette with distinctive colors
+    const colorPalette = [
+      "#7F56D9", // Purple (primary)
+      "#FF4690", // Pink (primary)
+      "#6EE7B7", // Green (primary)
+      "#6366F1", // Indigo
+      "#F59E0B", // Amber
+      "#EC4899", // Fuchsia
+      "#10B981", // Emerald
+      "#3B82F6", // Blue
+      "#8B5CF6", // Violet
+      "#EF4444", // Red
+      "#14B8A6", // Teal
+      "#F97316", // Orange
+      "#A78BFA", // Light purple
+      "#06B6D4", // Cyan
+      "#22D3EE"  // Light cyan
+    ];
+    
+    // Create a hash function for consistent coloring
+    const hashString = (str: string): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash) % colorPalette.length;
+    };
+    
+    // For string input (keys)
+    if (typeof segment === 'string') {
+      return colorPalette[hashString(segment)];
     }
     
-    // Default color scheme
-    return "#999"; // Gray as default
+    // For segment objects
+    const segmentId = segment.name || segment.id;
+    
+    // When dealing with investment chart type
+    if (chartType === "investments") {
+      // If investment has tax status, we could use that for grouping
+      if (segment.taxStatus) {
+        // Group by tax status with consistent colors
+        if (segment.taxStatus === "non-retirement") return colorPalette[0];
+        if (segment.taxStatus === "pre-tax") return colorPalette[1];
+        if (segment.taxStatus === "after-tax") return colorPalette[2];
+      }
+      
+      // Otherwise use hash of segment id for color
+      return colorPalette[hashString(segmentId)];
+    } 
+    // Income charts
+    else if (chartType === "income") {
+      return colorPalette[3]; // Income color
+    } 
+    // Expense charts
+    else if (chartType === "expenses") {
+      return colorPalette[1]; // Expense color (pink)
+    }
+    
+    // Default to hash-based color
+    return colorPalette[hashString(segmentId)];
   };
 
   // AI tool (ChatGPT) was used to assist with generating 
@@ -174,10 +192,8 @@ export default function StackedBarChart({
         .attr("height", d => y(d[0]) - y(d[1]))
         .attr("width", x.bandwidth())
         .attr("fill", d => {
-          // Using proper type annotations to fix TypeScript error
-          const key = String(stackKeys[i]);
-          // Color based on investment key rather than tax status
-          return color(undefined, key);
+          const key = stackKeys[i];
+          return getSegmentColor(key);
         })
         .on("mouseover", (event, d) => {
           const originalSegments = d.data.originalSegments as unknown as BarSegment[];
@@ -261,12 +277,12 @@ export default function StackedBarChart({
         legendItem.append("rect")
           .attr("width", 16)
           .attr("height", 16)
-          .attr("fill", color(exampleSegment?.taxStatus, investmentName as string));
+          .attr("fill", getSegmentColor(String(investmentName)));
         
         // Truncate long investment names
-        const displayName = investmentName.length > 15 
-          ? investmentName.substring(0, 15) + "..." 
-          : investmentName;
+        const displayName = String(investmentName).length > 15 
+          ? String(investmentName).substring(0, 15) + "..." 
+          : String(investmentName);
         
         legendItem.append("text")
           .attr("x", 24)
@@ -359,7 +375,7 @@ export default function StackedBarChart({
                 <p key={i} className="flex items-center">
                   <span 
                     className="inline-block w-3 h-3 mr-2 rounded-sm" 
-                    style={{ backgroundColor: color(undefined, s.name || s.id) }}
+                    style={{ backgroundColor: getSegmentColor(s) }}
                   ></span>
                   <span className="font-medium">{s.name || s.id}: </span>
                   <span className="ml-1">${s.value.toLocaleString()}</span>

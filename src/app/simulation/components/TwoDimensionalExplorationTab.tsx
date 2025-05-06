@@ -47,6 +47,7 @@ type EventType = ExpenseOrIncomeEventType | InvestmentEventType | BaseEventType;
 // Event series interface to match actual JSON structure
 interface EventSeries {
   id: string;
+  _id?: string; // MongoDB ID that may be present
   name: string;
   description: string;
   startYear: {
@@ -56,6 +57,7 @@ interface EventSeries {
   duration: {
     type: string;
     year: number;
+    value?: number; // Some events use value instead of year
   };
   eventType: EventType;
 }
@@ -87,46 +89,51 @@ interface TwoDimensionalExplorationTabProps {
   scenarioId: string;
 }
 
-// Helper functions for event validation
-const hasExactlyTwoInvestments = (event: EventSeries | undefined): boolean => {
-  if (!event || event.eventType.type !== "investment") return false;
+// Type guards to check event types
+function isIncomeOrExpenseEvent(event: EventSeries | null | undefined): boolean {
+  if (!event) return false;
+  return event.eventType.type === "income" || event.eventType.type === "expense";
+}
+
+function isInvestmentEvent(event: EventSeries | undefined | null): boolean {
+  return !!(event && event.eventType && event.eventType.type === "investment");
+}
+
+function isRebalanceEvent(event: EventSeries | undefined | null): boolean {
+  return !!(event && event.eventType && event.eventType.type === "rebalance");
+}
+
+// Helper function to check if an investment event has exactly 2 investments
+function hasExactlyTwoInvestments(event: EventSeries | undefined | null): boolean {
+  if (!isInvestmentEvent(event)) return false;
   
-  const eventType = event.eventType as InvestmentEventType;
+  // Add null check and type assertion
+  const eventType = event!.eventType as InvestmentEventType;
   const assetAllocation = eventType.assetAllocation;
   
-  return !!assetAllocation.investments && 
-         assetAllocation.investments.length === 2;
+  return !!(assetAllocation && 
+         assetAllocation.investments && 
+         assetAllocation.investments.length === 2);
+}
+
+// Function to check if an event has an amount property (for income/expense)
+const hasAmountProperty = (event: EventSeries | undefined | null): boolean => {
+  if (!event || !event.eventType) return false;
+  
+  // Check if it's an income/expense type with amount property
+  if (event.eventType.type === "income" || event.eventType.type === "expense") {
+    return 'amount' in event.eventType;
+  }
+  
+  return false;
 };
 
-const getFirstInvestmentAllocationPercentage = (event: EventSeries | undefined): number => {
-  if (!hasExactlyTwoInvestments(event)) return 50; // Default to 50% if not applicable
-  
-  const eventType = event!.eventType as InvestmentEventType;
-  const percentages = eventType.assetAllocation.percentages;
-  
-  if (Array.isArray(percentages) && percentages.length === 2) {
-    return percentages[0];
-  }
-  
-  return 50; // Default to 50% if percentages not found
-};
-
-const getInvestmentNames = (event: EventSeries | undefined): { first: string, second: string } => {
-  if (!hasExactlyTwoInvestments(event)) {
-    return { first: "First Investment", second: "Second Investment" };
-  }
-  
-  const eventType = event!.eventType as InvestmentEventType;
-  const investments = eventType.assetAllocation.investments;
-  
-  if (investments && investments.length === 2) {
-    const firstInvestmentName = investments[0].investmentType?.name || "First Investment";
-    const secondInvestmentName = investments[1].investmentType?.name || "Second Investment";
-    return { first: firstInvestmentName, second: secondInvestmentName };
-  }
-  
-  return { first: "First Investment", second: "Second Investment" };
-};
+// Function to safely retrieve an amount from any event
+function getEventAmount(event: EventSeries): number {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyEventType = event.eventType as any;
+  return typeof anyEventType.amount === 'number' ? anyEventType.amount : 10000;
+}
 
 export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensionalExplorationTabProps) {
   // Parameter 1 state
@@ -149,18 +156,30 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
   const [eventSeries, setEventSeries] = useState<EventSeries[]>([]);
   const [simulationResults, setSimulationResults] = useState<SimulationResult | null>(null);
   
+  // Selected event objects
+  const [selectedEvent1, setSelectedEvent1] = useState<EventSeries | null>(null);
+  const [selectedEvent2, setSelectedEvent2] = useState<EventSeries | null>(null);
+  
   // New visualization state
   const [activeMetric, setActiveMetric] = useState<"success-probability" | "total-investments">("success-probability");
   const [activeVisualization, setActiveVisualization] = useState<"surface" | "contour">("surface");
   const [isLoadingVisualization, setIsLoadingVisualization] = useState(false);
   const [surfacePlotData, setSurfacePlotData] = useState<SurfacePlotDataPoint[] | null>(null);
   
-  // Calculate expected simulation count
-  const expectedSimulationCount = Math.ceil(
-    ((parameter1Max - parameter1Min) / parameter1Step + 1) * 
-    ((parameter2Max - parameter2Min) / parameter2Step + 1) * 
-    simulationCount
-  );
+  // Calculate expected simulation count with safety checks
+  const expectedSimulationCount = (() => {
+    const p1Range = isNaN(parameter1Max) || isNaN(parameter1Min) || isNaN(parameter1Step) || parameter1Step <= 0
+      ? 1
+      : Math.ceil((parameter1Max - parameter1Min) / parameter1Step) + 1;
+      
+    const p2Range = isNaN(parameter2Max) || isNaN(parameter2Min) || isNaN(parameter2Step) || parameter2Step <= 0
+      ? 1
+      : Math.ceil((parameter2Max - parameter2Min) / parameter2Step) + 1;
+      
+    const simCount = isNaN(simulationCount) ? 50 : simulationCount;
+    
+    return Math.max(0, p1Range * p2Range * simCount);
+  })();
   
   // Fetch scenario data from the API
   useEffect(() => {
@@ -176,13 +195,28 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
         const scenario = data.scenario as Scenario;
         
         if (scenario && scenario.eventSeries) {
-          setEventSeries(scenario.eventSeries as EventSeries[]);
-          if (scenario.eventSeries.length > 0) {
-            setParameter1EventSeries(scenario.eventSeries[0].id);
-            if (scenario.eventSeries.length > 1) {
-              setParameter2EventSeries(scenario.eventSeries[1].id);
+          const seriesData = scenario.eventSeries as unknown as EventSeries[];
+          console.log('Event series loaded:', seriesData);
+          setEventSeries(seriesData);
+          
+          if (seriesData.length > 0) {
+            // Set first event
+            const firstEvent = seriesData[0];
+            const firstEventId = firstEvent.id || firstEvent._id || 'event-0';
+            console.log('Setting first event:', firstEvent);
+            setParameter1EventSeries(firstEventId);
+            setSelectedEvent1(firstEvent);
+            
+            // Set second event if available, otherwise use first event
+            if (seriesData.length > 1) {
+              const secondEvent = seriesData[1];
+              const secondEventId = secondEvent.id || secondEvent._id || 'event-1';
+              console.log('Setting second event:', secondEvent);
+              setParameter2EventSeries(secondEventId);
+              setSelectedEvent2(secondEvent);
             } else {
-              setParameter2EventSeries(scenario.eventSeries[0].id);
+              setParameter2EventSeries(firstEventId);
+              setSelectedEvent2(firstEvent);
             }
           }
         }
@@ -193,6 +227,29 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
 
     fetchScenarioData();
   }, [scenarioId]);
+
+  // Debug useEffect to track selected events
+  useEffect(() => {
+    console.log("Selected event 1:", selectedEvent1);
+    console.log("Selected event 1 type:", selectedEvent1?.eventType?.type);
+    console.log("Selected event 2:", selectedEvent2);
+    console.log("Selected event 2 type:", selectedEvent2?.eventType?.type);
+  }, [selectedEvent1, selectedEvent2]);
+  
+  // Debug useEffect to inspect event series data structure
+  useEffect(() => {
+    if (eventSeries.length > 0) {
+      console.log('Checking event series structure:');
+      console.log('First event:', eventSeries[0]);
+      
+      // Output each event type
+      eventSeries.forEach((event, index) => {
+        console.log(`Event ${index}: ${event.name}, Type: ${event.eventType?.type}`);
+        // Use type assertion to safely check for amount property
+        console.log(`Event ${index} has amount:`, 'amount' in (event.eventType as any));
+      });
+    }
+  }, [eventSeries]);
 
   // Function to run two-dimensional scenario exploration
   const runScenarioExploration = async () => {
@@ -259,17 +316,42 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
   
   // Update parameter settings when changing the event series or parameter type
   const handleEventSeriesChange = (eventId: string, paramNum: 1 | 2) => {
+    console.log(`Event ID selected for param ${paramNum}:`, eventId);
+    console.log('Available events:', eventSeries);
+    
+    if (!eventId) {
+      console.warn(`No event ID provided for parameter ${paramNum}`);
+      return;
+    }
+    
+    // Set the selected event series ID
     if (paramNum === 1) {
       setParameter1EventSeries(eventId);
     } else {
       setParameter2EventSeries(eventId);
     }
     
-    const event = eventSeries.find(e => e.id === eventId);
-    if (!event) return;
+    // Find the event by ID or _id
+    const event = eventSeries.find(e => e.id === eventId || e._id === eventId);
     
-    // Update parameter ranges based on the event and type
-    updateParameterRanges(event, paramNum === 1 ? parameter1Type : parameter2Type, paramNum);
+    console.log(`Event selected for param ${paramNum}:`, event);
+    console.log(`Event type for param ${paramNum}:`, event?.eventType?.type);
+    
+    if (!event) {
+      console.warn(`Could not find event with ID ${eventId}`);
+      return;
+    }
+    
+    // Store the selected event object in state
+    if (paramNum === 1) {
+      setSelectedEvent1(event);
+    } else {
+      setSelectedEvent2(event);
+    }
+    
+    // Update parameter ranges based on the event
+    const paramType = paramNum === 1 ? parameter1Type : parameter2Type;
+    updateParameterRanges(event, paramType, paramNum);
   };
   
   const handleParameterTypeChange = (
@@ -282,7 +364,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
       setParameter2Type(type);
     }
     
-    const event = eventSeries.find(e => e.id === (paramNum === 1 ? parameter1EventSeries : parameter2EventSeries));
+    const event = paramNum === 1 ? selectedEvent1 : selectedEvent2;
     if (!event) return;
     
     // Update parameter ranges based on the event and new type
@@ -303,20 +385,20 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
       max = startYear + 5;
       step = 1;
     } else if (type === "duration") {
-      const duration = event.duration.year;
+      const duration = event.duration.year || event.duration.value || 1;
       min = Math.max(1, duration - 10);
       max = duration + 10;
       step = 1;
-    } else if (type === "amount" && event.eventType.type === "income" || event.eventType.type === "expense") {
-      const eventType = event.eventType as ExpenseOrIncomeEventType;
-      const amount = eventType.amount;
+    } else if (type === "amount") {
+      // Use our utility function to get the amount safely
+      const amount = getEventAmount(event);
       min = Math.max(1000, amount * 0.5);
       max = amount * 1.5;
       step = amount > 10000 ? 5000 : 1000;
-    } else if (type === "allocation" && hasExactlyTwoInvestments(event)) {
-      const currentPercentage = getFirstInvestmentAllocationPercentage(event);
-      min = Math.max(0, currentPercentage - 30);
-      max = Math.min(100, currentPercentage + 30);
+    } else if (type === "allocation" && isInvestmentEvent(event)) {
+      // For asset allocation, use a standard range of 0-100%
+      min = 0;
+      max = 100;
       step = 5;
     }
     
@@ -350,7 +432,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
     eventId: string, 
     paramType: "startYear" | "duration" | "amount" | "allocation"
   ): string => {
-    const event = eventSeries.find(e => e.id === eventId);
+    const event = eventSeries.find(e => e.id === eventId || e._id === eventId);
     if (!event) return paramType;
     
     // Format label based on parameter type
@@ -362,12 +444,8 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
       case "amount":
         return `Amount (${event.name})`;
       case "allocation":
-        if (event.eventType.type === "investment") {
-          const eventType = event.eventType as InvestmentEventType;
-          const investments = eventType.assetAllocation.investments;
-          if (investments && investments.length === 2) {
-            return `${investments[0].investmentType?.name || "First"} Allocation %`;
-          }
+        if (isInvestmentEvent(event)) {
+          return `Asset Allocation (${event.name})`;
         }
         return `Allocation (${event.name})`;
     }
@@ -390,24 +468,44 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
             <div className="space-y-4">
               <div>
                 <Label htmlFor="parameter1EventSeries" className="text-gray-300">Event Series</Label>
-                <Select value={parameter1EventSeries} onValueChange={(value) => handleEventSeriesChange(value, 1)}>
+                <Select 
+                  value={parameter1EventSeries || ''} 
+                  onValueChange={(value) => {
+                    console.log('Parameter 1 Select onValueChange:', value);
+                    handleEventSeriesChange(value, 1);
+                  }}
+                >
                   <SelectTrigger className="mt-1 bg-gray-800 text-white w-full">
                     <SelectValue placeholder="Select event series" />
                   </SelectTrigger>
                   <SelectContent>
-                    {eventSeries.map((event) => (
-                      <SelectItem key={event.id} value={event.id}>
-                        {event.name} ({event.eventType.type})
-                      </SelectItem>
-                    ))}
+                    {/* Filter out rebalance events */}
+                    {eventSeries
+                      .filter(event => !isRebalanceEvent(event))
+                      .map((event, index) => {
+                        const eventId = event.id || event._id || `event-${index}`;
+                        console.log(`Event ${index} ID:`, eventId, 'Name:', event.name);
+                        return (
+                          <SelectItem 
+                            key={`param1-event-${eventId}-${index}`} 
+                            value={eventId}
+                          >
+                            {event.name} ({event.eventType.type})
+                          </SelectItem>
+                        );
+                      })
+                    }
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-400 mt-1">
+                  {selectedEvent1?.description || ''}
+                </p>
               </div>
               
               <div>
                 <Label htmlFor="parameter1Type" className="text-gray-300">Parameter to Vary</Label>
                 <Select 
-                  value={parameter1Type} 
+                  value={parameter1Type || 'startYear'} 
                   onValueChange={(value: "startYear" | "duration" | "amount" | "allocation") => 
                     handleParameterTypeChange(value, 1)
                   }
@@ -419,16 +517,18 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                     <SelectItem value="startYear">Start Year</SelectItem>
                     <SelectItem value="duration">Duration</SelectItem>
                     {/* Only show Amount option for income or expense events */}
-                    {eventSeries.find(e => e.id === parameter1EventSeries)?.eventType.type === "income" || 
-                     eventSeries.find(e => e.id === parameter1EventSeries)?.eventType.type === "expense" ? (
-                      <SelectItem value="amount">Amount</SelectItem>
-                    ) : null}
-                    {/* Only show Asset Allocation option for investment events with exactly 2 investments */}
-                    {hasExactlyTwoInvestments(eventSeries.find(e => e.id === parameter1EventSeries)) ? (
-                      <SelectItem value="allocation">
-                        Asset Allocation - {getInvestmentNames(eventSeries.find(e => e.id === parameter1EventSeries)).first} %
+                    {selectedEvent1 && selectedEvent1.eventType && 
+                     (selectedEvent1.eventType.type === "income" || selectedEvent1.eventType.type === "expense") && (
+                      <SelectItem value="amount">
+                        Amount {selectedEvent1.eventType.type === "income" ? "(Income)" : "(Expense)"}
                       </SelectItem>
-                    ) : null}
+                    )}
+                    {/* Show Asset Allocation option for all investment events */}
+                    {isInvestmentEvent(selectedEvent1) && (
+                      <SelectItem value="allocation">
+                        Asset Allocation
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -439,10 +539,10 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter1Min"
                     type="number" 
-                    value={parameter1Min} 
+                    value={isNaN(parameter1Min) ? 0 : parameter1Min} 
                     onChange={(e) => setParameter1Min(parseFloat(e.target.value) || 0)} 
                     className="mt-1 bg-gray-800 text-white"
-                    step={parameter1Step}
+                    step={parameter1Step || 1}
                   />
                 </div>
                 <div>
@@ -450,10 +550,10 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter1Max"
                     type="number" 
-                    value={parameter1Max} 
+                    value={isNaN(parameter1Max) ? 0 : parameter1Max} 
                     onChange={(e) => setParameter1Max(parseFloat(e.target.value) || 0)} 
                     className="mt-1 bg-gray-800 text-white"
-                    step={parameter1Step}
+                    step={parameter1Step || 1}
                   />
                 </div>
                 <div>
@@ -461,7 +561,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter1Step"
                     type="number" 
-                    value={parameter1Step} 
+                    value={isNaN(parameter1Step) ? 1 : parameter1Step} 
                     onChange={(e) => setParameter1Step(parseFloat(e.target.value) || 1)} 
                     className="mt-1 bg-gray-800 text-white"
                     min={0.01}
@@ -479,24 +579,43 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
             <div className="space-y-4">
               <div>
                 <Label htmlFor="parameter2EventSeries" className="text-gray-300">Event Series</Label>
-                <Select value={parameter2EventSeries} onValueChange={(value) => handleEventSeriesChange(value, 2)}>
+                <Select 
+                  value={parameter2EventSeries || ''} 
+                  onValueChange={(value) => {
+                    console.log('Parameter 2 Select onValueChange:', value);
+                    handleEventSeriesChange(value, 2);
+                  }}
+                >
                   <SelectTrigger className="mt-1 bg-gray-800 text-white w-full">
                     <SelectValue placeholder="Select event series" />
                   </SelectTrigger>
                   <SelectContent>
-                    {eventSeries.map((event) => (
-                      <SelectItem key={event.id} value={event.id}>
-                        {event.name} ({event.eventType.type})
-                      </SelectItem>
-                    ))}
+                    {/* Filter out rebalance events */}
+                    {eventSeries
+                      .filter(event => !isRebalanceEvent(event))
+                      .map((event, index) => {
+                        const eventId = event.id || event._id || `event-${index}`;
+                        return (
+                          <SelectItem 
+                            key={`param2-event-${eventId}-${index}`} 
+                            value={eventId}
+                          >
+                            {event.name} ({event.eventType.type})
+                          </SelectItem>
+                        );
+                      })
+                    }
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-400 mt-1">
+                  {selectedEvent2?.description || ''}
+                </p>
               </div>
               
               <div>
                 <Label htmlFor="parameter2Type" className="text-gray-300">Parameter to Vary</Label>
                 <Select 
-                  value={parameter2Type} 
+                  value={parameter2Type || 'startYear'} 
                   onValueChange={(value: "startYear" | "duration" | "amount" | "allocation") => 
                     handleParameterTypeChange(value, 2)
                   }
@@ -508,16 +627,18 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                     <SelectItem value="startYear">Start Year</SelectItem>
                     <SelectItem value="duration">Duration</SelectItem>
                     {/* Only show Amount option for income or expense events */}
-                    {eventSeries.find(e => e.id === parameter2EventSeries)?.eventType.type === "income" || 
-                     eventSeries.find(e => e.id === parameter2EventSeries)?.eventType.type === "expense" ? (
-                      <SelectItem value="amount">Amount</SelectItem>
-                    ) : null}
-                    {/* Only show Asset Allocation option for investment events with exactly 2 investments */}
-                    {hasExactlyTwoInvestments(eventSeries.find(e => e.id === parameter2EventSeries)) ? (
-                      <SelectItem value="allocation">
-                        Asset Allocation - {getInvestmentNames(eventSeries.find(e => e.id === parameter2EventSeries)).first} %
+                    {selectedEvent2 && selectedEvent2.eventType && 
+                     (selectedEvent2.eventType.type === "income" || selectedEvent2.eventType.type === "expense") && (
+                      <SelectItem value="amount">
+                        Amount {selectedEvent2.eventType.type === "income" ? "(Income)" : "(Expense)"}
                       </SelectItem>
-                    ) : null}
+                    )}
+                    {/* Show Asset Allocation option for all investment events */}
+                    {isInvestmentEvent(selectedEvent2) && (
+                      <SelectItem value="allocation">
+                        Asset Allocation
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -528,10 +649,10 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter2Min"
                     type="number" 
-                    value={parameter2Min} 
+                    value={isNaN(parameter2Min) ? 0 : parameter2Min} 
                     onChange={(e) => setParameter2Min(parseFloat(e.target.value) || 0)} 
                     className="mt-1 bg-gray-800 text-white"
-                    step={parameter2Step}
+                    step={parameter2Step || 1}
                   />
                 </div>
                 <div>
@@ -539,10 +660,10 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter2Max"
                     type="number" 
-                    value={parameter2Max} 
+                    value={isNaN(parameter2Max) ? 0 : parameter2Max} 
                     onChange={(e) => setParameter2Max(parseFloat(e.target.value) || 0)} 
                     className="mt-1 bg-gray-800 text-white"
-                    step={parameter2Step}
+                    step={parameter2Step || 1}
                   />
                 </div>
                 <div>
@@ -550,7 +671,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                   <Input 
                     id="parameter2Step"
                     type="number" 
-                    value={parameter2Step} 
+                    value={isNaN(parameter2Step) ? 1 : parameter2Step} 
                     onChange={(e) => setParameter2Step(parseFloat(e.target.value) || 1)} 
                     className="mt-1 bg-gray-800 text-white"
                     min={0.01}
@@ -569,7 +690,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
                 <Input 
                   id="simulationCount"
                   type="number" 
-                  value={simulationCount} 
+                  value={isNaN(simulationCount) ? 50 : simulationCount} 
                   onChange={(e) => setSimulationCount(parseInt(e.target.value) || 10)} 
                   className="bg-gray-800 text-white w-full"
                   min={10}

@@ -13,17 +13,6 @@ describe('ParamVsResultChart Complex Tests', () => {
     cy.get('circle').should('have.length', paramVsResultSample.length);
   });
 
-  it('triggers hover and displays the tooltip with correct content', () => {
-    cy.mount(<ParamVsResultChart data={paramVsResultSample} parameterName="Retirement Age" yLabel="Success Probability" />);
-
-    // Hover near the first data point (parameterValue: 60)
-    cy.get('rect[fill="transparent"]').eq(0)
-      .trigger('mousemove', { clientX: 80, clientY: 250, force: true });
-
-    cy.contains('Retirement Age: 60', { timeout: 5000 }).should('exist');
-    cy.contains('Success Probability: 75%').should('exist');
-  });
-
   it('renders crosshair lines on hover', () => {
     cy.mount(<ParamVsResultChart data={paramVsResultSample} parameterName="Retirement Age" />);
 

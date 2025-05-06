@@ -23,9 +23,9 @@ interface EventSeries {
     year: number;
   };
   duration: {
-    value: number;
     type: string;
     year: number;
+    value: number; // Some events use value instead of year
   };
   eventType: {
     type: string;
@@ -46,42 +46,48 @@ interface ParameterExplorationTabProps {
   scenarioId: string;
 }
 
+// Helper function to check if an event is an investment event
+const isInvestmentEvent = (event: EventSeries | undefined | null): boolean => {
+  return !!(event && event.eventType && event.eventType.type === "investment");
+};
+
+// Helper function to check if an event is a rebalance event
+const isRebalanceEvent = (event: EventSeries | undefined | null): boolean => {
+  return !!(event && event.eventType && event.eventType.type === "rebalance");
+};
+
 // Helper function to check if an investment event has exactly 2 investments
 const hasExactlyTwoInvestments = (event: EventSeries | undefined | null): boolean => {
-  if (!event || event.eventType.type !== "investment") return false;
+  if (!isInvestmentEvent(event)) return false;
   
-  const assetAllocation = event.eventType.assetAllocation;
+  const assetAllocation = event?.eventType.assetAllocation;
   return assetAllocation && 
          assetAllocation.investments && 
          assetAllocation.investments.length === 2;
 };
 
-// Get the current allocation percentage for the first investment in a dual-investment event
-const getFirstInvestmentAllocationPercentage = (event: EventSeries | undefined | null): number => {
-  if (!hasExactlyTwoInvestments(event)) return 50; // Default to 50% if not applicable
+// Get the parameter label based on event and parameter type
+const getParameterLabel = (event: EventSeries | undefined | null, parameterType: string): string => {
+  if (!event) return parameterType;
   
-  const percentages = event?.eventType.assetAllocation.percentages;
-  if (Array.isArray(percentages) && percentages.length === 2) {
-    return percentages[0];
+  if (parameterType === "startYear") {
+    return `Start Year for "${event.name}"`;
+  } else if (parameterType === "duration") {
+    return `Duration for "${event.name}"`;
+  } else if (parameterType === "amount") {
+    return `Amount for "${event.name}"`;
+  } else if (parameterType === "allocation") {
+    // For allocation, include the investment names if available
+    const investments = event.eventType.assetAllocation?.investments;
+    if (investments && investments.length === 2) {
+      const firstInvestmentName = investments[0].investmentType?.name || "First Investment";
+      const secondInvestmentName = investments[1].investmentType?.name || "Second Investment";
+      return `${firstInvestmentName} allocation (${secondInvestmentName} = 100% - value)`;
+    }
+    return "Investment Allocation";
   }
   
-  return 50; // Default to 50% if percentages not found
-};
-
-// Helper function to get the investment names for display
-const getInvestmentNames = (event: EventSeries | undefined | null): { first: string, second: string } => {
-  if (!hasExactlyTwoInvestments(event)) {
-    return { first: "First Investment", second: "Second Investment" };
-  }
-  
-  const investments = event?.eventType.assetAllocation?.investments;
-  if (investments && investments.length === 2) {
-    const firstInvestmentName = investments[0].investmentType?.name || "First Investment";
-    const secondInvestmentName = investments[1].investmentType?.name || "Second Investment";
-    return { first: firstInvestmentName, second: secondInvestmentName };
-  }
-  
-  return { first: "First Investment", second: "Second Investment" };
+  return parameterType;
 };
 
 export default function ParameterExplorationTab({ scenarioId }: ParameterExplorationTabProps) {
@@ -246,30 +252,6 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
     }
   };
 
-  // Get parameter label based on event and parameter type
-  const getParameterLabel = () => {
-    if (!selectedEvent) return parameterType;
-    
-    if (parameterType === "startYear") {
-      return `Start Year for "${selectedEvent.name}"`;
-    } else if (parameterType === "duration") {
-      return `Duration for "${selectedEvent.name}"`;
-    } else if (parameterType === "amount") {
-      return `Amount for "${selectedEvent.name}"`;
-    } else if (parameterType === "allocation") {
-      // For allocation, include the investment names if available
-      const investments = selectedEvent.eventType.assetAllocation?.investments;
-      if (investments && investments.length === 2) {
-        const firstInvestmentName = investments[0].investmentType?.name || "First Investment";
-        const secondInvestmentName = investments[1].investmentType?.name || "Second Investment";
-        return `${firstInvestmentName} allocation (${secondInvestmentName} = 100% - value)`;
-      }
-      return "Investment Allocation";
-    }
-    
-    return parameterType;
-  };
-  
   // Update parameter settings when changing the event series or parameter type
   const handleEventSeriesChange = (eventId: string) => {
     console.log('Event ID selected:', eventId);
@@ -333,7 +315,7 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
       setParameterMax(startYear + 5);
       setParameterStep(1);
     } else if (type === "duration") {
-      const duration = selectedEvent.duration.year;
+      const duration = selectedEvent.duration.year || selectedEvent.duration.value;
       setParameterMin(Math.max(1, duration - 10));
       setParameterMax(duration + 10);
       setParameterStep(1);
@@ -343,13 +325,10 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
       setParameterMin(Math.max(1000, amount * 0.5));
       setParameterMax(amount * 1.5);
       setParameterStep(1000);
-    } else if (type === "allocation" && hasExactlyTwoInvestments(selectedEvent)) {
-      // For asset allocation, get the current percentage of the first investment
-      const currentPercentage = getFirstInvestmentAllocationPercentage(selectedEvent);
-      
-      // Allow exploring a range of percentages around the current value
-      setParameterMin(Math.max(0, currentPercentage - 30));
-      setParameterMax(Math.min(100, currentPercentage + 30));
+    } else if (type === "allocation" && isInvestmentEvent(selectedEvent)) {
+      // For asset allocation, use a standard range of 0-100%
+      setParameterMin(0);
+      setParameterMax(100);
       setParameterStep(5);
     }
   };
@@ -396,18 +375,22 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                   <SelectValue placeholder="Select event series" />
                 </SelectTrigger>
                 <SelectContent>
-                  {eventSeries.map((event, index) => {
-                    const eventId = event.id || event._id || `event-${index}`;
-                    console.log(`Event ${index} ID:`, eventId, 'Name:', event.name);
-                    return (
-                      <SelectItem 
-                        key={`event-series-${eventId}-${index}`} 
-                        value={eventId}
-                      >
-                        {event.name} ({event.eventType.type})
-                      </SelectItem>
-                    );
-                  })}
+                  {/* Filter out rebalance events */}
+                  {eventSeries
+                    .filter(event => !isRebalanceEvent(event))
+                    .map((event, index) => {
+                      const eventId = event.id || event._id || `event-${index}`;
+                      console.log(`Event ${index} ID:`, eventId, 'Name:', event.name);
+                      return (
+                        <SelectItem 
+                          key={`event-series-${eventId}-${index}`} 
+                          value={eventId}
+                        >
+                          {event.name} ({event.eventType.type})
+                        </SelectItem>
+                      );
+                    })
+                  }
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-400 mt-1">
@@ -434,10 +417,10 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                       Amount {selectedEvent.eventType.type === "income" ? "(Income)" : "(Expense)"}
                     </SelectItem>
                   )}
-                  {/* Only show Asset Allocation option for investment events with exactly 2 investments */}
-                  {hasExactlyTwoInvestments(selectedEvent) && (
+                  {/* Show Asset Allocation option for all investment events */}
+                  {isInvestmentEvent(selectedEvent) && (
                     <SelectItem key="allocation" value="allocation">
-                      Asset Allocation - {getInvestmentNames(selectedEvent).first} %
+                      Asset Allocation
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -445,10 +428,10 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
               {parameterType === "allocation" && (
                 <>
                   <p className="text-sm text-gray-400 mt-2">
-                    Adjust the percentage allocation for <strong className="text-white">{getInvestmentNames(selectedEvent).first}</strong>.
+                    Adjust the percentage allocation for your investments.
                   </p>
                   <p className="text-sm text-gray-400">
-                    The allocation for <strong className="text-white">{getInvestmentNames(selectedEvent).second}</strong> will automatically be set to (100% - {getInvestmentNames(selectedEvent).first} %).
+                    Higher values will allocate more to riskier assets.
                   </p>
                 </>
               )}
@@ -603,8 +586,8 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                 : "Total Investments Over Time";
                 
               const description = graph.metric === "success-probability"
-                ? `This chart shows how probability of success changes over time for different values of ${getParameterLabel().toLowerCase()}.`
-                : `This chart shows how total investments change over time for different values of ${getParameterLabel().toLowerCase()}.`;
+                ? `This chart shows how probability of success changes over time for different values of ${getParameterLabel(selectedEvent, parameterType).toLowerCase()}.`
+                : `This chart shows how total investments change over time for different values of ${getParameterLabel(selectedEvent, parameterType).toLowerCase()}.`;
                 
               return (
                 <Card key={graph.id} className="text-white rounded-xl border border-[#7F56D9] shadow-lg bg-gray-900">
@@ -614,7 +597,7 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                     
                     <MultiLineScenarioChart 
                       data={graph.data as ScenarioLineData[]}
-                      parameterName={getParameterLabel()}
+                      parameterName={getParameterLabel(selectedEvent, parameterType)}
                       yLabel={graph.metric === "success-probability" ? "Probability of Success (%)" : "Total Investments ($)"}
                     />
                   </CardContent>
@@ -622,12 +605,12 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
               );
             } else if (graph.type === "parameter-impact" && graph.dataType === "impact") {
               const title = graph.metric === "success-probability" 
-                ? `Impact of ${getParameterLabel()} on Probability of Success`
-                : `Impact of ${getParameterLabel()} on Final Investment Value`;
+                ? `Impact of ${getParameterLabel(selectedEvent, parameterType)} on Probability of Success`
+                : `Impact of ${getParameterLabel(selectedEvent, parameterType)} on Final Investment Value`;
                 
               const description = graph.metric === "success-probability"
-                ? `This chart shows how different values of ${getParameterLabel().toLowerCase()} affect your probability of success.`
-                : `This chart shows how different values of ${getParameterLabel().toLowerCase()} affect your final investment value.`;
+                ? `This chart shows how different values of ${getParameterLabel(selectedEvent, parameterType).toLowerCase()} affect your probability of success.`
+                : `This chart shows how different values of ${getParameterLabel(selectedEvent, parameterType).toLowerCase()} affect your final investment value.`;
                 
               const yLabel = graph.metric === "success-probability"
                 ? "Probability of Success (%)"
@@ -641,7 +624,7 @@ export default function ParameterExplorationTab({ scenarioId }: ParameterExplora
                     
                     <ParamVsResultChart 
                       data={graph.data as ParamVsResultPoint[]}
-                      parameterName={getParameterLabel()}
+                      parameterName={getParameterLabel(selectedEvent, parameterType)}
                       yLabel={yLabel}
                     />
                   </CardContent>

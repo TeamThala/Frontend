@@ -12,6 +12,7 @@ export interface Event {
 }
 
 export interface FixedYear {
+    value?: number;
     type: "fixed";
     year: number;
 }

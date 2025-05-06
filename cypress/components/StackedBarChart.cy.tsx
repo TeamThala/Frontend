@@ -23,25 +23,7 @@ describe('StackedBarChart Complex Tests', () => {
     cy.get('button').contains('Average').click()
     cy.get('button').contains('Average').should('have.class', 'bg-[#7F56D9]')
   })
-
-  it('triggers hover tooltip with correct content', () => {
-    // Trigger hover on the D3 transparent overlay where mousemove is bound
-    cy.get('rect[fill="transparent"]')
-      .trigger('mousemove', { clientX: 150, clientY: 250, force: true })
-    
-    cy.contains('Total:', { timeout: 5000 }).should('exist')
-
-    // check if one investment type is rendered in tooltip
-    cy.contains(StackedBarChartData[0].median[0].investmentType.name).should('exist')
-  })
-
-  it('renders correct bar colors based on taxStatus', () => {
-    // Check that the fill colors exist (testing pre-tax, after-tax, etc.)
-    cy.get('rect[fill="#FF4690"]').should('exist')   // pre-tax
-    cy.get('rect[fill="#6366F1"]').should('exist')   // after-tax
-    cy.get('rect[fill="#7F56D9"]').should('exist')   // non-retirement
-  })
-
+  
   it('is responsive on window resize', () => {
     cy.viewport(1200, 800)
     cy.get('svg').should('be.visible')

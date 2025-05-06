@@ -398,13 +398,13 @@ export async function PUT(
       // Filter out entries with 0 percentages
       const validIndices = alloc.percentages.map((p: number, i: number) => p !== 0 ? i : -1).filter((i: number) => i !== -1);
       alloc.percentages = alloc.percentages.filter((_: number, i: number) => validIndices.includes(i));
-      alloc.percentages = alloc.percentages.map((p: number) => p * 100);
+      alloc.percentages = alloc.percentages.map((p: number) => p < 1 ? p * 100 : p);
       alloc.investments = alloc.investments.filter((_: any, i: number) => validIndices.includes(i));
     } else {
       alloc.initialPercentages = alloc.initialPercentages ?? [];
-      alloc.initialPercentages = alloc.initialPercentages.map((p: number) => p * 100);
+      alloc.initialPercentages = alloc.initialPercentages.map((p: number) => p < 1 ? p * 100 : p);
       alloc.finalPercentages = alloc.finalPercentages ?? [];
-      alloc.finalPercentages = alloc.finalPercentages.map((p: number) => p * 100);
+      alloc.finalPercentages = alloc.finalPercentages.map((p: number) => p < 1 ? p * 100 : p);
       // Filter out entries where both initial and final percentages are 0
       const validIndices = alloc.initialPercentages.map((ip: number, i: number) => 
         (ip !== 0 || alloc.finalPercentages[i] !== 0) ? i : -1
@@ -424,7 +424,7 @@ export async function PUT(
       const validIndices = pd.percentages.map((p: number, i: number) => p !== 0 ? i : -1).filter((i: number) => i !== -1);
       pd.percentages = pd.percentages.filter((_: number, i: number) => validIndices.includes(i));
       // Multiply percentages by 100 to convert from decimal to percentage
-      pd.percentages = pd.percentages.map((p: number) => p * 100);
+      pd.percentages = pd.percentages.map((p: number) => p < 1 ? p * 100 : p);
       pd.investments = pd.investments.filter((_: any, i: number) => validIndices.includes(i));
     } else {
       pd.initialPercentages = pd.initialPercentages ?? [];
@@ -435,8 +435,8 @@ export async function PUT(
       ).filter((i: number) => i !== -1);
       pd.initialPercentages = pd.initialPercentages.filter((_: number, i: number) => validIndices.includes(i));
       pd.finalPercentages = pd.finalPercentages.filter((_: number, i: number) => validIndices.includes(i));
-      pd.initialPercentages = pd.initialPercentages.map((p: number) => p * 100);
-      pd.finalPercentages = pd.finalPercentages.map((p: number) => p * 100);
+      pd.initialPercentages = pd.initialPercentages.map((p: number) => p < 1 ? p * 100 : p);
+      pd.finalPercentages = pd.finalPercentages.map((p: number) => p < 1 ? p * 100 : p);
       pd.investments = pd.investments.filter((_: any, i: number) => validIndices.includes(i));
     }
     return pd;
