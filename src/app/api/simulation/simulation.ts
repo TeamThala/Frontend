@@ -41,6 +41,7 @@ export async function simulation(scenario: Scenario){
     }
     if (ownerLifeExpectancy === null){
         log.push("Error: Could not sample life expectancy.");
+        saveLogToFile(log.join('\n'), `src/data/error.log`, log);
         return null;
     }
 
@@ -65,6 +66,7 @@ export async function simulation(scenario: Scenario){
     const eventArrays = await initializeEvents(scenario.eventSeries, log);
     if (eventArrays === null){
         log.push("Error: Could not initialize events.");
+        saveLogToFile(log.join('\n'), `src/data/error.log`, log);
         return null;
     }
     log.push(`Initialized events: ${eventArrays}`);
@@ -78,6 +80,7 @@ export async function simulation(scenario: Scenario){
     }
     else {
         log.push("Error: No events found.");
+        saveLogToFile(log.join('\n'), `src/data/error.log`, log);
         return null;
     }
     // Initialize investment related fields to use unified objects
@@ -131,6 +134,7 @@ export async function simulation(scenario: Scenario){
             const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, scenario.investments, log);
             if (incomeResults === null){
                 log.push("Error: Could not update income events.");
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
             curYearIncome = incomeResults.curYearIncome;
@@ -254,6 +258,7 @@ export async function simulation(scenario: Scenario){
             const investmentResults = updateInvestmentEvent(currentInvestmentEvent, log);
             if (investmentResults === null){
                 log.push("Error: Could not update investment events.");
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
             curYearIncome += investmentResults;
@@ -267,6 +272,7 @@ export async function simulation(scenario: Scenario){
             const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments, log);
             if (rc === null || rc === undefined){
                 log.push(`Error: Could not finish Roth conversion for year ${year}`);
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
             curYearIncome += rc;
@@ -275,6 +281,7 @@ export async function simulation(scenario: Scenario){
         const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, curYearEarlyWithdrawals, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, scenario.expenseWithdrawalStrategy, taxData, age, scenario.investments, log);
         if (nondiscExpenseRet === null){
             log.push(`Ending simulation run...`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
         curYearGains += nondiscExpenseRet.dCurYearGains;
@@ -298,6 +305,7 @@ export async function simulation(scenario: Scenario){
             const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, scenario.investments, log);
             if (runInvestResult === null){
                 console.log("Error: Could not run investment event.");
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
         }
@@ -308,6 +316,7 @@ export async function simulation(scenario: Scenario){
         const cashInvestment = findCashInvestment(scenario.investments, log);
         if (cashInvestment === null){
             log.push(`Error: Could not find cash investment in ${scenario.name}`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
         log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
@@ -463,6 +472,7 @@ async function initializeEvents(events: Event[], log: string[]){ // assuming it 
                 const matchingEvent = events.find(e => e.id === startYear.eventId);
                 if (!matchingEvent) {
                     log.push(`Error: Could not find event with id ${event.startYear.eventId}`);
+                    saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                     return null;
                 }
                 await initializeEvents([matchingEvent], log);
@@ -500,6 +510,7 @@ async function initializeEvents(events: Event[], log: string[]){ // assuming it 
                 const nestedInvestments = event.eventType.assetAllocation.investments;
                 if (nestedInvestments === null){
                     log.push(`Error: Could not find the investments nested inside ${event.id}, ${event.name}`);
+                    saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                     return null;
                 }
                 // cashInvestment = nestedInvestments.find(investment => investment.investmentType.name === "cash") || null;
@@ -510,6 +521,7 @@ async function initializeEvents(events: Event[], log: string[]){ // assuming it 
         }
         else {
             log.push(`Error: During initializeEvents(), event ${i} is null`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
     }
@@ -524,6 +536,7 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
         const investments = investmentType.assetAllocation.investments;
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
         for (let j=0; j<investments.length; j++){
@@ -535,6 +548,7 @@ function initializeInvestmentEvents(investmentEvents: Event[], scenario: Scenari
             }
             else{
                 log.push(`Error: Could not find investment with id ${investmentId}`);
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
         }
@@ -549,6 +563,7 @@ function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario,
         const investments = rebalanceType.portfolioDistribution.investments;
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${rebalanceEvent.id}, ${rebalanceEvent.name}`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
         for (let j=0; j<investments.length; j++){
@@ -560,6 +575,7 @@ function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario,
             }
             else{
                 log.push(`Error: Could not find investment with id ${investmentId}`);
+                saveLogToFile(log.join('\n'), `src/data/error.log`, log);
                 return null;
             }
         }
@@ -577,6 +593,7 @@ function initializeStrategy(strategy: Investment[], scenario: Scenario, log: str
         }
         else{
             log.push(`Error: Could not find investment with id ${investmentId}`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
     }
