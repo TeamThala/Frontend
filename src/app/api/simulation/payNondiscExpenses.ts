@@ -5,7 +5,7 @@ import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 import { TaxData } from "@/lib/taxData";
 
-export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, prevYearEarlyWithdrawals: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], taxData: TaxData, age: number, investments: Investment[], log: string[]){
+export function payNondiscExpenses(curYearIncome: number, curYearSS: number, prevYearGains: number, prevYearEarlyWithdrawals: number, year: number, expenseEvents: Event[], standardDeductions: number, married: boolean, state: string, expenseWithdrawalStrategy: Investment[], taxData: TaxData, age: number, investments: Investment[], log: string[]){
     log.push(`=== PAYING NON-DISCRETIONARY EXPENSES AND TAXES FOR ${year} ===`);
     let prevYearTaxes: number = 0;
 
@@ -89,7 +89,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
     }
     const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
-        log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+        log.push(`Error: Could not find cash investment in scenario's investments`);
         return null;
     }
     // log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);

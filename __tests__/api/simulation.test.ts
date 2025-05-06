@@ -5,6 +5,7 @@ import { Event } from '@/types/event';
 import { Investment } from '@/types/investment';
 import { rothConversion } from '@/app/api/simulation/rothConversion';
 import { getTaxData } from '@/lib/taxData';
+import { payNondiscExpenses } from '@/app/api/simulation/payNondiscExpenses';
 
 const mockLog: string[] = [];
 const mockIncomeEvent: Event = {
@@ -617,6 +618,30 @@ const mockCashInvestment2: Investment = {
     "purchasePrice": 0
 };
 
+const mockCashInvestment4: Investment = {
+    "id": "cashInvestment",
+    "value": 100000,
+    "investmentType": {
+        "id": "cash",
+        "name": "Cash Account",
+        "description": "Default cash investment",
+        "expectedAnnualReturn": {
+            "type": "fixed",
+            "valueType": "percentage",
+            "value": 100
+        },
+        "expenseRatio": 0,
+        "expectedAnnualIncome": {
+            "type": "fixed",
+            "valueType": "amount",
+            "value": 0
+        },
+        "taxability": true
+    },
+    "taxStatus": "non-retirement",
+    "purchasePrice": 0
+};
+
 const mockCashInvestment3: Investment = {
     "id": "cashInvestment",
     "value": 100000,
@@ -770,7 +795,7 @@ describe('Simulation: Update values of investments', () => {
 
 describe('Simulation: Roth Conversion optimizer', () => {
     it('should transfer investments correctly', async () => {
-        const taxData = await getTaxData(); // has 2025 tax data
+        const taxData = await getTaxData();
         const rc = rothConversion(70000, 0, taxData, false, 2025, [mockInvestment2], [mockCashInvestment, mockInvestment1, mockInvestment2, mockInvestment3], mockLog);
         expect(rc).toBeDefined(); // Ensure the result is not undefined or null
         expect(rc).toBeCloseTo(45125);
@@ -788,5 +813,17 @@ describe('Simulation: Run investment events', () => {
         expect(mockInvestmentEvent6.eventType.assetAllocation.investments[1].value).toBeCloseTo(50327.2727); // investment1 already over its target value
         expect(mockInvestmentEvent6.eventType.assetAllocation.investments[2].value).toBeCloseTo(51466.6666); // investment3 already over its target value
 
+    });
+});
+
+describe('Simulation: Pay tax expenses', () => {
+    it('should pay tax expenses correctly', async () => {
+        const taxData = await getTaxData();
+        const result = payNondiscExpenses(100000, 10000, 10000, 10000, 2025, [], 500, false, 'NY', [mockCashInvestment4], taxData, 40, [mockCashInvestment4], mockLog);
+        expect(result).toBeDefined(); // Ensure the result is not undefined or null
+        expect(result.dCurYearEarlyWithdrawals).toBeCloseTo(0);
+        expect(result.dCurYearGains).toBeCloseTo(0); 
+        expect(result.dCurYearIncome).toBeCloseTo(0);
+        expect(mockCashInvestment4.value).toBeCloseTo(69808);
     });
 });

@@ -4,15 +4,15 @@ import { findCashInvestment } from "./updateIncomeEvents";
 import { FixedYear } from "@/types/event";
 
 export function runInvestmentEvent(e: Event, l: number, simStartYear: number, year: number, investments: Investment[], log: string[]){ // e = currentInvestmentEvent, l = contributionsLimit
-    console.log(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
+    log.push(`=== RUNNING INVESTMENT EVENT ${e.name} ===`);
     const eType = e.eventType as InvestmentEvent;
     if (eType.assetAllocation.investments === null){
-        console.log(`Error: Could not find investments in asset allocation in ${e.name}`);
+        log.push(`Error: Could not find investments in asset allocation in ${e.name}`);
         return null;
     }
     const currentInvestments: Investment[] = eType.assetAllocation.investments;
 
-    console.log(`Investments: ${currentInvestments}`);
+    log.push(`Investments: ${currentInvestments}`);
 
     let b = 0; // sum of amount to buy in after tax accounts
     let cashCounter = 0; // countdown of excess cash to be invested
@@ -23,7 +23,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     for (let i=0; i<currentInvestments.length; i++){
         const investment = currentInvestments[i];
         if (investment === undefined || investment === null){
-            console.log(`Error: Investment ${i} is undefined or null`);
+            log.push(`Error: Investment ${i} is undefined or null`);
             return null;
         }
         investmentValues.push(investment.value);
@@ -32,29 +32,29 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             b += investment.value; // sum of amount to buy in after tax accounts
         }
     }
-    console.log(`Collected a b value of ${b} from after tax accounts`);
-    console.log(`Collected a net value of ${investmentNetValue} from all investments`);
+    log.push(`Collected a b value of ${b} from after tax accounts`);
+    log.push(`Collected a net value of ${investmentNetValue} from all investments`);
     const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
-        console.log(`Error: Could not find cash investment in ${e.name}`);
+        log.push(`Error: Could not find cash investment in ${e.name}`);
         return null;
     }
 
-    console.log(`Cash investment found in ${e.name}: ${cashInvestment}`);
+    log.push(`Cash investment found in ${e.name}: ${cashInvestment}`);
     const excessCash = Math.max(cashInvestment.value - eType.maxCash, 0); // excess cash in the account
-    console.log(`Excess cash in the account: ${excessCash}`);
-    console.log(`Cash investment value before withdrawal: ${cashInvestment.value}`);
+    log.push(`Excess cash in the account: ${excessCash}`);
+    log.push(`Cash investment value before withdrawal: ${cashInvestment.value}`);
 
     cashInvestment.value -= Math.max(0, excessCash); // withdraw from cash account to invest
     cashCounter += Math.max(0, excessCash); // countdown of excess cash to be invested
-    console.log(`Cash investment value after withdrawal: ${cashInvestment.value}`);
+    log.push(`Cash investment value after withdrawal: ${cashInvestment.value}`);
     const targetInvestmentValues: number[] = [];
 
     if (eType.assetAllocation.type === "fixed"){
         for (let i=0; i<eType.assetAllocation.percentages.length; i++){
             const targetRatio = eType.assetAllocation.percentages[i];
             if (targetRatio === undefined || targetRatio === null){
-                console.log(`Error: Target ratio ${targetRatio} is undefined or null in iteration ${i}`);
+                log.push(`Error: Target ratio ${targetRatio} is undefined or null in iteration ${i}`);
                 return null;
             }
             const targetValue = (investmentNetValue + excessCash) * targetRatio/100; // target value of investment
@@ -67,7 +67,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         const elapseRatio = eDuration.year !== 0 ? (year - simStartYear) / eDuration.year : 0; // percentage of how much current event has elapsed until end
         for (let i=0; i<currentInvestments.length; i++){
             if (eType.assetAllocation.initialPercentages[i] === undefined || eType.assetAllocation.finalPercentages[i] === undefined){
-                console.log(`Error: Target ratio ${eType.assetAllocation.initialPercentages[i]} or ${eType.assetAllocation.finalPercentages[i]} is undefined`);
+                log.push(`Error: Target ratio ${eType.assetAllocation.initialPercentages[i]} or ${eType.assetAllocation.finalPercentages[i]} is undefined`);
                 return null;
             }
             const targetRatio = eType.assetAllocation.initialPercentages[i] + (eType.assetAllocation.finalPercentages[i] - eType.assetAllocation.initialPercentages[i]) * elapseRatio; // target ratio of investment
@@ -76,20 +76,20 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         }
 
     }
-    console.log(`Target investment values: ${targetInvestmentValues}`);
+    log.push(`Target investment values: ${targetInvestmentValues}`);
 
     // Now, targetInvestmentValues contains the target values for each investment
     // We need to scale down the after-tax accounts if they exceed the limit
 
     if (b>l){
-        console.log(`After tax accounts will receive investments exceeding annual limits of ${l}. Scaling down...`)
+        log.push(`After tax accounts will receive investments exceeding annual limits of ${l}. Scaling down...`)
 
         let diff = 0;
         let numNonAfterAccounts = 0;
         for (let i = 0; i < currentInvestments.length; i++) {
             const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
-                console.log(`Error: Investment ${i} is undefined or null`);
+                log.push(`Error: Investment ${i} is undefined or null`);
                 return null;
 
             }
@@ -98,7 +98,7 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
                     diff += targetInvestmentValues[i] * (1 - l / b); // Safe division
                     targetInvestmentValues[i] *= l / b; // Safe division
                 } else {
-                    console.log("Warning: Division by zero avoided in after-tax scaling.");
+                    log.push("Warning: Division by zero avoided in after-tax scaling.");
                     diff += targetInvestmentValues[i]; // No scaling applied
                     targetInvestmentValues[i] = investmentValues[i]; // Set to original value if scaling is invalid
                 }
@@ -107,8 +107,8 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
             }
         }
 
-        console.log(`Difference between capped purchases and uncapped: ${diff}`);
-        console.log(`Number of non-after tax accounts: ${numNonAfterAccounts}`);
+        log.push(`Difference between capped purchases and uncapped: ${diff}`);
+        log.push(`Number of non-after tax accounts: ${numNonAfterAccounts}`);
     
         const scaleUp = numNonAfterAccounts !== 0 ? diff / numNonAfterAccounts : 0; // Safe division
         // Spread the difference across non-after tax accounts
@@ -116,28 +116,28 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
 
             const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
-                console.log(`Error: Investment ${i} is undefined or null`);
+                log.push(`Error: Investment ${i} is undefined or null`);
                 return null;
             }
             if (investment.taxStatus !== "after-tax") {
                 if (isNaN(targetInvestmentValues[i]) || targetInvestmentValues[i] === undefined) {
-                    console.log(`Error: targetInvestmentValues[${i}] is invalid (NaN or undefined).`);
+                    log.push(`Error: targetInvestmentValues[${i}] is invalid (NaN or undefined).`);
                     targetInvestmentValues[i] = 0; // Default to 0
                 }
                 if (investment.value < targetInvestmentValues[i] + scaleUp && cashCounter > 0) {
-                    console.log(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
-                    console.log(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]} + scaleUp: ${scaleUp}`);
+                    log.push(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
+                    log.push(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]} + scaleUp: ${scaleUp}`);
                     cashCounter -= targetInvestmentValues[i] + scaleUp - investment.value; // reduce cash counter by the amount we need to invest
                     investment.value = targetInvestmentValues[i] + scaleUp; // only purchase if we less
                 }
             } else {
                 if (isNaN(targetInvestmentValues[i]) || targetInvestmentValues[i] === undefined) {
-                    console.log(`Error: targetInvestmentValues[${i}] is invalid (NaN or undefined).`);
+                    log.push(`Error: targetInvestmentValues[${i}] is invalid (NaN or undefined).`);
                     targetInvestmentValues[i] = 0; // Default to 0
                 }
                 if (investment.value < targetInvestmentValues[i] && cashCounter > 0) {
-                    console.log(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
-                    console.log(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]}`);
+                    log.push(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
+                    log.push(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]}`);
                     cashCounter -= targetInvestmentValues[i] - investment.value; // reduce cash counter by the amount we need to invest
                     investment.value += targetInvestmentValues[i]; // only purchase if we less
                 }
@@ -148,12 +148,12 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         for (let i=0; i<currentInvestments.length; i++){
             const investment = currentInvestments[i];
             if (investment === undefined || investment === null){
-                console.log(`Error: Investment ${i} is undefined or null`);
+                log.push(`Error: Investment ${i} is undefined or null`);
                 return null;
             }
             if (investment.value < targetInvestmentValues[i] && cashCounter > 0) {
-                console.log(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
-                    console.log(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]}`);
+                log.push(`Sufficient cash has already been withdrawn from cash investment (current cashCounter: ${cashCounter})`);
+                    log.push(`Investment ${i} is ${investment.value} and target is ${targetInvestmentValues[i]}`);
                 cashCounter -= targetInvestmentValues[i] - investment.value; // reduce cash counter by the amount we need to invest
                 investment.value += targetInvestmentValues[i]; // invest excess cash
             }
