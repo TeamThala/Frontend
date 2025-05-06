@@ -28,7 +28,7 @@ const scenarioSchema = new Schema({
       min: { type: Number},
       max: { type: Number},
     },
-  RothConversionStrategy: [{ type: Schema.Types.ObjectId, ref: "RothConversionStrategy" }],
+  RothConversionStrategy: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
   RMDStrategy: [{ type: Schema.Types.ObjectId, ref: "Investment" }],
   rothConversion: {
     rothConversion: { type: Boolean, default: false },

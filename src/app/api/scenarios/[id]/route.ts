@@ -214,7 +214,9 @@ export async function GET(
     .populate({ path: "investments", populate: { path: "investmentType" } })
     .populate("eventSeries")
     .populate("spendingStrategy")
-    .populate("expenseWithdrawalStrategy");
+    .populate("expenseWithdrawalStrategy")
+    .populate("RMDStrategy") // ✅ Add this
+    .populate("RothConversionStrategy"); // ✅ Add this
 
   if (!scenario) {
     return NextResponse.json(
@@ -521,11 +523,28 @@ export async function PUT(
   );
 
   /* 5 — RMD & Roth */
-  scenario.RMDStrategy = extractInvestmentIds(body.RMDStrategy ?? []);
-  scenario.RothConversionStrategy = extractInvestmentIds(
-    body.RothConversionStrategy ?? [],
-  );
+  const toObjectId = (item: any): mongoose.Types.ObjectId | null => {
+    if (!item) return null;
+    if (item instanceof mongoose.Types.ObjectId) return item;
+    if (typeof item === "string" && mongoose.Types.ObjectId.isValid(item)) {
+      return new mongoose.Types.ObjectId(item);
+    }
+    if (typeof item === "object") {
+      const id = item._id || item.id;
+      if (mongoose.Types.ObjectId.isValid(id)) {
+        return new mongoose.Types.ObjectId(id);
+      }
+    }
+    return null; // fallback
+  };
+  
+  /* 5 — RMD & Roth */
+  scenario.RMDStrategy = (body.RMDStrategy ?? []).map(toObjectId).filter((id): id is mongoose.Types.ObjectId => !!id);
+  scenario.RothConversionStrategy = (body.RothConversionStrategy ?? []).map(toObjectId).filter((id): id is mongoose.Types.ObjectId => !!id);
   scenario.rothConversion = body.rothConversion ?? null;
+  
+  
+
 
   /* 6 — state‑tax files (user‑level) */
   if (body.stateTaxFiles) {
