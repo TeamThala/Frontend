@@ -89,12 +89,6 @@ interface TwoDimensionalExplorationTabProps {
   scenarioId: string;
 }
 
-// Type guards to check event types
-function isIncomeOrExpenseEvent(event: EventSeries | null | undefined): boolean {
-  if (!event) return false;
-  return event.eventType.type === "income" || event.eventType.type === "expense";
-}
-
 function isInvestmentEvent(event: EventSeries | undefined | null): boolean {
   return !!(event && event.eventType && event.eventType.type === "investment");
 }
@@ -102,31 +96,6 @@ function isInvestmentEvent(event: EventSeries | undefined | null): boolean {
 function isRebalanceEvent(event: EventSeries | undefined | null): boolean {
   return !!(event && event.eventType && event.eventType.type === "rebalance");
 }
-
-// Helper function to check if an investment event has exactly 2 investments
-function hasExactlyTwoInvestments(event: EventSeries | undefined | null): boolean {
-  if (!isInvestmentEvent(event)) return false;
-  
-  // Add null check and type assertion
-  const eventType = event!.eventType as InvestmentEventType;
-  const assetAllocation = eventType.assetAllocation;
-  
-  return !!(assetAllocation && 
-         assetAllocation.investments && 
-         assetAllocation.investments.length === 2);
-}
-
-// Function to check if an event has an amount property (for income/expense)
-const hasAmountProperty = (event: EventSeries | undefined | null): boolean => {
-  if (!event || !event.eventType) return false;
-  
-  // Check if it's an income/expense type with amount property
-  if (event.eventType.type === "income" || event.eventType.type === "expense") {
-    return 'amount' in event.eventType;
-  }
-  
-  return false;
-};
 
 // Function to safely retrieve an amount from any event
 function getEventAmount(event: EventSeries): number {
@@ -246,7 +215,7 @@ export default function TwoDimensionalExplorationTab({ scenarioId }: TwoDimensio
       eventSeries.forEach((event, index) => {
         console.log(`Event ${index}: ${event.name}, Type: ${event.eventType?.type}`);
         // Use type assertion to safely check for amount property
-        console.log(`Event ${index} has amount:`, 'amount' in (event.eventType as any));
+        console.log(`Event ${index} has amount:`, 'amount' in (event.eventType as EventType));
       });
     }
   }, [eventSeries]);
