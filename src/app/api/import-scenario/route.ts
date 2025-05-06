@@ -411,19 +411,32 @@ export async function POST(req: NextRequest) {
     } // end for‑each event
 
     /* 6️⃣  resolve startWith / startAfter */
-    for (const [child, parentName] of depTracker.entries()) {
-      const childEvt  = await Event.findOne({ name: child });
-      const parentEvt =
-        (await Event.findOne({ name: parentName })) ??
-        (await Event.findOne({ name: { $regex: new RegExp(`^${parentName}$`, "i") } }));
-
-      if (childEvt && parentEvt) {
-        (childEvt.startYear as StartYear).eventId = parentEvt._id;
-        await childEvt.save();
-      } else {
-        console.warn(`Could not resolve dependency '${child}' → '${parentName}'`);
-      }
+    /* 6️⃣  resolve startWith / startAfter
+   ─────────────────────────────────── */
+    /* 6️⃣  resolve startWith / startAfter
+   ─────────────────────────────────── */
+/* 6️⃣  resolve startWith / startAfter
+   ─────────────────────────────────── */
+   for (const [childName, parentName] of depTracker.entries()) {
+    /* ① look the two Ids up in the map that was built while creating
+          events in **this** import run                                   */
+    const childId  = eventMap.get(childName);
+    const parentId = eventMap.get(parentName);
+  
+    if (!childId || !parentId) {
+      console.warn(`Could not resolve dependency '${childName}' → '${parentName}'`);
+      continue;                     // nothing to update – skip
     }
+  
+    /* ② one atomic write – no double fetches, no stale matches           */
+    await Event.updateOne(
+      { _id: childId },
+      { $set: { "startYear.eventId": parentId } }
+    );
+  }
+  
+
+
 
     /* 7️⃣  Strategies */
     const normalizeKey = (s: string) => s.toLowerCase().replace(/[^\w]+/g, "").trim();

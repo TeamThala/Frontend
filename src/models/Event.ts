@@ -29,7 +29,7 @@ const yearSchema = new Schema(
     },
     // For "event":
     eventTime: { type: String, enum: ["start", "end"] },
-    event: { type: Schema.Types.ObjectId, ref: "Event" },
+    eventId: { type: Schema.Types.ObjectId, ref: "Event" },
   },
   { _id: false }
 );
