@@ -86,6 +86,7 @@ export async function simulation(scenario: Scenario){
     // Initialize investment related fields to use unified objects
     initializeInvestmentEvents(investmentEvents, scenario, log);
     initializeRebalanceEvents(rebalanceEvents, scenario, log);
+    initializeSpendingStrategy(scenario.spendingStrategy, expenseEvents, log);
     initializeStrategy(scenario.RMDStrategy, scenario, log);
     initializeStrategy(scenario.RothConversionStrategy, scenario, log);
     initializeStrategy(scenario.expenseWithdrawalStrategy, scenario, log);
@@ -598,4 +599,20 @@ function initializeStrategy(strategy: Investment[], scenario: Scenario, log: str
         }
     }
 }
+
+function initializeSpendingStrategy(spendingStrategy: Event[], expenseEvents: Event[], log: string[]){
+    for(let i=0; i<spendingStrategy.length; i++){
+        const event = spendingStrategy[i];
+        const id = event.id;
+        const expenseInField = expenseEvents.find(i => i.id === id);
+        if (expenseInField){
+            spendingStrategy[i] = expenseInField; // replace with reference to investment object in scenario.investments
+        }
+        else{
+            log.push(`Error: Could not find investment with id ${id}`);
+            saveLogToFile(log.join('\n'), `src/data/error.log`, log);
+            return null;
+        }
+    }
+}   
 
