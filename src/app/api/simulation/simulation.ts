@@ -284,6 +284,11 @@ export async function simulation(scenario: Scenario){
             saveLogToFile(log.join('\n'), `src/data/error.log`, log);
             return null;
         }
+        if (nondiscExpenseRet === undefined){
+            log.push(`WARNING: Could not finish nondiscretionary expenses for year ${year}`);
+            success = false;
+            break;
+        }
         curYearGains += nondiscExpenseRet.dCurYearGains;
         curYearIncome += nondiscExpenseRet.dCurYearIncome;
         curYearEarlyWithdrawals += nondiscExpenseRet.dCurYearEarlyWithdrawals;
@@ -572,7 +577,7 @@ function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario,
             portfolioDistribution = portfolioDistribution[0];
         }
         const investments = portfolioDistribution.investments;
-        
+
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${rebalanceEvent.id}, ${rebalanceEvent.name}`);
             saveLogToFile(log.join('\n'), `src/data/error.log`, log);

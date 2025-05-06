@@ -148,7 +148,7 @@ export function payNondiscExpenses(curYearIncome: number, curYearSS: number, pre
 
     if (cashInvestment.value < 0){
         log.push(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
-        return null;
+        return undefined
     }
 
     // Update non-discretionary expense events
