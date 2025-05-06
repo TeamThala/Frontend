@@ -177,6 +177,7 @@ interface StartYear {
   eventTime?: "start" | "end";
   eventId?: Types.ObjectId | null;
   event?: Types.ObjectId | null; // Backwards compatibility
+  value?: number;
 }
 
 /* ────────────────────────────────
@@ -273,7 +274,7 @@ export async function POST(req: NextRequest) {
       let start: StartYear = { type: "fixed" };
       switch (ev.start.type) {
         case "fixed":
-          start = { type: "fixed", year: ev.start.value };
+          start = { type: "fixed", year: ev.start.value};
           break;
         case "normal":
           start = {
@@ -302,6 +303,7 @@ export async function POST(req: NextRequest) {
       interface Duration {
         type: "fixed" | "normal" | "uniform";
         valueType: "amount";
+        value?: number;
         year?:           // ⬅︎ notice the first union member is *number* now
           | number                              //  ← fixed
           | { mean: number; stdDev: number; valueType: "amount" }   // normal
@@ -319,6 +321,7 @@ export async function POST(req: NextRequest) {
           duration = {
             type,
             valueType: "amount",
+            value:ev.duration.value,
             year: typeof ev.duration.value === "number" && isFinite(ev.duration.value)
                     ? ev.duration.value            // number – not an object
                     : 0

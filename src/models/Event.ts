@@ -98,6 +98,10 @@ const durationSchema = new Schema(
       type: Schema.Types.Mixed,
       required: true,
     },
+    value:{
+      type: Number,
+      required: false,
+    }
   },
   { _id: false }
 );

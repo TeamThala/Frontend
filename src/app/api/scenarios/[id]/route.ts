@@ -44,7 +44,8 @@ type DbDuration =
 | {
     type: "fixed";
     valueType: "amount";
-    year: number;                          //  ← plain number
+    year: number;
+    value: number;                         //  ← plain number
   }
 | {
     type: "uniform";
@@ -125,6 +126,7 @@ function normalizeDuration(
       return {
         type: "fixed",
         valueType: "amount",
+        value: raw.year,
         year: raw.year           // ✅ now matches `number`
       };
 
