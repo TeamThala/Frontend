@@ -40,5 +40,6 @@ export function rothConversion(curYearIncome: number, curYearSS: number, taxData
             log.push(`Ran out of events in Roth conversion strategy to convert for ${year}`);
             return rcOriginal - rc;
         }
+        return 0;
     }
 }

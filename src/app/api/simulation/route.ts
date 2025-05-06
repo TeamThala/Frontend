@@ -320,7 +320,16 @@ function convertMongoIds(obj: any): void {
 
 // Function to transform startYear fields in scenario
 function transformStartYearFields(scenario: Scenario): void {
+
+
     if (!scenario?.eventSeries || !Array.isArray(scenario.eventSeries)) return;
+    
+    scenario.eventSeries.forEach((event) => {
+        if (event.duration.type === "fixed") 
+        {
+            event.duration.year = event.duration.value;
+        }
+    });
     
     scenario.eventSeries.forEach((event) => {
         if (event.startYear) {

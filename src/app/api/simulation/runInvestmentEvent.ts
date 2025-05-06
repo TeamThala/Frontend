@@ -10,7 +10,14 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         log.push(`Error: Could not find investments in asset allocation in ${e.name}`);
         return null;
     }
-    const currentInvestments: Investment[] = eType.assetAllocation.investments;
+
+    
+    let assetAllocation = eType.assetAllocation;
+    if(Array.isArray(assetAllocation))
+    {
+        assetAllocation = assetAllocation[0];
+    }
+    const currentInvestments: Investment[] = assetAllocation.investments!;
 
     log.push(`Investments: ${currentInvestments}`);
 
@@ -50,9 +57,9 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
     log.push(`Cash investment value after withdrawal: ${cashInvestment.value}`);
     const targetInvestmentValues: number[] = [];
 
-    if (eType.assetAllocation.type === "fixed"){
-        for (let i=0; i<eType.assetAllocation.percentages.length; i++){
-            const targetRatio = eType.assetAllocation.percentages[i];
+    if (assetAllocation.type === "fixed"){
+        for (let i=0; i<assetAllocation.percentages.length; i++){
+            const targetRatio = assetAllocation.percentages[i];
             if (targetRatio === undefined || targetRatio === null){
                 log.push(`Error: Target ratio ${targetRatio} is undefined or null in iteration ${i}`);
                 return null;
@@ -66,11 +73,11 @@ export function runInvestmentEvent(e: Event, l: number, simStartYear: number, ye
         const eDuration = e.duration as FixedYear;
         const elapseRatio = eDuration.year !== 0 ? (year - simStartYear) / eDuration.year : 0; // percentage of how much current event has elapsed until end
         for (let i=0; i<currentInvestments.length; i++){
-            if (eType.assetAllocation.initialPercentages[i] === undefined || eType.assetAllocation.finalPercentages[i] === undefined){
-                log.push(`Error: Target ratio ${eType.assetAllocation.initialPercentages[i]} or ${eType.assetAllocation.finalPercentages[i]} is undefined`);
+            if (assetAllocation.initialPercentages[i] === undefined || assetAllocation.finalPercentages[i] === undefined){
+                log.push(`Error: Target ratio ${assetAllocation.initialPercentages[i]} or ${assetAllocation.finalPercentages[i]} is undefined`);
                 return null;
             }
-            const targetRatio = eType.assetAllocation.initialPercentages[i] + (eType.assetAllocation.finalPercentages[i] - eType.assetAllocation.initialPercentages[i]) * elapseRatio; // target ratio of investment
+            const targetRatio = assetAllocation.initialPercentages[i] + (assetAllocation.finalPercentages[i] - assetAllocation.initialPercentages[i]) * elapseRatio; // target ratio of investment
             const targetValue = (investmentNetValue + excessCash) * targetRatio/100; // target value of investment
             targetInvestmentValues.push(targetValue);
         }
