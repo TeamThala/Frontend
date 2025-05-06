@@ -49,11 +49,14 @@ export const renderInvestmentEventDetails = (
     
     // Handle both array of investments and array of investment IDs by checking the structure
     // Use all investments from the scenario if available
-    const investments = scenarioInvestments.length > 0 
-      ? scenarioInvestments 
-      : Array.isArray(assetAllocationData.investments) 
-          ? assetAllocationData.investments 
-          : [];
+    const rawIds = Array.isArray(assetAllocationData.investments)
+      ? assetAllocationData.investments as string[]
+      : [];
+
+    // 2) Map them into your real investment objects (preserving order)
+    const investments = rawIds
+      .map(id => scenarioInvestments.find(inv => inv._id === id || inv.id === id))
+      .filter((inv): inv is Investment => !!inv);
     
     // Calculate total percentages with safety checks
     const calculateTotal = (percentages: number[] = []) => {

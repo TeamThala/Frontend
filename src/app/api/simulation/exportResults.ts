@@ -9,7 +9,7 @@ export function exportResultsToJson(yearlyData: YearlyResult[], filepath: string
         };
 
         // Write the JSON data to the specified filepath
-        fs.writeFileSync(filepath, JSON.stringify(jsonData, null, 2), 'utf-8');
+        //fs.writeFileSync(filepath, JSON.stringify(jsonData, null, 2), 'utf-8');
 
         // Prepare CSV content
         const csvHeaders = ['Year', ...Object.values(yearlyData[0].investments).map(investment => investment.id)];
@@ -23,7 +23,7 @@ export function exportResultsToJson(yearlyData: YearlyResult[], filepath: string
         ].join('\n');
 
         // Write the CSV content to the specified csvFilepath
-        fs.writeFileSync(csvFilepath, csvContent, 'utf-8');
+        //fs.writeFileSync(csvFilepath, csvContent, 'utf-8');
         log.push(`Written yearly results to ${csvFilepath}`);
         log.push(`Written simulation results to ${filepath}`);
         return jsonData;
@@ -35,7 +35,7 @@ export function exportResultsToJson(yearlyData: YearlyResult[], filepath: string
 
 export function saveLogToFile(logContents: string, filepath: string, log: string[]) {
     try {
-        fs.appendFileSync(filepath, logContents + '\n', 'utf-8');
+        //fs.appendFileSync(filepath, logContents + '\n', 'utf-8');
         log.push(`Log entry added to ${filepath}.`);
     } catch (error) {
         console.error('Error writing to the log file:', error);

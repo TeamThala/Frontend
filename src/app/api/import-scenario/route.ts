@@ -14,7 +14,6 @@ import Scenario          from "@/models/Scenario";
 import InvestmentType    from "@/models/InvestmentType";
 import Investment        from "@/models/Investment";
 import Event             from "@/models/Event";
-import RothConv          from "@/models/RothConversionStrategy";
 import TaxFile           from "@/models/TaxFile";
 import * as yaml         from "js-yaml";
 
@@ -536,21 +535,7 @@ export async function POST(req: NextRequest) {
     /* 8️⃣  Scenario */
     const uniqueInvestmentIds = getUniqueInvestmentIds(investMap);
 
-    let finalRothConv: Types.ObjectId[] | Types.ObjectId[] = [];
-    if (yml.RothConversionOpt && directRothIds.length) {
-      try {
-        const rc = await RothConv.create({
-          name: "Imported Strategy",
-          investmentOrder: directRothIds,
-          owner: user._id
-        });
-        finalRothConv = [rc._id];
-      } catch (_e) {
-        console.warn("Could not create RothConversionStrategy doc, storing direct IDs");
-        finalRothConv = directRothIds;
-        console.log(_e);
-      }
-    }
+    const finalRothConv: Types.ObjectId[] = directRothIds;
 
     const scenario = await Scenario.create({
       type:                 yml.maritalStatus === "couple" ? "couple" : "individual",
