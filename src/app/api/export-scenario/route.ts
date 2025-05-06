@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
       })
       .populate({
         path: "eventSeries",
-        populate: { path: "startYear.event", model: "Event" }
+        populate: { path: "startYear.event", model: "Event", options: { strictPopulate: false } }
       })
       .populate("RothConversionStrategy");
 
