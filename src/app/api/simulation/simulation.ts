@@ -566,7 +566,13 @@ function initializeRebalanceEvents(rebalanceEvents: Event[], scenario: Scenario,
     for (let i=0; i<rebalanceEvents.length; i++){
         const rebalanceEvent = rebalanceEvents[i];
         const rebalanceType = rebalanceEvent.eventType as RebalanceEvent;
-        const investments = rebalanceType.portfolioDistribution.investments;
+        
+        let portfolioDistribution = rebalanceType.portfolioDistribution;
+        if (Array.isArray(portfolioDistribution)){
+            portfolioDistribution = portfolioDistribution[0];
+        }
+        const investments = portfolioDistribution.investments;
+        
         if (investments === null){
             log.push(`Error: Could not find the investments nested inside ${rebalanceEvent.id}, ${rebalanceEvent.name}`);
             saveLogToFile(log.join('\n'), `src/data/error.log`, log);
