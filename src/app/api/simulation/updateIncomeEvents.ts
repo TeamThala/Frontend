@@ -9,7 +9,7 @@ export function findCashInvestment(investments: Investment[], log: string[]): In
         return null;
     }
     // log.push(`Nested investments: ${nestedInvestments}`);
-    const cashInvestment = investments.find(investment => investment.investmentType.name === "Cash Account") || null;
+    const cashInvestment = investments.find(investment => investment.investmentType.name.toLowerCase().includes("cash")) || null;
     return cashInvestment;
 }
 
