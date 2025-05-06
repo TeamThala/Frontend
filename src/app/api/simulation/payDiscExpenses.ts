@@ -3,7 +3,7 @@ import { Investment } from "@/types/investment";
 import { findCashInvestment } from "./updateIncomeEvents";
 import { randomNormal } from "d3-random";
 
-export function payDiscExpenses(year: number, expenseEvents: Event[], currentInvestmentEvent: Event, expenseWithdrawalStrategy: Investment[], financialGoal: number, investments: Investment[], log: string[]){
+export function payDiscExpenses(year: number, expenseEvents: Event[], spendingStrategy: Event[], expenseWithdrawalStrategy: Investment[], financialGoal: number, investments: Investment[], log: string[]){
     // Calculate net worth
     let netWorth = 0;
     for (let i=0; i<investments.length; i++){
@@ -15,25 +15,28 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
     log.push(`Temporary net worth for payDiscExpenses is ${netWorth}`);
     log.push(`=== PAYING DISCRETIONARY EXPENSES FOR ${year} ===`);
     let totalPayments = 0;
-    for (let i=0; i<expenseEvents.length; i++){
-        const event = expenseEvents[i];
+    for (let i=0; i<spendingStrategy.length; i++){
+        if (netWorth <= financialGoal){
+            break; // stop if net worth is below financial goal
+        }
+        const event = spendingStrategy[i];
         const eventType = event.eventType as ExpenseEvent;
         if (eventType.discretionary === true){
             const eventStartYear = event.startYear as FixedYear;
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears
-            netWorth -= eventType.amount; // deduct from net worth
             if (withinDuration && netWorth > financialGoal){
-                log.push(`Adding Non-discretionary Expense ${event.name} with amount ${eventType.amount} to totalPayments (value before add: ${totalPayments})`);
-                totalPayments += eventType.amount;
+                log.push(`Adding Non-discretionary Expense ${event.name} with amount ${Math.min(eventType.amount, netWorth)} to totalPayments (value before add: ${totalPayments})`);
+                totalPayments += Math.min(eventType.amount, netWorth);
+                netWorth -= Math.min(eventType.amount, netWorth); // deduct from net worth
             }
         }
     }
     log.push(`Total payments for discretionary expenses is ${totalPayments}`);
     log.push(`Net worth after discretionary expenses is ${netWorth}`);
-    const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+    const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
-        log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+        log.push(`Error: Could not find cash investment in scenario's investments`);
         return null;
     }
     log.push(`Cash investment with value ${cashInvestment.value} is going to have ${totalPayments} withdrawn for totalPayments`);
@@ -66,16 +69,11 @@ export function payDiscExpenses(year: number, expenseEvents: Event[], currentInv
         }
     }
 
-    if (cashInvestment.value < 0){
-        log.push(`FAILED TO PAY OFF ALL NON-DISCRETIONARY EXPENSES`);
-        return null;
-    }
-
     // Update non-discretionary expense events
     for(let i=0; i<expenseEvents.length; i++){
         const event = expenseEvents[i];
         const eventType = event.eventType as ExpenseEvent;
-        if (eventType.discretionary === false){
+        if (eventType.discretionary === true){
             const eventStartYear = event.startYear as FixedYear;
             const eventDuration = event.duration as FixedYear;
             const withinDuration = (year >= eventStartYear.year) && (year <= (eventStartYear.year + eventDuration.year)); // should be fixedYears

@@ -32,8 +32,18 @@ export class WorkerPool {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   private taskQueue: { scenario: Scenario; simulationId: number; resolve: Function; reject: Function }[] = [];
   private activeWorkers = 0;
+  private workerErrors: Map<number, string> = new Map();
 
   constructor(private maxWorkers: number = MAX_WORKERS) {}
+
+  // Getter for worker errors
+  get errors(): Record<string, string> {
+    const errorObj: Record<string, string> = {};
+    this.workerErrors.forEach((errorMsg, simId) => {
+      errorObj[`simulation_${simId}`] = errorMsg;
+    });
+    return errorObj;
+  }
 
   /**
    * Run a batch of simulations in parallel using worker threads
@@ -78,6 +88,12 @@ export class WorkerPool {
           return result;
         }).catch(err => {
           console.error(`Error in simulation ${index}:`, err);
+          // Store detailed error information
+          this.workerErrors.set(index, JSON.stringify({
+            message: err.message || String(err),
+            stack: err.stack,
+            simulationId: index
+          }));
           errors++;
           return null;
         });
@@ -154,10 +170,23 @@ export class WorkerPool {
               result
             });
           } catch (error) {
+            // Capture full error details
+            const errorDetails = {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+              name: error instanceof Error ? error.name : 'UnknownError',
+              simulationId: simulationId
+            };
+            
+            console.error(`Simulation error in worker ${simulationId}:`, errorDetails);
+            
+            // Store the detailed error
+            this.workerErrors.set(simulationId, JSON.stringify(errorDetails));
+            
             // Send error back to worker
             worker.postMessage({ 
               type: 'error',
-              error: String(error)
+              error: JSON.stringify(errorDetails)
             });
           }
         }
@@ -181,6 +210,18 @@ export class WorkerPool {
             resolve(processedResult);
           } else {
             console.error(`Worker #${simulationId} error:`, message.error);
+            if (message.error) {
+              // Store the error with more context
+              const errorInfo = typeof message.error === 'string' 
+                ? message.error 
+                : JSON.stringify(message.error);
+                
+              this.workerErrors.set(simulationId, `Worker #${simulationId} error details: ${errorInfo}`);
+            } else {
+              // Provide a fallback message when error is undefined
+              this.workerErrors.set(simulationId, `Worker #${simulationId} failed with an unknown error`);
+              console.warn(`Worker #${simulationId} had undefined error message`);
+            }
             resolve(null); // Resolve with null instead of rejecting to continue batch processing
           }
 
@@ -192,6 +233,7 @@ export class WorkerPool {
       // Handle worker errors
       worker.on('error', (err) => {
         console.error(`Worker ${simulationId} error:`, err);
+        this.workerErrors.set(simulationId, err.message || String(err));
         reject(err);
         this.terminateWorker(worker, simulationId);
       });
@@ -200,7 +242,9 @@ export class WorkerPool {
       worker.on('exit', (code) => {
         if (code !== 0) {
           console.error(`Worker ${simulationId} exited with code ${code}`);
-          reject(new Error(`Worker exited with code ${code}`));
+          const errorMsg = `Worker exited with code ${code}`;
+          this.workerErrors.set(simulationId, errorMsg);
+          reject(new Error(errorMsg));
         }
         this.terminateWorker(worker, simulationId);
       });

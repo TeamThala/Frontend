@@ -85,13 +85,6 @@ export function updateInvestmentEvent(investmentEvent: Event, log: string[]){
             log.push(`Error: Investment ${investment.id} has no expense ratio`);
             return null;
         }
-
-        // if (assetAllocation.type === "fixed"){
-
-        // }
-        // else {
-
-        // }
     }
 
     return dCurYearIncome;

@@ -39,11 +39,19 @@ async function runWorkerTask() {
       }
       else if (message.type === 'error') {
         
+        // Parse the error if it's JSON
+        let errorData;
+        try {
+          errorData = JSON.parse(message.error);
+        } catch {
+          errorData = message.error;
+        }
+        
         // Forward the error back to the main thread
         parentPort.postMessage({ 
           type: 'complete',
           success: false, 
-          error: message.error,
+          error: errorData,
           simulationId
         });
 
@@ -53,11 +61,20 @@ async function runWorkerTask() {
     });
 
   } catch (error) {
+    // Create a detailed error object
+    const errorDetails = {
+      message: error.message || String(error),
+      stack: error.stack || "No stack trace available",
+      name: error.name || "UnknownError",
+      location: "Worker internal error",
+      simulationId: workerData.simulationId
+    };
+    
     // Handle any errors and send them back to the main thread
     parentPort.postMessage({ 
       type: 'complete',
       success: false, 
-      error: `Error in worker: ${error.message}\nStack: ${error.stack}`,
+      error: JSON.stringify(errorDetails),
       simulationId: workerData.simulationId
     });
     process.exit(1);
@@ -66,10 +83,18 @@ async function runWorkerTask() {
 
 // Start the worker
 runWorkerTask().catch(err => {
+  const errorDetails = {
+    message: err.message || String(err),
+    stack: err.stack || "No stack trace available",
+    name: err.name || "UnknownError",
+    location: "Worker initialization error",
+    simulationId: workerData?.simulationId
+  };
+  
   parentPort.postMessage({ 
     type: 'complete',
     success: false, 
-    error: String(err),
+    error: JSON.stringify(errorDetails),
     simulationId: workerData?.simulationId
   });
   process.exit(1);

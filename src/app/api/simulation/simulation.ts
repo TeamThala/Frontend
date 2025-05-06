@@ -24,8 +24,6 @@ export async function simulation(scenario: Scenario){
     let success: boolean = true;
     let finalReturn: SimulationResult | null = null;
     const yearlyResults: YearlyResult[] = [];
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
-    const snowflakeId = scenario.owner.id + "_" + timestamp; // Unique identifier for the simulation run
     const currentYear = new Date().getFullYear();
     let year = currentYear;
     const log: string[] = [];
@@ -122,20 +120,29 @@ export async function simulation(scenario: Scenario){
             (event.startYear.year <= year) && 
             (event.startYear.year + event.duration.year) >= year);
 
-        if (!currentInvestmentEvent) {
-            log.push(`Error: Could not find investment event for year ${year}`);
-            return null;
+        let currentInvestmentEventExists = true;
+
+        if (!currentInvestmentEvent || currentInvestmentEvent === undefined){
+            log.push(`WARNING: Could not find investment event for year ${year}. Skipping all processes that require a current investment event.`);
+            currentInvestmentEventExists = false;
         }
 
-        const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, log);
-        if (incomeResults === null){
-            log.push("Error: Could not update income events.");
-            return null;
+        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
+            const incomeResults = await updateIncomeEvents(incomeEvents, year, currentInvestmentEvent, inflation, scenario.inflationRate.valueType, scenario.investments, log);
+            if (incomeResults === null){
+                log.push("Error: Could not update income events.");
+                return null;
+            }
+            curYearIncome = incomeResults.curYearIncome;
+            curYearSS = incomeResults.curYearSS;
+            log.push(`Income for current year ${year}: ${curYearIncome}`);
+            log.push(`Social Security for current year ${year}: ${curYearSS}`);
         }
-        curYearIncome = incomeResults.curYearIncome;
-        curYearSS = incomeResults.curYearSS;
-        log.push(`Income for current year ${year}: ${curYearIncome}`);
-        log.push(`Social Security for current year ${year}: ${curYearSS}`);
+        else {
+            log.push(`WARNING: Skipping income events for year ${year} because current investment event is not found.`);
+            curYearIncome = 0;
+            curYearSS = 0;
+        }
         
         // === RMD Processing: Calculate and distribute required minimum distributions for pre-tax accounts ===
         // Perform RMD for previous year if applicable
@@ -144,107 +151,117 @@ export async function simulation(scenario: Scenario){
             const rmdService = RMDService.getInstance();
             
             // Get previous year's pre-tax accounts
-            const investmentEventType = currentInvestmentEvent.eventType as InvestmentEvent;
-            if (investmentEventType.assetAllocation?.investments) {
-                //Filter pre-tax accounts with positive balances for RMD calculation
-                const previousYearPretaxAccounts = investmentEventType.assetAllocation.investments
-                    .filter(inv => inv.taxStatus === "pre-tax" && inv.value > 0)
-                    .map(inv => ({
-                        id: inv.id,
-                        name: inv.id,
-                        balance: inv.value,
-                        accountType: "pretax" as const
-                    } as RMDInvestment));
+            if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
+                const investmentEventType = currentInvestmentEvent.eventType as InvestmentEvent;
+                if (investmentEventType.assetAllocation?.investments) {
+                    //Filter pre-tax accounts with positive balances for RMD calculation
+                    const previousYearPretaxAccounts = investmentEventType.assetAllocation.investments
+                        .filter(inv => inv.taxStatus === "pre-tax" && inv.value > 0)
+                        .map(inv => ({
+                            id: inv.id,
+                            name: inv.id,
+                            balance: inv.value,
+                            accountType: "pretax" as const
+                        } as RMDInvestment));
 
-                log.push(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
-                previousYearPretaxAccounts.forEach(acc => {
-                    log.push(`  - ${acc.name}: $${acc.balance}`);
-                });
+                    log.push(`Found ${previousYearPretaxAccounts.length} pre-tax accounts with positive balances`);
+                    previousYearPretaxAccounts.forEach(acc => {
+                        log.push(`  - ${acc.name}: $${acc.balance}`);
+                    });
 
-                // Only proceed if we have pre-tax accounts and an RMD strategy
-                if (previousYearPretaxAccounts.length > 0 && Array.isArray(scenario.RMDStrategy) && scenario.RMDStrategy.length > 0) {
-                    try {
-                        // Load the RMD table for the current year first
-                        await rmdService.getRmdTable(year);
+                    // Only proceed if we have pre-tax accounts and an RMD strategy
+                    if (previousYearPretaxAccounts.length > 0 && Array.isArray(scenario.RMDStrategy) && scenario.RMDStrategy.length > 0) {
+                        try {
+                            // Load the RMD table for the current year first
+                            await rmdService.getRmdTable(year);
 
-                        // Create RMD strategy from the ordered array of investments
-                        const rmdStrategy: RmdStrategy = {
-                            name: "Simulation RMD Strategy",
-                            investmentOrder: scenario.RMDStrategy.map(inv => inv.id)
-                        };
-                        log.push(`RMD distribution order: ${rmdStrategy.investmentOrder.join(', ')}`);
+                            // Create RMD strategy from the ordered array of investments
+                            const rmdStrategy: RmdStrategy = {
+                                name: "Simulation RMD Strategy",
+                                investmentOrder: scenario.RMDStrategy.map(inv => inv.id)
+                            };
+                            log.push(`RMD distribution order: ${rmdStrategy.investmentOrder.join(', ')}`);
 
-                        // Execute RMD distribution
-                        const distribution = await rmdService.executeRmdDistribution(
-                            year,  // current year is the distribution year
-                            age,
-                            previousYearPretaxAccounts,
-                            rmdStrategy
-                        );
+                            // Execute RMD distribution
+                            const distribution = await rmdService.executeRmdDistribution(
+                                year,  // current year is the distribution year
+                                age,
+                                previousYearPretaxAccounts,
+                                rmdStrategy
+                            );
 
-                        // Add RMD to current year's income
-                        curYearIncome += distribution.distributionAmount;
-                        log.push(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
-                        log.push(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
-                        
-                        // Process the distributions - transfer, reduce pre-tax, increase or create non-retirement investment
-                        // Note: RMD transfers work in dollars only - no share counts or portfolio percentages per requirements
-                        log.push('Processing distributions:');
-                        for (const dist of distribution.distributedInvestments) {
-                            log.push(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
-                            const sourceInv = investmentEventType.assetAllocation.investments
-                                .find(inv => inv.id === dist.investmentId);
+                            // Add RMD to current year's income
+                            curYearIncome += distribution.distributionAmount;
+                            log.push(`RMD distribution for year ${year}: $${distribution.distributionAmount}`);
+                            log.push(`Total pre-tax balance: $${distribution.pretaxAccountBalance}`);
                             
-                            if (sourceInv) {
-                                // Reduce the pre-tax investment value
-                                const oldValue = sourceInv.value;
-                                sourceInv.value -= dist.amount;
-                                log.push(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
+                            // Process the distributions - transfer, reduce pre-tax, increase or create non-retirement investment
+                            // Note: RMD transfers work in dollars only - no share counts or portfolio percentages per requirements
+                            log.push('Processing distributions:');
+                            for (const dist of distribution.distributedInvestments) {
+                                log.push(`  Processing distribution of $${dist.amount} from ${dist.investmentId}`);
+                                const sourceInv = investmentEventType.assetAllocation.investments
+                                    .find(inv => inv.id === dist.investmentId);
+                                
+                                if (sourceInv) {
+                                    // Reduce the pre-tax investment value
+                                    const oldValue = sourceInv.value;
+                                    sourceInv.value -= dist.amount;
+                                    log.push(`  Reduced ${sourceInv.id} from $${oldValue} to $${sourceInv.value}`);
 
-                                // Find or create corresponding non-retirement investment
-                                const targetInv = investmentEventType.assetAllocation.investments
-                                    .find(inv => 
-                                        inv.investmentType.name === sourceInv.investmentType.name && 
-                                        inv.taxStatus === "non-retirement"
-                                    );
+                                    // Find or create corresponding non-retirement investment
+                                    const targetInv = investmentEventType.assetAllocation.investments
+                                        .find(inv => 
+                                            inv.investmentType.name === sourceInv.investmentType.name && 
+                                            inv.taxStatus === "non-retirement"
+                                        );
 
-                                if (targetInv) {
-                                    // Add to existing non-retirement investment
-                                    const oldTargetValue = targetInv.value;
-                                    targetInv.value += dist.amount;
-                                    log.push(`  Added to existing non-retirement ${targetInv.id}: $${oldTargetValue} -> $${targetInv.value}`);
-                                } else { //CREATING NEW INVESTMENT HERE!
-                                    // Create new non-retirement investment
-                                    const newInv = {
-                                        id: `${sourceInv.id}-nonret`,
-                                        value: dist.amount,
-                                        taxStatus: "non-retirement" as const, // strictly typed to accept only: taxStatus: "non-retirement" | "pre-tax" | "after-tax", else would infer as generic string.
-                                        investmentType: sourceInv.investmentType,
-                                        purchasePrice: dist.amount  // Set purchase price to distribution amount
-                                    };
-                                    investmentEventType.assetAllocation.investments.push(newInv);
-                                    log.push(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
+                                    if (targetInv) {
+                                        // Add to existing non-retirement investment
+                                        const oldTargetValue = targetInv.value;
+                                        targetInv.value += dist.amount;
+                                        log.push(`  Added to existing non-retirement ${targetInv.id}: $${oldTargetValue} -> $${targetInv.value}`);
+                                    } else { //CREATING NEW INVESTMENT HERE!
+                                        // Create new non-retirement investment
+                                        const newInv = {
+                                            id: `${sourceInv.id}-nonret`,
+                                            value: dist.amount,
+                                            taxStatus: "non-retirement" as const, // strictly typed to accept only: taxStatus: "non-retirement" | "pre-tax" | "after-tax", else would infer as generic string.
+                                            investmentType: sourceInv.investmentType,
+                                            purchasePrice: dist.amount  // Set purchase price to distribution amount
+                                        };
+                                        investmentEventType.assetAllocation.investments.push(newInv);
+                                        log.push(`  Created new non-retirement investment ${newInv.id} with value $${newInv.value}`);
+                                    }
                                 }
                             }
+                            log.push('=== RMD processing complete ===');
+                        } catch (error) {
+                            console.error('Error executing RMD distribution:', error);
+                            // Handle errors gracefully to ensure simulation continues
                         }
-                        log.push('=== RMD processing complete ===');
-                    } catch (error) {
-                        console.error('Error executing RMD distribution:', error);
-                        // Handle errors gracefully to ensure simulation continues
+                    } else {
+                        log.push('Skipping RMD: No pre-tax accounts or RMD strategy available');
                     }
-                } else {
-                    log.push('Skipping RMD: No pre-tax accounts or RMD strategy available');
                 }
+            }
+            else {
+                log.push(`WARNING: Skipping RMD for year ${year} because current investment event is not found.`);
             }
         }
 
-        const investmentResults = updateInvestmentEvent(currentInvestmentEvent, log);
-        if (investmentResults === null){
-            log.push("Error: Could not update investment events.");
-            return null;
+        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
+            const investmentResults = updateInvestmentEvent(currentInvestmentEvent, log);
+            if (investmentResults === null){
+                log.push("Error: Could not update investment events.");
+                return null;
+            }
+            curYearIncome += investmentResults;
         }
-
-        curYearIncome += investmentResults;
+        else {
+            log.push(`WARNING: Skipping investment events for year ${year} because current investment event is not found.`);
+        }
+        
         if (scenario.rothConversion !== null){
             log.push(`Roth conversion for ${year} is ${scenario.rothConversion}`);
             const rc = rothConversion(curYearIncome, curYearSS, taxData, scenario.type === "couple", year, scenario.RothConversionStrategy, scenario.investments, log);
@@ -254,30 +271,43 @@ export async function simulation(scenario: Scenario){
             }
             curYearIncome += rc;
         }
-        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, taxData, log);
+
+        const nondiscExpenseRet = payNondiscExpenses(curYearIncome, curYearSS, curYearGains, curYearEarlyWithdrawals, year, expenseEvents, standardDeductions, scenario.type === "couple", scenario.residenceState, scenario.expenseWithdrawalStrategy, taxData, age, scenario.investments, log);
         if (nondiscExpenseRet === null){
             log.push(`Ending simulation run...`);
             return null;
         }
         curYearGains += nondiscExpenseRet.dCurYearGains;
         curYearIncome += nondiscExpenseRet.dCurYearIncome;
+        curYearEarlyWithdrawals += nondiscExpenseRet.dCurYearEarlyWithdrawals;
+        log.push(`Return from payNondiscExpenses: dCurYearGains: ${nondiscExpenseRet.dCurYearGains}, dCurYearIncome: ${nondiscExpenseRet.dCurYearIncome}, dCurYearEarlyWithdrawals: ${nondiscExpenseRet.dCurYearEarlyWithdrawals}`);
 
         // After using previous year's variables, reset these values to be used the next year
         curYearGains = 0;
         curYearEarlyWithdrawals = 0;
         log.push(`curYearEarlyWithdrawals reset to ${curYearEarlyWithdrawals}`);
         // Pay discretionary expenses in spending strategy
-        payDiscExpenses(year, expenseEvents, currentInvestmentEvent, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
+        if(currentInvestmentEventExists && currentInvestmentEvent !== undefined){
+            payDiscExpenses(year, expenseEvents, scenario.spendingStrategy, scenario.expenseWithdrawalStrategy, scenario.financialGoal, scenario.investments, log);
+        }
+        else{
+            log.push(`WARNING: Skipping discretionary expenses for year ${year} because current investment event is not found.`);
+        }
         // Run invest event scheduled for the current year
-        const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, log); // TODO: Check if this is correct
-        if (runInvestResult === null){
-            console.log("Error: Could not run investment event.");
-            return null;
+        if (currentInvestmentEventExists && currentInvestmentEvent !== undefined){
+            const runInvestResult = runInvestmentEvent(currentInvestmentEvent, scenario.contributionsLimit, currentYear, year, scenario.investments, log);
+            if (runInvestResult === null){
+                console.log("Error: Could not run investment event.");
+                return null;
+            }
+        }
+        else{
+            log.push(`WARNING: Skipping investment event for year ${year} because current investment event is not found.`);
         }
         // Run rebalance events scheduled for the current year
-        const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+        const cashInvestment = findCashInvestment(scenario.investments, log);
         if (cashInvestment === null){
-            log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
+            log.push(`Error: Could not find cash investment in ${scenario.name}`);
             return null;
         }
         log.push(`Cash investment value before rebalance: ${cashInvestment.value}`);
@@ -304,6 +334,7 @@ export async function simulation(scenario: Scenario){
         };
         log.push(`Yearly result being added for year ${year}: ${JSON.stringify(yearlyResult)}`);
         log.push(`Cash investment value: ${cashInvestment.value}`);
+
         yearlyResults.push(yearlyResult); // Add yearly result to array
 
         // Check if financial goal is met
@@ -353,6 +384,8 @@ export async function simulation(scenario: Scenario){
         
     }
     log.push("=====================SIMULATION FINISHED=====================");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-'); // Replace colons and dots for file system compatibility
+    const snowflakeId = scenario.owner.id + "_" + timestamp; // Unique identifier for the simulation run
     finalReturn = exportResultsToJson(yearlyResults, `src/data/${snowflakeId}_simulationResults_${scenario.id}.json`, `src/data/${snowflakeId}.csv`, success, log);
     saveLogToFile(log.join('\n'), `src/data/${snowflakeId}.log`, log);
     return finalReturn;

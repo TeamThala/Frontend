@@ -1,21 +1,19 @@
-import { Event, InvestmentEvent, IncomeEvent, FixedYear } from "@/types/event";
+import { Event, IncomeEvent, FixedYear } from "@/types/event";
 import { Investment } from "@/types/investment";
 import { randomNormal } from "d3-random";
 
-export function findCashInvestment(investmentEvent: Event, log: string[]): Investment | null {
+export function findCashInvestment(investments: Investment[], log: string[]): Investment | null {
     // Find the cash investment in the investment event
-    const investmentEventType = investmentEvent.eventType as InvestmentEvent;
-    const nestedInvestments = investmentEventType.assetAllocation.investments;
-    if (nestedInvestments === null || nestedInvestments.length === 0) {
-        log.push(`Error: Could not find the investments nested inside ${investmentEvent.id}, ${investmentEvent.name}`);
+    if (investments === null || investments.length === 0) {
+        log.push(`Error: Could not find the investments nested inside scenario's investments`);
         return null;
     }
     // log.push(`Nested investments: ${nestedInvestments}`);
-    const cashInvestment = nestedInvestments.find(investment => investment.investmentType.id === "cash") || null; // TODO: change this to a more permanent solution
+    const cashInvestment = investments.find(investment => investment.investmentType.name === "Cash Account") || null;
     return cashInvestment;
 }
 
-export async function updateIncomeEvents(incomeEvents:Event[], year:number, currentInvestmentEvent:Event, inflation: number, inflationType: string, log: string[]){
+export async function updateIncomeEvents(incomeEvents:Event[], year:number, currentInvestmentEvent:Event, inflation: number, inflationType: string, investments: Investment[], log: string[]){
     log.push(`=== UPDATING INCOME EVENTS FOR ${year} ===`);
     // incomeEvents: array of income events obtained from initializeEvents
     // year: current year of simulation to check if event should apply
@@ -23,7 +21,7 @@ export async function updateIncomeEvents(incomeEvents:Event[], year:number, curr
     let curYearIncome = 0;
     let curYearSS = 0;
 
-    const cashInvestment = findCashInvestment(currentInvestmentEvent, log);
+    const cashInvestment = findCashInvestment(investments, log);
     if (cashInvestment === null){
         log.push(`Error: Could not find cash investment in ${currentInvestmentEvent.name}`);
         return null;

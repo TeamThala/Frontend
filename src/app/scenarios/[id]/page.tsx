@@ -110,7 +110,7 @@ export default function ScenarioPage() {
       // If on last step, show success message then redirect
       setShowSuccess(true);
       setTimeout(() => {
-        router.push('/scenarios');
+        router.push(`/simulation/${scenario?.id}`);
       }, 2000);
     }
   };
@@ -182,7 +182,7 @@ export default function ScenarioPage() {
           <div className="bg-zinc-800 p-8 rounded-lg text-center">
             <div className="text-purple-400 text-4xl mb-4">✓</div>
             <h2 className="text-2xl font-bold mb-4">Scenario Created Successfully!</h2>
-            <p>Redirecting to scenarios page...</p>
+            <p>Redirecting to simulation page...</p>
           </div>
         </div>
       ) : (
